@@ -1,0 +1,28 @@
+"Crawl Feed GMC" v1.0
+======================
+
+Ung dung crawl san pham va xuat file feed Google Merchant Center (GMC).
+
+Chay nhanh (can Python)
+-----------------------
+1. Double-click `run.bat`
+2. Trinh duyet mo http://localhost:8501
+
+Build thanh app Windows (.exe)
+------------------------------
+1. Double-click `build.bat`
+2. Doi build xong (5–15 phut lan dau)
+3. Chay: `dist\Crawl Feed GMC\Crawl Feed GMC.exe`
+4. File xuat CSV nam trong thu muc `output` cung cap exe
+
+Luong chinh (GMC)
+-----------------
+Bước 1 Crawl link (Shopify / Woo / Web thuan / Redbubble)
+Bước 2 Cau hinh feed GMC
+Bước 3–7 Tuy chinh, xem truoc, xuat file CSV GMC
+
+Ghi chu
+-------
+- Dong cua so console = tat app
+- Port mac dinh: 8501
+- Cau hinh: config.json (xem config.example.json)

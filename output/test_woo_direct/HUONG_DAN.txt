@@ -1,0 +1,41 @@
+HUONG DAN IMPORT LEN WOOCOMMERCE (veexovar.com / shop khac)
+=====================================================
+
+TAI SAO ANH BI LOI?
+1. URL anh Redbubble co dau phay (,) -> WooCommerce cat sai link khi import
+2. WordPress bi Redbubble chan (403) khi tai anh ve server
+3. Import that bai -> Woo dung placeholder -> URL bi ghép sai:
+   veexovar.com/http:/veexovar.com/wp-content/.../woocommerce-placeholder.webp
+
+CACH FIX (LAM 1 LAN):
+
+BUOC 1 - Cap nhat code WordPress (QUAN TRONG)
+  Copy file wordpress-image-fix.php MOI NHAT vao functions.php theme child
+  (file trong goi ZIP export — phien ban moi fix loi double URL + http:/)
+
+BUOC 2 - Xoa san pham import loi (co anh placeholder)
+  WooCommerce -> Products -> chon SP loi -> Delete
+
+BUOC 3 - Import CSV MOI
+  WooCommerce -> Products -> Import -> products.csv
+  Map cot "Images" -> Images
+
+BUOC 4 - Neu anh van trong (Redbubble chan server)
+  a) Trong app: bat Proxy -> xuat lai ZIP (thu muc images/ co anh tai san)
+  b) Upload anh trong images/ vao Media Library
+  c) Sua CSV cot Images = URL tu Media (Copy URL) — KHONG de URL veexovar.com/...
+  d) Import lai
+
+COT Images TRONG CSV:
+- CHI dung URL ngoai: https://ih1.redbubble.net/... hoac URL Media Library
+- KHONG dung: veexovar.com/..., woocommerce-placeholder, ten file .jpg don le
+- Nhieu anh ngan cach bang dau | (pipe)
+
+
+Thong ke:
+- Tong san pham: 2
+- Truong xuat: Tiêu đề (Title), Giá (Price), Mô tả (Description), Ảnh (Images), Danh mục (Categories), Tags, SKU, Vendor / thương hiệu, Loại SP (Product type), Link sản phẩm (URL), Biến thể (Variants), Meta (source, id, currency, status)
+- Tai anh local thanh cong: 2
+- Dung URL trong CSV: 0
+- File import: test_woo_direct.csv
+- Anh backup (neu co): test_woo_direct/images/

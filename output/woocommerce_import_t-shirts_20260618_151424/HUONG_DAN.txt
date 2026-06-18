@@ -1,0 +1,44 @@
+HUONG DAN IMPORT LEN WOOCOMMERCE (veexovar.com / shop khac)
+=====================================================
+
+TAI SAO ANH BI LOI?
+1. URL anh Redbubble co dau phay (,) -> WooCommerce cat sai link khi import
+2. WordPress bi Redbubble chan (403) khi tai anh ve server
+3. Import that bai -> Woo dung placeholder -> URL bi ghép sai:
+   veexovar.com/http:/veexovar.com/wp-content/.../woocommerce-placeholder.webp
+
+CACH FIX (LAM 1 LAN):
+
+BUOC 1 - Cap nhat code WordPress (QUAN TRONG)
+  Copy file wordpress-image-fix.php MOI NHAT vao functions.php theme child
+  (file trong goi ZIP export — phien ban moi fix loi double URL + http:/)
+
+BUOC 2 - Xoa san pham import loi (co anh placeholder)
+  WooCommerce -> Products -> chon SP loi -> Delete
+
+BUOC 3 - Import CSV MOI
+  WooCommerce -> Products -> Import -> products.csv
+  Map cot "Images" -> Images
+
+BUOC 4 - Neu anh van trong (Redbubble chan server)
+  a) Trong app: bat Proxy -> xuat lai ZIP (thu muc images/ co anh tai san)
+  b) Upload anh trong images/ vao Media Library
+  c) Sua CSV cot Images = URL tu Media (Copy URL) — KHONG de URL veexovar.com/...
+  d) Import lai
+
+COT Images TRONG CSV:
+- Chuẩn WooCommerce: MỘT cột "Images", nhiều URL cách nhau dấu phẩy (,)
+  Ví dụ: https://a.jpg,https://b.jpg,https://c.jpg
+- KHÔNG dùng cột Image 2, Image 3… — Woo chỉ đọc cột Images, bỏ qua các cột còn lại
+- Giới hạn ảnh/SP = 0 trong app → tự động lấy hết ảnh crawl được
+
+
+Thong ke:
+- Tong san pham: 900
+- Truong xuat: Tiêu đề (Title), Giá (Price), Mô tả (Description), Ảnh (Images), Danh mục (Categories), Tags, SKU, Vendor / thương hiệu, Loại SP (Product type), Link sản phẩm (URL), Biến thể (Variants), Meta (source, id, currency, status)
+- Tai anh local thanh cong: 900
+- Che do anh: Một cột Images — nhiều URL cách nhau dấu phẩy (chuẩn WooCommerce)
+- Cot anh: Images (mot cot, URL cach nhau dau phay)
+- SP nhieu anh nhat: 3
+- File import: woocommerce_import_t-shirts_20260618_151424.csv
+- Anh backup (neu co): woocommerce_import_t-shirts_20260618_151424/images/

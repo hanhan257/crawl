@@ -1,0 +1,22 @@
+{
+  "shopify": {
+    "token": "",
+    "shops": {
+      "your-store.myshopify.com": "shpat_xxxxxxxx"
+    }
+  },
+  "woocommerce": {
+    "key": "",
+    "secret": "",
+    "sites": {
+      "yourstore.com": {
+        "key": "ck_xxxxxxxx",
+        "secret": "cs_xxxxxxxx"
+      }
+    }
+  },
+  "proxy": {
+    "url": "",
+    "comment": "host:port:user:pass hoac http://user:pass@host:port"
+  }
+}
