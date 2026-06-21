@@ -30,7 +30,19 @@ def work_dir() -> Path:
 
 
 def open_browser() -> None:
-    webbrowser.open(f"http://localhost:{PORT}")
+    try:
+        # new=0: dùng lại tab/cửa sổ đang mở, tránh mở tab mới mỗi lần restart app
+        webbrowser.open(f"http://localhost:{PORT}", new=0, autoraise=True)
+    except Exception:
+        pass
+
+
+def should_open_browser() -> bool:
+    """Chỉ mở trình duyệt khi chạy .exe hoặc run.bat (CRAWL_OPEN_BROWSER=1)."""
+    if _is_frozen():
+        return True
+    flag = os.environ.get("CRAWL_OPEN_BROWSER", "").strip().lower()
+    return flag in {"1", "true", "yes", "on"}
 
 
 def main() -> int:
@@ -56,7 +68,10 @@ def main() -> int:
     print("Dong cua so nay = tat app.")
     print()
 
-    Timer(2.0, open_browser).start()
+    if should_open_browser():
+        Timer(2.0, open_browser).start()
+    else:
+        print("(Khong tu mo trinh duyet — mo san tab http://localhost:8501 neu can)")
 
     sys.argv = [
         "streamlit",

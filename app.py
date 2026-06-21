@@ -42,7 +42,7 @@ from utils.export_preview import (
     image_batch_summary,
 )
 from utils.image_fetch import fetch_image_bytes
-from utils.http_session import mask_proxy_url, test_proxy_connection
+from utils.http_session import mask_proxy_url, parse_proxy_list, test_proxy_connection
 from utils.edit_validation import (
     EDIT_FIELD_LABELS,
     column_header_label,
@@ -78,7 +78,10 @@ from utils.product_editor import (
 )
 from utils.shop_probe import build_category_crawl_url, probe_shop_stats
 from utils.ui_theme import inject_pastel_pink_theme, render_app_hero
+from ui.proxy_panel import render_proxy_panel
+from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from utils.url_preview import describe_url
+
 
 st.set_page_config(
     page_title=APP_NAME,
@@ -108,9 +111,10 @@ SHOP_EXPORT_FORMATS = GENERAL_EXPORT_FORMATS + ["gmc-feed-csv"]
 DEFAULT_EXPORT_WORKERS = min(16, max(4, (os.cpu_count() or 4) * 2))
 
 WORKFLOW_MODES = {
-    "crawl": "Crawl từ link",
+    "crawl": "Crawl từ link (Shopify / Woo / web)",
     "import": "Import CSV có sẵn → xuất file",
     "crawl-gmc": "Crawl → file feed GMC",
+    "redbubble": "Crawl Redbubble → xuất file",
 }
 
 RULE_DEFAULTS = {
@@ -162,7 +166,7 @@ def init_session() -> None:
         "image_cache_nonce": 0,
         "image_export_mode": "comma",
         "max_images_per_product": 0,
-        "workflow_mode": "crawl-gmc",
+        "workflow_mode": "crawl",
         "imported_products_all": None,
         "import_source_name": "",
         "import_selected_category": "Tất cả",
@@ -210,6 +214,18 @@ def init_session() -> None:
 
     if st.session_state.get("workflow_mode") == "crawl-gmc":
         st.session_state.export_format = "gmc-feed-csv"
+    elif st.session_state.get("workflow_mode") == "redbubble":
+        if st.session_state.get("export_format") not in (
+            "web-feed-csv",
+            "woocommerce-csv",
+            "shopify-csv",
+        ):
+            st.session_state.export_format = "web-feed-csv"
+
+
+def is_redbubble_workflow(mode: str | None = None) -> bool:
+    active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
+    return active == "redbubble"
 
 
 def is_gmc_workflow(mode: str | None = None) -> bool:
@@ -218,21 +234,95 @@ def is_gmc_workflow(mode: str | None = None) -> bool:
 
 
 def default_export_format(mode: str | None = None) -> str:
-    return "gmc-feed-csv" if is_gmc_workflow(mode) else "woocommerce-csv"
+    active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
+    if is_gmc_workflow(active):
+        return "gmc-feed-csv"
+    if is_redbubble_workflow(active):
+        return "web-feed-csv"
+    return "woocommerce-csv"
 
 
 def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
-    if is_gmc_workflow(mode):
+    active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
+    if is_gmc_workflow(active):
         st.session_state.export_format = "gmc-feed-csv"
+        return
+    if is_redbubble_workflow(active):
+        if st.session_state.get("export_format") not in (
+            "web-feed-csv",
+            "woocommerce-csv",
+            "shopify-csv",
+        ):
+            st.session_state.export_format = "web-feed-csv"
         return
     if st.session_state.get("export_format") not in GENERAL_EXPORT_FORMATS:
         st.session_state.export_format = "woocommerce-csv"
+
+
+def _clear_image_cache() -> None:
+    st.session_state.image_cache_nonce += 1
+    _cached_product_image.clear()
 
 
 def _on_workflow_mode_change() -> None:
     _ensure_export_format_for_workflow()
     if st.session_state.products_raw is not None:
         apply_edit_filter()
+
+
+def _is_stale_homepage_crawl_error(message: str) -> bool:
+    text = str(message or "")
+    markers = (
+        "Trang chủ Redbubble",
+        "Chưa xác định loại link",
+        "Link chưa đủ thông tin",
+        "không crawl được",
+        "loại link 'unknown'",
+    )
+    return any(marker in text for marker in markers)
+
+
+def _refresh_crawl_messages(url: str) -> None:
+    """Xóa thông báo lỗi/info cũ khi link hiện tại đã hợp lệ."""
+    cleaned = url.strip()
+    if st.session_state.get("_crawl_url_sig") != cleaned:
+        st.session_state._crawl_url_sig = cleaned
+        st.session_state.last_error = None
+        last_info = st.session_state.get("last_info") or ""
+        if last_info.startswith(("Nhận diện:", "Crawl xong")) or "Trang chủ" in last_info:
+            st.session_state.last_info = None
+
+    if not cleaned:
+        return
+
+    info = describe_url(cleaned)
+    if not info.get("ok") or not info.get("crawl_ready", True):
+        return
+
+    err = st.session_state.get("last_error")
+    if err and _is_stale_homepage_crawl_error(str(err)):
+        st.session_state.last_error = None
+
+    last_info = st.session_state.get("last_info") or ""
+    if last_info.startswith("Nhận diện:") and "Chưa xác định" in last_info:
+        st.session_state.last_info = None
+
+
+def _on_crawl_url_change() -> None:
+    _refresh_crawl_messages(str(st.session_state.get("crawl_url") or ""))
+
+
+def _current_crawl_error() -> str | None:
+    err = st.session_state.get("last_error")
+    if not err:
+        return None
+    url = str(st.session_state.get("crawl_url") or "").strip()
+    if not url:
+        return str(err)
+    info = describe_url(url)
+    if info.get("ok") and info.get("crawl_ready", True) and _is_stale_homepage_crawl_error(str(err)):
+        return None
+    return str(err)
 
 
 @st.cache_data(show_spinner=False, ttl=1800)
@@ -259,7 +349,13 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(url: str, woo_key: str, woo_secret: str, shopify_token: str) -> dict:
+def _cached_probe_shop(
+    url: str,
+    woo_key: str,
+    woo_secret: str,
+    shopify_token: str,
+    proxy_url: str,
+) -> dict:
     creds = CrawlCredentials.load()
     if shopify_token:
         creds.shopify_token = shopify_token
@@ -267,6 +363,8 @@ def _cached_probe_shop(url: str, woo_key: str, woo_secret: str, shopify_token: s
         creds.woocommerce_key = woo_key
     if woo_secret:
         creds.woocommerce_secret = woo_secret
+    if proxy_url.strip():
+        creds.proxy_url = proxy_url.strip()
     return probe_shop_stats(url, creds).to_dict()
 
 
@@ -889,10 +987,12 @@ def apply_bulk_customization() -> None:
     st.session_state.output_bytes = None
     st.session_state.output_name = None
     st.session_state.last_error = None
-    st.session_state.last_info = (
+    msg = (
         f"Đã áp dụng **{section_label}** cho **{total}** sản phẩm — "
         f"bảng Bước 6 hiển thị **{shown}** SP — kiểm tra tab **File CSV**."
     )
+    st.session_state.last_info = msg
+    st.session_state.last_bulk_apply = msg
 
 
 def _preview_price(base_price: float | None, rules: ExportRules) -> str:
@@ -1100,6 +1200,59 @@ def _render_bulk_description_section() -> None:
             )
 
 
+def _render_data_status_banner() -> None:
+    """Nhắc rõ đã crawl hay chưa — tránh nhầm Bước 3/4 là đã có dữ liệu."""
+    products = st.session_state.products_raw
+    mode = st.session_state.get("workflow_mode", "crawl")
+
+    if products is None:
+        if is_redbubble_workflow(mode):
+            st.warning(
+                "**Chưa có sản phẩm.** Dán link Redbubble `/shop/...` hoặc chọn **Link mẫu**, "
+                "nhập **Proxy** nếu cần, rồi bấm **Crawl Redbubble**."
+            )
+        elif mode in ("crawl", "crawl-gmc"):
+            st.warning(
+                "**Chưa có sản phẩm.** Ở **Bước 1** nhập link shop/category, "
+                "rồi bấm **Crawl dữ liệu**."
+            )
+        return
+
+    if not products:
+        st.warning("Crawl xong nhưng không có sản phẩm nào trong danh sách.")
+        return
+
+    sample = products[0]
+    count = len(products)
+    title = _truncate_preview(sample.title or "—", 55)
+    if sample.price is not None:
+        price_text = f"${sample.price:.2f}"
+    else:
+        price_text = "chưa có giá"
+
+    thumb_col, info_col = st.columns([1, 5])
+    with thumb_col:
+        img_url = (sample.image_urls or [None])[0]
+        if img_url:
+            proxy = st.session_state.get("proxy_url", "").strip() or None
+            img_bytes = _cached_product_image(
+                img_url,
+                proxy or "",
+                st.session_state.get("image_cache_nonce", 0),
+            )
+            if img_bytes:
+                st.image(img_bytes, width=72)
+            else:
+                st.caption("Ảnh")
+        else:
+            st.caption("Ảnh")
+    with info_col:
+        st.success(
+            f"**{count}** sản phẩm sẵn sàng · **{title}** · Giá mẫu: **{price_text}** · "
+            "Cuộn xuống **Bước 5** (xem trước) và **Bước 6** (bảng chỉnh sửa) sau Bước 4."
+        )
+
+
 def _render_bulk_section_preview(
     section: str,
     rules: ExportRules,
@@ -1107,12 +1260,15 @@ def _render_bulk_section_preview(
 ) -> None:
     previews: list[str] = []
     if section == "price":
-        sample_prices = [
-            p.price for p in st.session_state.products_raw if p.price is not None
-        ][:3]
+        working = get_working_products()
+        sample_prices = [p.price for p in working if p.price is not None][:3]
         if sample_prices:
             price_text = ", ".join(_preview_price(price, rules) for price in sample_prices)
             previews.append(f"**Giá:** {price_text}")
+        else:
+            previews.append(
+                "**Giá:** SP chưa có giá — crawl lại (bật proxy) hoặc nhập giá ở **Bước 6**."
+            )
     elif section == "title":
         previews.append(f"**Title:** {_preview_title_change(sample_product, rules)}")
     elif section == "meta":
@@ -1192,14 +1348,24 @@ def render_customization_panel() -> ExportRules:
             disabled=not has_products,
         )
     with preview_col:
-        st.caption("Xem trước SP đầu tiên · Bấm **Áp dụng** để ghi vào bảng Bước 6.")
+        if not has_products:
+            st.caption(
+                "Chưa có dữ liệu — quay **Bước 1** bấm **Crawl dữ liệu** "
+                "(Redbubble cần link `/shop/...` + proxy nếu bị chặn)."
+            )
+        else:
+            working = get_working_products()
+            if working:
+                _render_bulk_section_preview(section, rules, working[0])
+            st.caption("Bấm **Áp dụng** để ghi vào bảng **Bước 6** (cuộn xuống sau Bước 4).")
+
+    bulk_msg = st.session_state.pop("last_bulk_apply", None)
+    if bulk_msg:
+        st.success(bulk_msg)
 
     if apply_clicked:
         apply_bulk_customization()
         st.rerun()
-
-    if st.session_state.products_raw:
-        _render_bulk_section_preview(section, rules, get_working_products()[0])
 
     return rules
 
@@ -1307,9 +1473,24 @@ def run_crawl_only(
 
     try:
         crawl_url = url.strip()
+        if is_redbubble_workflow():
+            from ui.redbubble_workflow import validate_redbubble_url
+
+            rb_check = validate_redbubble_url(crawl_url)
+            if not rb_check.get("crawl_ready"):
+                st.session_state.last_info = None
+                st.session_state.last_error = str(
+                    rb_check.get("message") or "Link Redbubble chưa hợp lệ."
+                )
+                return
+
         preview = describe_url(crawl_url)
         category_filter: str | None = None
-        if preview["ok"] and category_slug and category_slug != "Tất cả":
+        target = preview.get("target") if preview.get("ok") else None
+        rb_mode = is_redbubble_workflow() or (
+            target is not None and getattr(target, "platform", "") == "redbubble"
+        )
+        if preview["ok"] and category_slug and category_slug != "Tất cả" and not rb_mode:
             target = preview["target"]
             if target.platform == "generic-web":
                 category_filter = category_slug
@@ -1322,15 +1503,63 @@ def run_crawl_only(
                 preview = describe_url(crawl_url)
 
         if preview["ok"]:
-            st.session_state.last_info = f"Nhận diện: **{preview['message']}**"
-        products, target = run_auto_crawl(
+            if preview.get("crawl_ready", True):
+                st.session_state.last_info = f"Nhận diện: **{preview['message']}**"
+            else:
+                st.session_state.last_info = None
+                st.session_state.last_error = (
+                    preview.get("notice")
+                    or preview.get("hint")
+                    or "Link chưa đủ thông tin để crawl."
+                )
+                return
+        progress_callback = None
+        progress_bar = None
+        progress_text = None
+        target_preview = preview.get("target") if preview.get("ok") else None
+        rb_platform = (
+            target_preview
+            and getattr(target_preview, "platform", "") == "redbubble"
+        )
+        if target_preview and getattr(target_preview, "platform", "") == "generic-web":
+            progress_bar = st.progress(0.0, text="Đang chuẩn bị crawl web thuần…")
+            progress_text = st.empty()
+
+            def progress_callback(current: int, total: int, matched: int) -> None:
+                if progress_bar is not None and total:
+                    progress_bar.progress(
+                        min(current / total, 1.0),
+                        text=f"Đang crawl {current}/{total} link · {matched} SP khớp",
+                    )
+                if progress_text is not None and total:
+                    est_min = max(1, int(total * 1.4 / 60))
+                    progress_text.caption(
+                        f"Web thuần quét từng link trong sitemap — crawl hết **~{est_min} phút**. "
+                        f"Đặt **Giới hạn SP = 10–50** để test nhanh."
+                    )
+
+        crawl_kwargs = dict(
             url=crawl_url,
             credentials=creds,
             limit=limit if limit > 0 else None,
             max_pages=pages if pages > 0 else None,
             proxy_url=st.session_state.proxy_url.strip() or None,
             category_slug=category_filter,
+            progress_callback=progress_callback,
         )
+        if rb_platform:
+            spinner_msg = (
+                "Đang crawl Redbubble… (~82 SP/trang). "
+                "Nếu lỗi, bật **Proxy & Redbubble** rồi thử lại."
+            )
+            with st.spinner(spinner_msg):
+                products, target = run_auto_crawl(**crawl_kwargs)
+        else:
+            products, target = run_auto_crawl(**crawl_kwargs)
+        if progress_bar is not None:
+            progress_bar.empty()
+        if progress_text is not None:
+            progress_text.empty()
         st.session_state.products_raw = deepcopy(products)
         apply_edit_filter(products)
         st.session_state.export_name = (
@@ -1462,12 +1691,51 @@ def _crawl_category_pill_label(slug: str, categories: list[dict]) -> str:
     return slug
 
 
+def _format_sp_count(count: int | None) -> str:
+    if count is None:
+        return ""
+    return f"{count:,}".replace(",", ".")
+
+
 def render_crawl_category_pills(probe: dict) -> None:
+    platform = probe.get("platform") or ""
     categories = probe.get("categories") or []
     if not categories or probe.get("crawl_type") == "product":
         return
 
     slugs = [cat["slug"] for cat in categories if cat.get("slug")]
+    url_slug = probe.get("url_category_slug")
+
+    if platform == "redbubble":
+        st.caption("Danh mục crawl (theo link `/shop/...` bạn dán):")
+        if len(categories) == 1:
+            cat = categories[0]
+            slug = cat.get("slug") or url_slug or slugs[0]
+            st.session_state["crawl_category_pill"] = slug
+            name = cat.get("name") or slug
+            count = cat.get("count")
+            count_text = f" · **{_format_sp_count(count)}** SP" if count is not None else ""
+            st.info(
+                f"Sẽ crawl danh mục **{name}**{count_text}. "
+                "Redbubble **không có** crawl \"cả shop\" — chỉ lấy SP trong link bạn dán."
+            )
+            return
+
+        options = slugs
+        default = url_slug if url_slug in options else (slugs[0] if slugs else "Tất cả")
+        st.session_state["crawl_category_pill"] = default
+        st.pills(
+            "Danh mục Redbubble",
+            options=options,
+            default=default,
+            format_func=lambda slug: _crawl_category_pill_label(slug, categories),
+            selection_mode="single",
+            key="crawl_category_pill",
+            label_visibility="collapsed",
+            width="content",
+        )
+        return
+
     options = ["Tất cả", *slugs]
     url_slug = probe.get("url_category_slug")
     default = url_slug if url_slug in options else "Tất cả"
@@ -1513,7 +1781,7 @@ def render_url_preview(
     cleaned = url.strip()
     info: dict
     probe: dict
-    with st.status("Đang nhận diện shop...", expanded=True) as status:
+    with st.status("Đang nhận diện shop...", expanded=False) as status:
         status.write("Đang kết nối và kiểm tra **Shopify · WooCommerce · Redbubble · Web thuần**…")
         info = _cached_describe_url(cleaned)
         target = info.get("target") if info.get("ok") else None
@@ -1531,11 +1799,17 @@ def render_url_preview(
                     "Không thấy sitemap-products — không đếm được tổng SP shop."
                 )
         elif platform == "redbubble":
-            status.write("Redbubble: không đếm SP/danh mục tự động.")
+            status.write("Redbubble: đang đếm SP trên trang **/shop/...**…")
         else:
             status.write("Đang đếm sản phẩm và danh mục…")
 
-        probe = _cached_probe_shop(cleaned, woo_key, woo_secret, shopify_token)
+        probe = _cached_probe_shop(
+            cleaned,
+            woo_key,
+            woo_secret,
+            shopify_token,
+            st.session_state.get("proxy_url", ""),
+        )
 
         if info["ok"] and probe.get("ok"):
             if platform == "generic-web":
@@ -1552,7 +1826,10 @@ def render_url_preview(
                         "Không có danh mục shop riêng — category nằm trong từng SP khi crawl."
                     )
             elif platform == "redbubble":
-                status.write("Redbubble: dùng link /shop hoặc /i/... để crawl.")
+                if probe.get("total_products") is not None:
+                    status.write(f"Đã đếm **{probe['total_products']}** SP trên Redbubble.")
+                else:
+                    status.write("Redbubble: dùng link /shop hoặc /i/... để crawl.")
             elif probe.get("total_products") is not None:
                 status.write(
                     f"Đã đếm **{probe['total_products']}** SP"
@@ -1564,20 +1841,41 @@ def render_url_preview(
                 )
 
         if info["ok"]:
+            crawl_ready = info.get("crawl_ready", True)
             status.update(
-                label=f"Nhận diện: {info['message']}",
-                state="complete",
-                expanded=False,
+                label=(
+                    f"Nhận diện: {info['message']}"
+                    if crawl_ready
+                    else f"Chưa crawl được: {info['message']}"
+                ),
+                state="complete" if crawl_ready else "error",
+                expanded=not crawl_ready,
             )
         else:
             status.update(label=info["message"], state="error", expanded=False)
 
+    if info.get("notice") and not info.get("crawl_ready", True):
+        st.error(info["notice"])
+    elif info.get("ok") and not info.get("crawl_ready", True):
+        st.error(
+            "Link này **không crawl được**. Redbubble cần link dạng "
+            "`/shop/từ-khóa` hoặc `/i/.../sản-phẩm` — không dùng trang chủ."
+        )
+
     if info.get("ok") and probe.get("ok") and probe.get("message"):
         st.caption(probe["message"])
-        if platform == "generic-web" and not probe.get("categories"):
-            st.caption(
-                "Web thuần không có collection shop — crawl **Tất cả** hoặc lọc danh mục nếu có pill."
-            )
+        if platform == "generic-web":
+            total = probe.get("total_products")
+            if total:
+                est_min = max(1, int(total * 1.4 / 60))
+                st.caption(
+                    f"Crawl **{total}** SP có thể mất **~{est_min} phút** — không bị treo. "
+                    f"Nên đặt **Giới hạn SP = 10–50** để test, hoặc chọn **Tất cả shop** để tải hết."
+                )
+            if not probe.get("categories"):
+                st.caption(
+                    "Web thuần không có collection shop — crawl **Tất cả** hoặc lọc danh mục nếu có pill."
+                )
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
 
@@ -1586,6 +1884,10 @@ def render_url_preview(
         if st.session_state.get("crawl_url_sig") != url_sig:
             st.session_state.crawl_url_sig = url_sig
             default_cat = probe.get("url_category_slug") or "Tất cả"
+            if platform == "redbubble" and probe.get("categories"):
+                first_slug = probe["categories"][0].get("slug")
+                if first_slug:
+                    default_cat = first_slug
             st.session_state["crawl_category_pill"] = default_cat
         render_crawl_category_pills(probe)
 
@@ -1731,13 +2033,16 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
         st.markdown("### Bước 1 · Crawl link")
     url = st.text_input(
         "Link shop / category / sản phẩm",
-        placeholder="https://yourstore.com hoặc .../collections/hats",
+        placeholder="https://www.redbubble.com/shop/shower-curtains",
         help=(
-            "Trang chủ shop → crawl toàn bộ SP\n"
-            "Link /collections/... → crawl category\n"
-            "Link /products/... → crawl 1 SP"
+            "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
+            "Shopify/Woo: trang chủ shop, /collections/..., /products/...\n"
+            "Web thuần: trang chủ hoặc /shop/..., /product/..."
         ),
+        key="crawl_url",
+        on_change=_on_crawl_url_change,
     )
+    _refresh_crawl_messages(url)
 
     with st.expander("API (Shopify / Woo)", expanded=False):
         shopify_token = st.text_input("Shopify token", type="password", key="crawl_shopify_token")
@@ -1749,12 +2054,23 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
 
     render_url_preview(url, shopify_token, woo_key, woo_secret)
 
+    if url.strip():
+        url_info = describe_url(url.strip())
+        if url_info.get("ok") and url_info.get("crawl_ready", True):
+            st.caption(f"Link OK · **{url_info['message']}**")
+        elif url_info.get("ok"):
+            st.warning(
+                url_info.get("notice")
+                or url_info.get("hint")
+                or "Link Redbubble chưa đúng — cần `/shop/từ-khóa` hoặc `/i/...`."
+            )
+
     lim_col, page_col = st.columns(2)
     with lim_col:
         st.number_input(
             "Giới hạn SP",
             min_value=0,
-            help="0 = lấy hết.",
+            help="0 = lấy hết. Web thuần ~2000 SP có thể mất ~45 phút — nên thử 10–50 trước.",
             key="crawl_limit",
         )
     with page_col:
@@ -1767,34 +2083,31 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))
 
-    with st.expander("Proxy & Redbubble", expanded=False):
-        st.caption(
-            "Redbubble chặn IP → nhập proxy để crawl + xem ảnh preview."
-        )
-        st.text_input(
-            "Proxy",
-            placeholder="host:port:user:pass",
-            key="proxy_url",
-        )
-        if st.session_state.proxy_url.strip():
-            st.caption(f"Dùng: `{mask_proxy_url(st.session_state.proxy_url)}`")
-        reset_col, test_col = st.columns(2)
-        if reset_col.button("Làm mới session", use_container_width=True, key="crawl_reset_session"):
-            st.session_state.image_cache_nonce += 1
-            _cached_product_image.clear()
-            st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
-        if test_col.button("Test proxy", use_container_width=True, key="crawl_test_proxy"):
-            ok, message = test_proxy_connection(st.session_state.proxy_url)
-            if ok:
-                st.success(message)
-            else:
-                st.warning(message)
+    render_proxy_panel(
+        expanded=False,
+        title="Proxy & Redbubble",
+        key_prefix="crawl_",
+    )
+    if st.button("Làm mới session HTTP", use_container_width=True, key="crawl_reset_session"):
+        _clear_image_cache()
+        st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
+
+    crawl_ready = True
+    if url.strip():
+        url_info = describe_url(url.strip())
+        crawl_ready = bool(url_info.get("ok") and url_info.get("crawl_ready", True))
 
     crawl_clicked = st.button(
         "Crawl → GMC" if gmc_mode else "Crawl dữ liệu",
         type="primary",
         use_container_width=True,
         key="crawl_data_btn",
+        disabled=not crawl_ready,
+        help=(
+            None
+            if crawl_ready
+            else "Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được."
+        ),
     )
     return url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked
 
@@ -1805,9 +2118,10 @@ def main() -> None:
 
     workflow_mode = render_workflow_selector()
     gmc_mode = is_gmc_workflow(workflow_mode)
+    rb_mode = is_redbubble_workflow(workflow_mode)
     _ensure_export_format_for_workflow(workflow_mode)
 
-    render_app_hero(gmc_mode=gmc_mode)
+    render_app_hero(gmc_mode=gmc_mode, redbubble_mode=rb_mode)
 
     url = ""
     limit = 0
@@ -1817,7 +2131,15 @@ def main() -> None:
     woo_secret = ""
     crawl_clicked = False
 
-    if workflow_mode in ("crawl", "crawl-gmc"):
+    if workflow_mode == "redbubble":
+        with st.container(border=True):
+            url, limit, pages, crawl_clicked = render_redbubble_crawl_panel(
+                render_url_preview=render_url_preview,
+                refresh_crawl_messages=_refresh_crawl_messages,
+                on_crawl_url_change=_on_crawl_url_change,
+                clear_image_cache=_clear_image_cache,
+            )
+    elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
             url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
                 render_crawl_panel()
@@ -1830,6 +2152,8 @@ def main() -> None:
         if gmc_mode:
             export_format = render_gmc_step2_panel()
             st.session_state.export_format = export_format
+        elif rb_mode:
+            export_format = render_redbubble_export_selector()
         else:
             export_format = render_export_format_selector()
 
@@ -1855,22 +2179,26 @@ def _render_main_workflow(
     woo_secret: str,
     crawl_clicked: bool,
 ) -> None:
-    if workflow_mode in ("crawl", "crawl-gmc") and crawl_clicked:
-        with st.spinner("Đang crawl..."):
-            run_crawl_only(
-                url,
-                limit,
-                pages,
-                shopify_token,
-                woo_key,
-                woo_secret,
-                category_slug=st.session_state.get("crawl_category_pill", "Tất cả"),
-            )
+    _refresh_crawl_messages(str(st.session_state.get("crawl_url") or url or ""))
+
+    if workflow_mode in ("crawl", "crawl-gmc", "redbubble") and crawl_clicked:
+        run_crawl_only(
+            url,
+            limit,
+            pages,
+            shopify_token,
+            woo_key,
+            woo_secret,
+            category_slug=st.session_state.get("crawl_category_pill", "Tất cả"),
+        )
 
     if st.session_state.last_info:
         st.success(st.session_state.last_info)
-    if st.session_state.last_error:
-        st.error(st.session_state.last_error)
+    crawl_error = _current_crawl_error()
+    if crawl_error:
+        st.error(crawl_error)
+
+    _render_data_status_banner()
 
     export_format = st.session_state.get("export_format", default_export_format(workflow_mode))
 
@@ -1886,7 +2214,7 @@ def _render_main_workflow(
             working_products,
             export_format,
             export_fields,
-            ExportRules(),
+            build_export_rules(),
             image_mode=st.session_state.get("image_export_mode", "comma"),
             max_images_per_product=int(st.session_state.get("max_images_per_product", 0)),
         )

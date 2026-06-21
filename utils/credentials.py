@@ -28,6 +28,11 @@ class CrawlCredentials:
             creds.woocommerce_key = woo.get("key") or creds.woocommerce_key
             creds.woocommerce_secret = woo.get("secret") or creds.woocommerce_secret
             creds.proxy_url = proxy.get("url") or creds.proxy_url
+            proxies = proxy.get("proxies")
+            if isinstance(proxies, list):
+                lines = [str(p).strip() for p in proxies if str(p).strip()]
+                if lines:
+                    creds.proxy_url = "\n".join(lines)
 
         creds.shopify_token = creds.shopify_token or os.environ.get("SHOPIFY_TOKEN")
         creds.woocommerce_key = creds.woocommerce_key or os.environ.get("WC_KEY")
@@ -38,7 +43,25 @@ class CrawlCredentials:
             or os.environ.get("HTTPS_PROXY")
             or os.environ.get("HTTP_PROXY")
         )
+        creds.proxy_url = _normalize_proxy_storage(creds.proxy_url)
         return creds
+
+    def save_proxy(self, proxy_url: str) -> Path:
+        """Ghi danh sách proxy vào config.json (mỗi dòng 1 proxy)."""
+        path = Path(self.config_path or os.environ.get("CRAWL_CONFIG", "config.json"))
+        data: dict = {}
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+        cleaned = _normalize_proxy_storage(proxy_url) or ""
+        data.setdefault("proxy", {})["url"] = cleaned
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        self.config_path = str(path)
+        self.proxy_url = cleaned or None
+        return path
 
     def with_proxy(self, proxy_url: str | None) -> CrawlCredentials:
         return CrawlCredentials(
@@ -73,3 +96,17 @@ def normalize_proxy_override(proxy_url: str | None) -> str | None:
         return None
     cleaned = str(proxy_url).strip()
     return cleaned or None
+
+
+def _normalize_proxy_storage(proxy_url: str | None) -> str | None:
+    """Chuẩn hóa proxy lưu file — giữ nhiều dòng, bỏ dòng trống."""
+    if not proxy_url:
+        return None
+    lines = [line.strip() for line in str(proxy_url).splitlines() if line.strip()]
+    if not lines:
+        return None
+    return "\n".join(lines)
+
+
+def load_saved_proxy() -> str:
+    return CrawlCredentials.load().proxy_url or ""

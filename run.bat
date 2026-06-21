@@ -29,6 +29,7 @@ echo.
 echo Mo trinh duyet: http://localhost:8501
 echo.
 
+set CRAWL_OPEN_BROWSER=1
 python launcher.py
 
 pause

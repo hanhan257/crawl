@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import requests
+
+from crawlers.generic_web import GenericWebCrawler
 
 SHOPIFY_PRODUCT = re.compile(r"/products/([^/?#]+)")
 SHOPIFY_COLLECTION = re.compile(r"/collections/([^/?#]+)")
@@ -13,6 +15,8 @@ WOOCOMMERCE_CATEGORY = re.compile(r"/product-category/([^/?#]+)")
 REDBUBBLE_PRODUCT = re.compile(r"/i/[^/]+/[^/]+/\d+")
 REDBUBBLE_SHOP = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_PRODUCT = re.compile(r"/product/([^/?#]+)")
+GENERIC_WEB_SHOP_CATEGORY = re.compile(r"/shop/([^/?#]+)")
+GENERIC_WEB_CATEGORY = re.compile(r"/category/([^/?#]+)")
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -172,6 +176,18 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
         )
 
     if target is not None:
+        if target.platform == "redbubble" and (
+            target.crawl_type == "unknown" or path in ("", "/")
+        ):
+            raise UnsupportedUrlError(
+                target.message
+                or (
+                    "Nhận diện: **Redbubble** · Trang chủ không crawl được.\n"
+                    "Dán link **/shop/từ-khóa** (vd. `redbubble.com/shop/t-shirts`) "
+                    "hoặc link sản phẩm **/i/...**."
+                ),
+                platform="redbubble",
+            )
         raise UnsupportedUrlError(
             f"Nhận diện được {target.platform} nhưng chưa hỗ trợ loại link: {path}",
             platform=target.platform,
@@ -221,9 +237,15 @@ def _detect_redbubble(url: str, path: str) -> DetectedTarget:
             base_url="https://www.redbubble.com",
         )
 
-    raise UnsupportedUrlError(
-        f"Link Redbubble không hợp lệ hoặc chưa hỗ trợ: {url}",
+    return DetectedTarget(
         platform="redbubble",
+        crawl_type="unknown",
+        url=url,
+        base_url="https://www.redbubble.com",
+        message=(
+            "Trang chủ Redbubble — dán link **/shop/từ-khóa** "
+            "(vd. `/shop/t-shirts`) hoặc link sản phẩm **/i/...**."
+        ),
     )
 
 
@@ -321,7 +343,31 @@ def _detect_generic_web(url: str, path: str) -> DetectedTarget:
             handle=product_match.group(1),
         )
 
-    if path in ("", "/", "/products", "/shop", "/new-arrivals"):
+    shop_match = GENERIC_WEB_SHOP_CATEGORY.search(path)
+    if shop_match:
+        category_name = unquote(shop_match.group(1)).replace("+", " ").strip()
+        return DetectedTarget(
+            platform="generic-web",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=category_name,
+            category_slug=GenericWebCrawler.category_slug(category_name),
+        )
+
+    category_match = GENERIC_WEB_CATEGORY.search(path)
+    if category_match:
+        category_name = unquote(category_match.group(1)).replace("+", " ").strip()
+        return DetectedTarget(
+            platform="generic-web",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=category_name,
+            category_slug=GenericWebCrawler.category_slug(category_name),
+        )
+
+    if path.rstrip("/") in ("", "/products", "/shop", "/category", "/new-arrivals"):
         return DetectedTarget(
             platform="generic-web",
             crawl_type="shop",

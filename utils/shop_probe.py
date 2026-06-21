@@ -70,8 +70,9 @@ def _probe_generic_web(
             url_category_slug=url_category or target.handle,
         )
 
+    uses_shop_catalog = crawler._uses_shop_catalog()
     total = crawler.count_sitemap_products()
-    if total <= 0:
+    if total <= 0 and not uses_shop_catalog:
         return ShopProbeResult(
             ok=True,
             platform="generic-web",
@@ -132,6 +133,16 @@ def probe_shop_stats(
     try:
         target = resolve_url(cleaned)
     except UnsupportedUrlError as exc:
+        if getattr(exc, "platform", None) == "redbubble":
+            return ShopProbeResult(
+                ok=True,
+                platform="redbubble",
+                crawl_type="unknown",
+                base_url="https://www.redbubble.com",
+                message=str(exc),
+                total_products=None,
+                categories=[],
+            )
         return ShopProbeResult(
             ok=False,
             platform=getattr(exc, "platform", "") or "",
@@ -152,16 +163,7 @@ def probe_shop_stats(
     if target.platform == "shopify":
         return _probe_shopify(target, credentials, base_url, url_category)
     if target.platform == "redbubble":
-        return ShopProbeResult(
-            ok=True,
-            platform="redbubble",
-            crawl_type=target.crawl_type,
-            base_url=base_url,
-            message="Redbubble — không đếm SP/danh mục. Dán link /shop hoặc /i/... để crawl.",
-            total_products=None,
-            categories=[],
-            url_category_slug=url_category,
-        )
+        return _probe_redbubble(target, credentials, base_url, url_category)
 
     if target.platform == "generic-web":
         return _probe_generic_web(target, base_url, url_category)
@@ -175,6 +177,82 @@ def probe_shop_stats(
         total_products=None,
         categories=[],
         url_category_slug=url_category,
+    )
+
+
+def _probe_redbubble(
+    target: DetectedTarget,
+    credentials: CrawlCredentials,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from crawlers.redbubble import RedbubbleCrawler
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="redbubble",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link sản phẩm /i/...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    if target.crawl_type != "category":
+        return ShopProbeResult(
+            ok=True,
+            platform="redbubble",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message="Redbubble — dán link **/shop/từ-khóa** hoặc **/i/...** để crawl.",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    crawler = RedbubbleCrawler(proxy_url=credentials.proxy_url or None)
+    try:
+        stats = crawler.probe_category(target.url)
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=True,
+            platform="redbubble",
+            crawl_type="category",
+            base_url=base_url,
+            message=(
+                f"Redbubble — không đếm được SP ({exc}). "
+                "Thử thêm **Proxy** (Redbubble hay chặn IP)."
+            ),
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    total = stats.get("total")
+    slug = target.category_slug or url_category or "shop"
+    name = str(stats.get("category_name") or slug).strip()
+    categories = [
+        ShopCategoryInfo(
+            slug=slug,
+            name=name,
+            count=int(total) if total is not None else None,
+        )
+    ]
+    message = _stats_message(total, len(categories))
+    per_page = stats.get("per_page")
+    if per_page and total:
+        message = f"{message} · ~{per_page} SP/trang"
+    return ShopProbeResult(
+        ok=True,
+        platform="redbubble",
+        crawl_type="category",
+        base_url=base_url,
+        message=message,
+        total_products=total,
+        categories=categories,
+        url_category_slug=url_category or slug,
     )
 
 

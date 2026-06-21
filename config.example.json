@@ -16,7 +16,8 @@
     }
   },
   "proxy": {
-    "url": "",
-    "comment": "host:port:user:pass hoac http://user:pass@host:port"
+    "url": "host1:port:user:pass\nhost2:port:user:pass",
+    "proxies": [],
+    "comment": "url = nhiều dòng (mỗi dòng 1 proxy) hoặc dùng mảng proxies[]"
   }
 }

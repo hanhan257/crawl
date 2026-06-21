@@ -50,11 +50,61 @@ def parse_proxy_input(proxy_url: str | None) -> str | None:
     return f"http://{cleaned}"
 
 
+def parse_proxy_list(proxy_input: str | None) -> list[str]:
+    """Parse nhiều proxy — mỗi dòng một proxy host:port:user:pass."""
+    if not proxy_input or not str(proxy_input).strip():
+        return []
+    proxies: list[str] = []
+    for line in str(proxy_input).splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parsed = parse_proxy_input(line)
+        if parsed:
+            proxies.append(parsed)
+    return proxies
+
+
+class ProxyRotator:
+    """Luân phiên proxy — đổi sang proxy kế khi gọi rotate()."""
+
+    def __init__(self, proxy_input: str | None = None):
+        self._proxies = parse_proxy_list(proxy_input)
+        self._index = 0
+
+    @property
+    def count(self) -> int:
+        return len(self._proxies)
+
+    @property
+    def has_proxy(self) -> bool:
+        return bool(self._proxies)
+
+    def current(self) -> str | None:
+        if not self._proxies:
+            return None
+        return self._proxies[self._index % len(self._proxies)]
+
+    def rotate(self) -> str | None:
+        if not self._proxies:
+            return None
+        if len(self._proxies) > 1:
+            self._index = (self._index + 1) % len(self._proxies)
+        return self.current()
+
+
 def normalize_proxy_url(proxy_url: str | None) -> str | None:
+    proxies = parse_proxy_list(proxy_url)
+    if proxies:
+        return proxies[0]
     return parse_proxy_input(proxy_url)
 
 
 def mask_proxy_url(proxy_url: str | None) -> str:
+    proxies = parse_proxy_list(proxy_url)
+    if len(proxies) > 1:
+        first = re.sub(r":([^:@/]+)@", ":***@", proxies[0])
+        return f"{first} (+{len(proxies) - 1} proxy)"
     parsed = parse_proxy_input(proxy_url)
     if not parsed:
         return ""
@@ -94,15 +144,32 @@ def reset_session(
 
 
 def test_proxy_connection(proxy_url: str | None) -> tuple[bool, str]:
-    proxy = normalize_proxy_url(proxy_url)
-    if not proxy:
-        return False, "Chưa nhập proxy"
+    proxies = parse_proxy_list(proxy_url)
+    if not proxies:
+        single = parse_proxy_input(proxy_url)
+        if not single:
+            return False, "Chưa nhập proxy"
+        proxies = [single]
 
-    session = create_http_session(proxy_url, for_redbubble=True)
-    try:
-        response = session.get("https://www.redbubble.com/", timeout=25)
-        if response.status_code == 200:
-            return True, f"Kết nối OK qua {mask_proxy_url(proxy_url)}"
-        return False, f"Proxy phản hồi HTTP {response.status_code}"
-    except requests.RequestException as exc:
-        return False, f"Lỗi: {exc}"
+    errors: list[str] = []
+    test_limit = min(len(proxies), 3)
+    for index, proxy in enumerate(proxies[:test_limit], start=1):
+        session = create_http_session(proxy, for_redbubble=True)
+        try:
+            response = session.get("https://www.redbubble.com/", timeout=25)
+            if response.status_code == 200:
+                masked = re.sub(r":([^:@/]+)@", ":***@", proxy)
+                if len(proxies) > 1:
+                    return (
+                        True,
+                        f"OK proxy #{index}/{len(proxies)} · {masked} · pool **{len(proxies)}** proxy",
+                    )
+                return True, f"Kết nối OK qua {masked}"
+            errors.append(f"#{index} HTTP {response.status_code}")
+        except requests.RequestException as exc:
+            errors.append(f"#{index} {exc}")
+        finally:
+            session.close()
+
+    summary = "; ".join(errors[:2])
+    return False, f"Thử {test_limit}/{len(proxies)} proxy đều lỗi: {summary}"

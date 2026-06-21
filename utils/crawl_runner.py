@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from urllib.parse import urlparse
 
 import requests
+
+CrawlProgressCallback = Callable[[int, int, int], None]
 
 from utils.credentials import CrawlCredentials
 from utils.detector import DetectedTarget, UnsupportedUrlError, resolve_url
@@ -20,6 +23,7 @@ def run_auto_crawl(
     max_pages: int | None = None,
     proxy_url: str | None = None,
     category_slug: str | None = None,
+    progress_callback: CrawlProgressCallback | None = None,
 ) -> tuple[list, DetectedTarget]:
     from crawlers.generic_web import GenericWebCrawler
     from crawlers.redbubble import RedbubbleCrawler
@@ -27,13 +31,15 @@ def run_auto_crawl(
     from crawlers.woocommerce import WooCommerceCrawler
 
     credentials = credentials or CrawlCredentials.load()
-    effective_proxy = normalize_proxy_url(
+    raw_proxy = (
         str(proxy_url).strip() if proxy_url is not None else credentials.proxy_url
     )
+    raw_proxy = raw_proxy.strip() if raw_proxy else None
+    effective_proxy = normalize_proxy_url(raw_proxy)
     target = resolve_url(url)
 
     if target.platform == "redbubble":
-        crawler = RedbubbleCrawler(proxy_url=effective_proxy)
+        crawler = RedbubbleCrawler(proxy_url=raw_proxy)
         if target.crawl_type == "product":
             products = crawler.crawl(url=target.url, limit=limit)
         elif target.crawl_type == "category":
@@ -127,21 +133,27 @@ def run_auto_crawl(
             if target.crawl_type == "product" and target.handle:
                 product = crawler.crawl_product(target.handle)
                 products = [product] if product else []
-            elif target.crawl_type == "shop":
+            elif target.crawl_type in ("shop", "category"):
+                effective_category = category_slug
+                if target.crawl_type == "category" and not effective_category:
+                    effective_category = target.category_slug
                 products = crawler.crawl(
                     limit=limit,
                     max_pages=max_pages,
-                    category_slug=category_slug,
+                    category_slug=effective_category,
+                    progress_callback=progress_callback,
                 )
             else:
                 raise CrawlError(f"Web thuần: chưa hỗ trợ loại link '{target.crawl_type}'")
         except requests.RequestException as exc:
             raise CrawlError(f"Web thuần: lỗi HTTP {exc}") from exc
+        except ValueError as exc:
+            raise CrawlError(str(exc)) from exc
 
         if not products:
             raise CrawlError(
                 "Web thuần: không crawl được sản phẩm nào. "
-                "Site cần có sitemap-products hoặc trang /product/..."
+                "Site cần sitemap-products, trang /shop/... hoặc link /product/..."
             )
         return products, target
 

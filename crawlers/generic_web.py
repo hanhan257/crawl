@@ -4,8 +4,9 @@ import json
 import re
 import time
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 import requests
 
@@ -13,10 +14,14 @@ from crawlers.base import BaseCrawler
 from models.product import Product
 from utils.http_session import create_http_session
 
+CrawlProgressCallback = Callable[[int, int, int], None]
+
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+DATASHIELD_BACKEND_DEFAULT = "https://api.kingdomshirt.com"
+SHOP_CATALOG_PAGE_SIZE = 12
 
 NEXT_DATA_PATTERN = re.compile(
     r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>',
@@ -43,6 +48,8 @@ class GenericWebCrawler(BaseCrawler):
         self.session = create_http_session(proxy_url)
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._build_id: str | None = None
+        self._init_data: dict[str, Any] | None = None
+        self._shop_catalog_mode: bool | None = None
 
     @staticmethod
     def _normalize_site_url(site_url: str) -> str:
@@ -57,12 +64,21 @@ class GenericWebCrawler(BaseCrawler):
         limit: int | None = None,
         max_pages: int | None = None,
         category_slug: str | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        if self._uses_shop_catalog():
+            return self._crawl_shop_catalog(
+                limit=limit,
+                max_pages=max_pages,
+                category_slug=category_slug,
+                progress_callback=progress_callback,
+            )
         product_urls = self._discover_product_urls(max_sitemaps=max_pages)
         return self._crawl_urls(
             product_urls,
             limit=limit,
             category_slug=category_slug,
+            progress_callback=progress_callback,
         )
 
     def crawl_product(self, product_id: str) -> Product | None:
@@ -83,6 +99,10 @@ class GenericWebCrawler(BaseCrawler):
         return slug or "uncategorized"
 
     def count_sitemap_products(self, max_sitemaps: int | None = None) -> int:
+        if self._uses_shop_catalog():
+            data = self._fetch_shop_catalog_page(category=None, page=1, limit=1)
+            return int(data.get("total") or 0)
+
         sitemap_urls = self._collect_product_sitemaps()
         if max_sitemaps and max_sitemaps > 0:
             sitemap_urls = sitemap_urls[:max_sitemaps]
@@ -98,7 +118,10 @@ class GenericWebCrawler(BaseCrawler):
         self,
         sample_size: int = 50,
     ) -> tuple[list[dict[str, Any]], str]:
-        """Lấy danh mục từ field category của SP mẫu (web thuần không có API category)."""
+        if self._uses_shop_catalog():
+            return self._probe_shop_categories()
+
+        # Lấy danh mục từ field category của SP mẫu (web thuần không có API collection).
         product_urls = self._discover_product_urls(max_sitemaps=2)[:sample_size]
         counts: dict[str, int] = {}
         labels: dict[str, str] = {}
@@ -164,23 +187,31 @@ class GenericWebCrawler(BaseCrawler):
         urls: list[str],
         limit: int | None = None,
         category_slug: str | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         products: list[Product] = []
+        total = len(urls)
         for index, url in enumerate(urls):
             if limit is not None and len(products) >= limit:
                 break
             match = GENERIC_PRODUCT_PATH.search(urlparse(url).path or "")
-            if not match:
-                continue
-            product = self._fetch_product(url, match.group(1))
-            if not product:
-                continue
-            if category_slug and category_slug not in {"", "Tất cả"}:
-                if not any(self.category_slug(cat) == category_slug for cat in product.categories):
-                    continue
-            products.append(product)
-            if self.request_delay and index + 1 < len(urls):
-                time.sleep(self.request_delay)
+            if match:
+                product = self._fetch_product(url, match.group(1))
+                if product and (
+                    not category_slug
+                    or category_slug in {"", "Tất cả"}
+                    or any(
+                        self.category_slug(cat) == category_slug
+                        for cat in product.categories
+                    )
+                ):
+                    products.append(product)
+                if self.request_delay and index + 1 < total:
+                    time.sleep(self.request_delay)
+            if progress_callback and (index + 1 == total or (index + 1) % 5 == 0):
+                progress_callback(index + 1, total, len(products))
+        if progress_callback and total:
+            progress_callback(total, total, len(products))
         return products
 
     def _fetch_product(self, url: str, product_id: str) -> Product | None:
@@ -300,6 +331,241 @@ class GenericWebCrawler(BaseCrawler):
             return [part.strip() for part in text.split(",") if part.strip()]
         return [text]
 
+    def _uses_shop_catalog(self) -> bool:
+        if self._shop_catalog_mode is not None:
+            return self._shop_catalog_mode
+        if self._count_sitemap_product_urls() > 0:
+            self._shop_catalog_mode = False
+            return False
+        init = self._get_init_data()
+        if str(init.get("template") or "").lower() == "datashield":
+            self._shop_catalog_mode = True
+            return True
+        try:
+            resp = self.session.get(f"{self.site_url}/shop", timeout=20)
+            if resp.status_code == 200 and "initialShopData" in resp.text:
+                self._shop_catalog_mode = True
+                return True
+        except requests.RequestException:
+            pass
+        self._shop_catalog_mode = False
+        return False
+
+    def _count_sitemap_product_urls(self) -> int:
+        total = 0
+        for sitemap_url in self._collect_product_sitemaps():
+            for loc in self._parse_sitemap_locs(sitemap_url):
+                if GENERIC_PRODUCT_PATH.search(urlparse(loc).path or ""):
+                    total += 1
+        return total
+
+    def _get_page_props(self, url: str | None = None) -> dict[str, Any]:
+        target = url or self.site_url
+        try:
+            resp = self.session.get(target, timeout=25)
+            if resp.status_code != 200:
+                return {}
+            match = NEXT_DATA_PATTERN.search(resp.text)
+            if not match:
+                return {}
+            payload = json.loads(match.group(1))
+            page_props = payload.get("props", {}).get("pageProps")
+            return page_props if isinstance(page_props, dict) else {}
+        except (requests.RequestException, ValueError, json.JSONDecodeError):
+            return {}
+
+    def _get_init_data(self) -> dict[str, Any]:
+        if self._init_data is None:
+            self._init_data = self._get_page_props().get("initData") or {}
+            if not isinstance(self._init_data, dict):
+                self._init_data = {}
+        return self._init_data
+
+    def _get_domain(self) -> str:
+        host = urlparse(self.site_url).netloc.lower()
+        return host.removeprefix("www.")
+
+    def _get_template(self) -> str:
+        return str(self._get_init_data().get("template") or "datashield").strip() or "datashield"
+
+    def _get_backend_url(self) -> str:
+        endpoint = str(self._get_init_data().get("endpoint") or "").strip().rstrip("/")
+        return endpoint or DATASHIELD_BACKEND_DEFAULT
+
+    def _fetch_shop_catalog_page(
+        self,
+        *,
+        category: str | None,
+        page: int,
+        limit: int = SHOP_CATALOG_PAGE_SIZE,
+        include_categories: bool = False,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "page": page,
+            "limit": limit,
+            "template": self._get_template(),
+            "domain": self._get_domain(),
+        }
+        if category:
+            params["category"] = category
+        if include_categories:
+            params["include_categories"] = "true"
+        resp = self.session.get(
+            f"{self._get_backend_url()}/shop",
+            params=params,
+            timeout=45,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if isinstance(payload, dict) and isinstance(payload.get("data"), dict):
+            return payload["data"]
+        return payload if isinstance(payload, dict) else {}
+
+    def _resolve_category_name(self, category_slug: str | None) -> str | None:
+        if not category_slug or category_slug in {"", "Tất cả"}:
+            return None
+        overview = self._fetch_shop_catalog_page(
+            category=None,
+            page=1,
+            limit=SHOP_CATALOG_PAGE_SIZE,
+            include_categories=True,
+        )
+        for name in overview.get("categories") or []:
+            if self.category_slug(str(name)) == category_slug:
+                return str(name)
+        return None
+
+    def _probe_shop_categories(self) -> tuple[list[dict[str, Any]], str]:
+        overview = self._fetch_shop_catalog_page(
+            category=None,
+            page=1,
+            limit=1,
+            include_categories=True,
+        )
+        names = [str(name) for name in (overview.get("categories") or []) if str(name).strip()]
+        categories: list[dict[str, Any]] = []
+        total = 0
+        for name in names:
+            cat_data = self._fetch_shop_catalog_page(category=name, page=1, limit=1)
+            count = int(cat_data.get("total") or 0)
+            total += count
+            categories.append(
+                {"slug": self.category_slug(name), "name": name, "count": count}
+            )
+        categories.sort(key=lambda item: (-int(item.get("count") or 0), item["name"].lower()))
+        note = f"Danh mục từ **/shop/** API ({len(categories)} loại · **{total or overview.get('total') or 0}** SP)."
+        return categories, note
+
+    def _product_from_shop_item(self, data: dict[str, Any]) -> Product | None:
+        product_id = str(data.get("id") or "").strip()
+        title = str(data.get("name") or data.get("title") or "").strip()
+        if not product_id or not title:
+            return None
+        category = str(data.get("category") or "").strip()
+        vendor = str(data.get("vendor") or data.get("brand") or "").strip() or None
+        return Product(
+            source=self.source,
+            id=product_id,
+            title=title,
+            price=self._parse_price(data.get("price")),
+            url=f"{self.site_url}/product/{product_id}",
+            image_urls=self._normalize_images(data.get("image") or data.get("images")),
+            vendor=vendor,
+            sku=product_id,
+            categories=[category] if category else [],
+            status="active",
+        )
+
+    def _enrich_product_detail(self, product: Product) -> Product:
+        detailed = self._fetch_product(product.url, product.id)
+        if not detailed:
+            return product
+        if detailed.description:
+            product.description = detailed.description
+        if detailed.tags:
+            product.tags = detailed.tags
+        if detailed.image_urls:
+            product.image_urls = detailed.image_urls
+        if detailed.price is not None:
+            product.price = detailed.price
+        if detailed.categories:
+            product.categories = detailed.categories
+        if detailed.vendor:
+            product.vendor = detailed.vendor
+        return product
+
+    def _crawl_shop_catalog(
+        self,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        category_slug: str | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[Product]:
+        category_name = self._resolve_category_name(category_slug)
+        if category_slug and category_slug not in {"", "Tất cả"} and not category_name:
+            raise ValueError(f"Không tìm thấy danh mục: {category_slug}")
+
+        if category_name:
+            categories = [category_name]
+        else:
+            overview = self._fetch_shop_catalog_page(
+                category=None,
+                page=1,
+                limit=SHOP_CATALOG_PAGE_SIZE,
+                include_categories=True,
+            )
+            categories = [str(name) for name in (overview.get("categories") or []) if str(name).strip()]
+
+        products: list[Product] = []
+        estimated_total = 0
+        for name in categories:
+            first_page = self._fetch_shop_catalog_page(category=name, page=1, limit=1)
+            estimated_total += int(first_page.get("total") or 0)
+        processed = 0
+
+        for name in categories:
+            page = 1
+            total_pages = 1
+            while page <= total_pages:
+                if max_pages and page > max_pages:
+                    break
+                data = self._fetch_shop_catalog_page(
+                    category=name,
+                    page=page,
+                    limit=SHOP_CATALOG_PAGE_SIZE,
+                )
+                total_pages = int(data.get("totalPages") or 1)
+                batch = data.get("products") or []
+                if not batch:
+                    break
+                for item in batch:
+                    if limit is not None and len(products) >= limit:
+                        break
+                    if not isinstance(item, dict):
+                        continue
+                    product = self._product_from_shop_item(item)
+                    if not product:
+                        continue
+                    product = self._enrich_product_detail(product)
+                    products.append(product)
+                    processed += 1
+                    if progress_callback and (
+                        processed == estimated_total
+                        or processed % 5 == 0
+                    ):
+                        progress_callback(processed, max(estimated_total, processed), len(products))
+                    if self.request_delay:
+                        time.sleep(self.request_delay)
+                if limit is not None and len(products) >= limit:
+                    break
+                page += 1
+            if limit is not None and len(products) >= limit:
+                break
+
+        if progress_callback and estimated_total:
+            progress_callback(estimated_total, estimated_total, len(products))
+        return products
+
     def _get_build_id(self) -> str | None:
         if self._build_id:
             return self._build_id
@@ -395,7 +661,10 @@ class GenericWebCrawler(BaseCrawler):
         for path in ("/sitemap-products.xml", "/sitemap.xml"):
             try:
                 resp = session.get(base + path, timeout=15)
-                if resp.status_code == 200 and "sitemap-product" in resp.text.lower():
+                if resp.status_code != 200:
+                    continue
+                text = resp.text.lower()
+                if "sitemap-product" in text or "/product/" in text:
                     return True
             except requests.RequestException:
                 continue
@@ -406,9 +675,20 @@ class GenericWebCrawler(BaseCrawler):
                 return False
             if "__NEXT_DATA__" not in resp.text:
                 return False
+            match = NEXT_DATA_PATTERN.search(resp.text)
+            if match:
+                payload = json.loads(match.group(1))
+                init = payload.get("props", {}).get("pageProps", {}).get("initData", {})
+                if str(init.get("template") or "").lower() == "datashield":
+                    return True
             sample = session.get(f"{base}/products", timeout=15)
-            return sample.status_code == 200 and (
+            if sample.status_code == 200 and (
                 "/product/" in sample.text or "productData" in sample.text
-            )
-        except requests.RequestException:
+            ):
+                return True
+            shop = session.get(f"{base}/shop", timeout=15)
+            if shop.status_code == 200 and "initialShopData" in shop.text:
+                return True
+        except (requests.RequestException, ValueError, json.JSONDecodeError):
             return False
+        return False
