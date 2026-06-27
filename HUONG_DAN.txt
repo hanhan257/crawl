@@ -26,3 +26,4 @@ Ghi chu
 - Dong cua so console = tat app
 - Port mac dinh: 8501
 - Cau hinh: config.json (xem config.example.json)
+- Deploy len VPS (Docker): xem DEPLOY_VPS.md

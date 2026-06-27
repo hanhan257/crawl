@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.env
+.venv/
+venv/
+config.json
+output/
+dist/
+build/
+*.spec.bak
+.DS_Store

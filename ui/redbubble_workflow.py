@@ -7,6 +7,12 @@ from typing import Any
 
 import streamlit as st
 
+from ui.crawl_step1_layout import (
+    close_crawl_step1_wrap,
+    open_crawl_step1_wrap,
+    render_crawl_action_centered,
+    render_crawl_limits_row,
+)
 from ui.proxy_panel import render_proxy_panel
 from utils.url_preview import describe_url
 
@@ -70,28 +76,20 @@ def render_redbubble_crawl_panel(
     refresh_crawl_messages: Callable[[str], None],
     on_crawl_url_change: Callable[[], None],
     clear_image_cache: Callable[[], None],
+    run_crawl: Callable[..., None] | None = None,
+    update_crawl_ui: Callable[..., None] | None = None,
 ) -> tuple[str, int, int, bool]:
-    """Bước 1 — panel crawl chỉ dành cho Redbubble."""
+    """Bước 1 — link bên trái, cài đặt crawl bên phải."""
     st.markdown("### Bước 1 · Crawl Redbubble")
     st.caption(
         "Chỉ hỗ trợ link **Redbubble**: `/shop/từ-khóa` (nhiều SP) hoặc `/i/...` (1 SP). "
         "**Không** crawl được từ trang chủ `redbubble.com`."
     )
 
-    example_col, pick_col = st.columns([3, 2])
-    with pick_col:
-        picked = st.selectbox(
-            "Link mẫu",
-            options=[""] + list(REDBUBBLE_LINK_EXAMPLES.keys()),
-            format_func=lambda key: "— Chọn mẫu —" if not key else key,
-            key="redbubble_example_pick",
-        )
-        if picked and st.button("Dùng link mẫu", use_container_width=True, key="redbubble_use_example"):
-            st.session_state.crawl_url = REDBUBBLE_LINK_EXAMPLES[picked]
-            refresh_crawl_messages(st.session_state.crawl_url)
-            st.rerun()
+    open_crawl_step1_wrap()
+    left_col, right_col = st.columns([3, 2], gap="medium")
 
-    with example_col:
+    with left_col:
         url = st.text_input(
             "Link Redbubble",
             placeholder="https://www.redbubble.com/shop/kids-tshirts",
@@ -99,89 +97,99 @@ def render_redbubble_crawl_panel(
             key="crawl_url",
             on_change=on_crawl_url_change,
         )
+        refresh_crawl_messages(url)
 
-    refresh_crawl_messages(url)
+        check = validate_redbubble_url(url)
+        if url.strip():
+            if check.get("crawl_ready"):
+                st.success(f"Link OK · **{check['message']}**")
+            elif check.get("ok"):
+                st.warning(check["message"])
+            else:
+                st.error(check["message"])
 
-    check = validate_redbubble_url(url)
-    if url.strip():
-        if check.get("crawl_ready"):
-            st.success(f"Link OK · **{check['message']}**")
-        elif check.get("ok"):
-            st.warning(check["message"])
-        else:
-            st.error(check["message"])
+        render_url_preview(url, "", "", "")
 
-    render_url_preview(url, "", "", "")
-
-    lim_col, page_col = st.columns(2)
-    with lim_col:
-        st.number_input(
-            "Giới hạn SP",
-            min_value=0,
-            help="0 = lấy hết trang hiện tại. Nên thử **10–50** trước. Mỗi trang ~82 SP.",
-            key="crawl_limit",
+    with right_col:
+        st.markdown('<div class="crawl-side-tools">', unsafe_allow_html=True)
+        picked = st.selectbox(
+            "Link mẫu",
+            options=[""] + list(REDBUBBLE_LINK_EXAMPLES.keys()),
+            format_func=lambda key: "— Chọn mẫu —" if not key else key,
+            key="redbubble_example_pick",
         )
-    with page_col:
-        st.number_input(
-            "Số trang",
-            min_value=0,
-            help="Redbubble ~82 SP/trang. Ví dụ 1000 SP ≈ **13 trang**.",
-            key="crawl_pages",
+        if picked and st.button(
+            "Dùng link mẫu", use_container_width=True, key="redbubble_use_example"
+        ):
+            st.session_state.crawl_url = REDBUBBLE_LINK_EXAMPLES[picked]
+            refresh_crawl_messages(st.session_state.crawl_url)
+            st.rerun()
+
+        render_proxy_panel(
+            expanded=True,
+            title="Proxy (bắt buộc nếu bị chặn IP)",
+            key_prefix="rb_",
         )
-    limit = int(st.session_state.get("crawl_limit", 0))
-    pages = int(st.session_state.get("crawl_pages", 0))
 
-    render_proxy_panel(
-        expanded=True,
-        title="Proxy (bắt buộc nếu bị chặn IP)",
-        key_prefix="rb_",
-    )
-
-    btn_col1, btn_col2 = st.columns(2)
-    with btn_col1:
-        if st.button("Làm mới session HTTP", use_container_width=True, key="rb_reset_session"):
+        if st.button(
+            "Làm mới session HTTP", use_container_width=True, key="rb_reset_session"
+        ):
             clear_image_cache()
             st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    render_crawl_limits_row(include_workers=False)
+
+    limit = int(st.session_state.get("crawl_limit", 0))
+    pages = int(st.session_state.get("crawl_pages", 0))
     crawl_ready = bool(check.get("crawl_ready"))
-    crawl_clicked = st.button(
-        "Crawl Redbubble",
-        type="primary",
-        use_container_width=True,
-        key="redbubble_crawl_btn",
-        disabled=not crawl_ready,
-        help=(
-            None
-            if crawl_ready
-            else "Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được."
-        ),
+
+    crawl_clicked, crawl_action, crawl_live = render_crawl_action_centered(
+        label="Crawl Redbubble",
+        button_key="redbubble_crawl_btn",
+        crawl_ready=crawl_ready,
+        not_ready_help="Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được.",
+        is_running=bool(st.session_state.get("crawl_running")),
+        update_live_ui=update_crawl_ui,
+        matched_count=int(st.session_state.get("crawl_matched_count", 0)),
     )
-    return url, limit, pages, crawl_clicked
+    close_crawl_step1_wrap()
+
+    if crawl_clicked and crawl_ready and run_crawl is not None:
+        run_crawl(
+            url,
+            limit,
+            pages,
+            "",
+            "",
+            "",
+            category_slug=st.session_state.get("crawl_category_pill", "Tất cả"),
+            action_area=crawl_action,
+            live_area=crawl_live,
+        )
+        st.rerun()
+
+    return url, limit, pages, False
 
 
-def render_redbubble_export_selector() -> str:
+def render_redbubble_export_selector() -> str | None:
     """Bước 2 — định dạng xuất phổ biến khi bán lại SP Redbubble."""
     st.markdown("### Bước 2 · Chọn file xuất")
-    st.caption(
-        "Mặc định **Feed web** (title, description, images, price…). "
-        "Có thể đổi sang WooCommerce / Shopify."
-    )
     options = {
         "web-feed-csv": "CSV feed web thuần",
         "woocommerce-csv": "CSV import WooCommerce",
         "shopify-csv": "CSV import Shopify",
     }
-    current = st.session_state.get("export_format", "web-feed-csv")
-    if current not in options:
-        current = "web-feed-csv"
 
     export_format = st.radio(
         "Định dạng file",
         options=list(options.keys()),
         format_func=lambda key: options[key],
-        index=list(options.keys()).index(current),
-        key="redbubble_export_format",
+        index=None,
+        key="export_format",
         horizontal=True,
     )
-    st.session_state.export_format = export_format
+    if not export_format:
+        st.caption("Chưa chọn định dạng — bấm một tuỳ chọn phía trên trước khi xuất file.")
+        return None
     return export_format

@@ -7,6 +7,8 @@ from exporters.gmc_feed_import import expand_gmc_variants, product_to_gmc_row
 from models.product import Product
 from utils.gmc_taxonomy import (
     GMC_AGE_GROUP_DEFAULT,
+    category_id_from_option,
+    category_option_from_id,
     normalize_age_group_for_export,
 )
 
@@ -17,6 +19,16 @@ GMC_FEED_EDIT_COLUMNS = [
     "brand",
     "size",
     "color",
+    "gender",
+    "age group",
+]
+
+GMC_FEED_EDITABLE_COLUMNS = [
+    "brand",
+    "size",
+    "color",
+    "condition",
+    "google product category",
     "gender",
     "age group",
 ]
@@ -56,6 +68,11 @@ def build_gmc_feed_edit_rows(
                     "brand": gmc_row["brand"],
                     "size": gmc_row["size"],
                     "color": gmc_row["color"],
+                    "condition": gmc_row["condition"],
+                    "google product category": category_option_from_id(
+                        gmc_row["google product category"]
+                    )
+                    or gmc_row["google product category"],
                     "gender": gmc_row["gender"] or gender_default,
                     "age group": normalize_age_group_for_export(
                         gmc_row["age group"] or age_default
@@ -63,6 +80,74 @@ def build_gmc_feed_edit_rows(
                 }
             )
     return rows
+
+
+def merge_stored_gmc_feed_edits(
+    feed_rows: list[dict[str, str]],
+    stored_edits: list[dict[str, Any]] | None,
+) -> list[dict[str, str]]:
+    """Giữ chỉnh sửa từng dòng feed (theo feed_key) khi rebuild bảng."""
+    if not stored_edits:
+        return feed_rows
+
+    by_key = {
+        str(item.get("feed_key")): item
+        for item in stored_edits
+        if item.get("feed_key")
+    }
+    merged: list[dict[str, str]] = []
+    for row in feed_rows:
+        key = str(row.get("feed_key") or "")
+        stored = by_key.get(key)
+        if not stored:
+            merged.append(row)
+            continue
+        updated = dict(row)
+        for column in GMC_FEED_EDITABLE_COLUMNS:
+            if column in stored:
+                updated[column] = str(stored.get(column) or "")
+        merged.append(updated)
+    return merged
+
+
+def apply_bulk_to_gmc_feed_edits(
+    feed_edits: list[dict[str, Any]],
+    *,
+    brand: str = "",
+    size: str = "",
+    color: str = "",
+    condition: str = "",
+    google_category: str = "",
+    gender: str = "",
+    age_group: str = "",
+    only_empty: bool = False,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Ghi đè brand / size / color / condition / category / gender / age group cho mọi dòng feed."""
+    fields = {
+        "brand": brand.strip(),
+        "size": size.strip(),
+        "color": color.strip(),
+        "condition": condition.strip(),
+        "google product category": google_category.strip(),
+        "gender": gender.strip(),
+        "age group": normalize_age_group_for_export(age_group.strip())
+        if age_group.strip()
+        else "",
+    }
+    active = {column: value for column, value in fields.items() if value}
+    if not active:
+        return feed_edits, []
+
+    updated: list[dict[str, Any]] = []
+    for row in feed_edits:
+        new_row = dict(row)
+        for column, value in active.items():
+            current = str(new_row.get(column) or "").strip()
+            if only_empty and current:
+                continue
+            new_row[column] = value
+        updated.append(new_row)
+    return updated, list(active.keys())
 
 
 def merge_gmc_feed_edits(
@@ -91,11 +176,17 @@ def merge_gmc_feed_edits(
         age_group = str(edit.get("age group") or "").strip()
         size = str(edit.get("size") or "").strip()
         color = str(edit.get("color") or "").strip()
+        condition = str(edit.get("condition") or "").strip()
+        google_category = str(edit.get("google product category") or "").strip()
 
         if brand:
             product.vendor = brand
         if gender:
             product.gmc_gender = gender
+        if condition:
+            product.gmc_condition = condition
+        if google_category:
+            product.google_product_category = category_id_from_option(google_category) or google_category
         product.gmc_age_group = normalize_age_group_for_export(
             age_group or product.gmc_age_group or GMC_AGE_GROUP_DEFAULT
         )

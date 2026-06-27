@@ -1,0 +1,13 @@
+services:
+  crawl:
+    build: .
+    container_name: crawl-feed-gmc
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./config.json:/app/config.json
+      - ./output:/app/output
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_GLOBAL_DEVELOPMENT_MODE: "false"
+    restart: unless-stopped

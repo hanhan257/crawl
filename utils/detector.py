@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
 
 import requests
 
@@ -249,6 +249,26 @@ def _detect_redbubble(url: str, path: str) -> DetectedTarget:
     )
 
 
+def _extract_search_query(url: str) -> str | None:
+    parsed = urlparse(url)
+    raw = parse_qs(parsed.query).get("s", [None])[0]
+    if not raw:
+        return None
+    query = unquote_plus(str(raw)).strip()
+    return query or None
+
+
+def _extract_shopify_search_query(url: str) -> str | None:
+    parsed = urlparse(url)
+    if (parsed.path or "").rstrip("/") != "/search":
+        return None
+    raw = parse_qs(parsed.query).get("q", [None])[0]
+    if not raw:
+        return None
+    query = unquote_plus(str(raw)).strip()
+    return query or None
+
+
 def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
     base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
 
@@ -260,6 +280,16 @@ def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
             url=url,
             base_url=base_url,
             handle=product_match.group(1),
+        )
+
+    search_query = _extract_shopify_search_query(url)
+    if search_query:
+        return DetectedTarget(
+            platform="shopify",
+            crawl_type="search",
+            url=url,
+            base_url=base_url,
+            query=search_query,
         )
 
     collection_match = SHOPIFY_COLLECTION.search(path)
@@ -293,6 +323,16 @@ def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
 
 def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
     base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+
+    search_query = _extract_search_query(url)
+    if search_query:
+        return DetectedTarget(
+            platform="woocommerce",
+            crawl_type="search",
+            url=url,
+            base_url=base_url,
+            query=search_query,
+        )
 
     product_match = WOOCOMMERCE_PRODUCT.search(path)
     if product_match:

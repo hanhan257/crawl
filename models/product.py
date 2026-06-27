@@ -27,6 +27,7 @@ class Product:
     gmc_color: str | None = None
     gmc_gender: str | None = None
     gmc_age_group: str | None = None
+    gmc_condition: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

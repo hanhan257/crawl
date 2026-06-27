@@ -12,6 +12,7 @@ PLATFORM_LABELS = {
 CRAWL_TYPE_LABELS = {
     "shop": "Crawl toàn bộ shop",
     "category": "Crawl category / collection",
+    "search": "Crawl kết quả tìm kiếm",
     "product": "Crawl 1 sản phẩm",
     "unknown": "Chưa xác định loại link",
 }
@@ -19,9 +20,11 @@ CRAWL_TYPE_LABELS = {
 CRAWL_HINTS = {
     ("shopify", "shop"): "Link trang chủ shop → lấy tất cả sản phẩm qua /products.json",
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
+    ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",
     ("shopify", "product"): "Link sản phẩm → lấy 1 SP",
     ("woocommerce", "shop"): "Link /shop → lấy toàn bộ sản phẩm",
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
+    ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm (Store API)",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
     ("redbubble", "category"): "Link /shop/... → crawl kết quả tìm kiếm / category",
     ("redbubble", "product"): "Link /i/... → crawl 1 sản phẩm",
@@ -71,6 +74,8 @@ def describe_url(url: str) -> dict:
     detail = ""
     if target.crawl_type == "category":
         detail = target.handle or target.category_slug or target.query or ""
+    elif target.crawl_type == "search":
+        detail = target.query or ""
     elif target.crawl_type == "product":
         detail = target.handle or ""
 

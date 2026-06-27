@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from typing import Any
 from urllib.parse import urlparse
@@ -273,6 +274,20 @@ def _probe_woocommerce(
         use_public_api=not (key and secret),
     )
 
+    if target.crawl_type == "search" and target.query:
+        total = _woo_search_count(crawler, target.query)
+        total_text = f"**{total}** SP" if total is not None else "**?** SP"
+        return ShopProbeResult(
+            ok=True,
+            platform="woocommerce",
+            crawl_type="search",
+            base_url=crawler.site_url,
+            message=f"{total_text} · tìm kiếm `{target.query}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=target.query,
+        )
+
     categories = _woo_list_categories(crawler)
     total = _woo_product_count(crawler)
 
@@ -306,6 +321,20 @@ def _probe_shopify(
         access_token=token,
         use_public_api=not token,
     )
+
+    if target.crawl_type == "search" and target.query:
+        total = crawler.count_search_results(target.query)
+        total_text = f"**{total}** SP" if total is not None else "**?** SP"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type="search",
+            base_url=crawler.shop_url,
+            message=f"{total_text} · tìm kiếm `{target.query}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=target.query,
+        )
 
     categories = _shopify_list_collections(crawler)
     total = _shopify_product_count(crawler)
@@ -400,6 +429,52 @@ def _woo_list_categories(crawler) -> list[ShopCategoryInfo]:
 
     categories.sort(key=lambda item: (-(item.count or 0), item.name.lower()))
     return categories
+
+
+def _woo_search_count(crawler, query: str) -> int | None:
+    total = _woo_search_count_from_html(crawler, query)
+    if total is not None:
+        return total
+
+    try:
+        params: dict[str, Any] = {"search": query, "per_page": 1}
+        if crawler.use_public_api:
+            response = crawler.session.get(
+                f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                params=params,
+                timeout=30,
+            )
+        else:
+            response = crawler.session.get(
+                f"{crawler.site_url}/wp-json/wc/v3/products",
+                params={**params, "status": "publish"},
+                auth=(crawler.consumer_key, crawler.consumer_secret),
+                timeout=30,
+            )
+        if response.status_code == 200:
+            total_header = response.headers.get("X-WP-Total") or response.headers.get("x-wp-total")
+            if total_header is not None:
+                return int(total_header)
+    except (requests.RequestException, ValueError, TypeError):
+        pass
+    return None
+
+
+def _woo_search_count_from_html(crawler, query: str) -> int | None:
+    try:
+        response = crawler.session.get(
+            crawler.site_url.rstrip("/") + "/",
+            params={"s": query, "post_type": "product"},
+            timeout=30,
+        )
+        if response.status_code != 200:
+            return None
+        match = re.search(r"([\d][\d\.,]*)\s+result", response.text, re.I)
+        if match:
+            return int(match.group(1).replace(".", "").replace(",", ""))
+    except (requests.RequestException, ValueError, TypeError):
+        pass
+    return None
 
 
 def _woo_product_count(crawler) -> int | None:

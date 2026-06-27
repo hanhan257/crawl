@@ -302,6 +302,20 @@ div[data-testid="stNotification"]:has([data-testid="stAlertContainer"]) {
     color: #047857;
 }
 
+.crawl-busy-btn {
+    display: block;
+    width: 100%;
+    padding: 0.72rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--pink-300);
+    background: linear-gradient(135deg, #FDF2F8, #FBCFE8);
+    color: var(--pink-600);
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    opacity: 0.92;
+}
+
 /* ── Validation missing labels ── */
 .val-missing {
     color: #BE123C;
@@ -336,6 +350,122 @@ footer { visibility: hidden; }
     .app-title { font-size: 1.55rem !important; }
     .app-hero { padding: 1rem 1.1rem; }
 }
+
+/* ── Compact product preview row (Bước xem trước) ── */
+.preview-chip-title {
+    font-size: 0.68rem;
+    line-height: 1.25;
+    margin: 0.15rem 0 0;
+    font-weight: 600;
+    color: var(--rose-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.preview-chip-price {
+    font-size: 0.62rem;
+    color: var(--rose-muted);
+    margin: 0;
+    line-height: 1.2;
+}
+.preview-compact-wrap [data-testid="stImage"] {
+    margin-bottom: 0.15rem;
+}
+.preview-compact-wrap [data-testid="stImage"] img {
+    border-radius: 8px;
+    object-fit: cover;
+    aspect-ratio: 1;
+}
+
+/* ── Bước 1 crawl — 2 cột + hàng 1·2·3 + nút giữa ── */
+.crawl-step1-wrap {
+    margin-top: 0.25rem;
+}
+.crawl-step1-wrap [data-testid="column"] {
+    align-self: flex-start;
+}
+.crawl-limits-row {
+    margin: 0.65rem 0 0.35rem;
+    padding: 0.65rem 0.85rem 0.45rem;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FFF8FB 100%);
+    border: 1px solid var(--pink-200);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+}
+.crawl-num-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.15rem;
+    min-height: 1.35rem;
+}
+.crawl-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
+}
+.crawl-num-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--rose-dark);
+    line-height: 1.2;
+}
+.crawl-limits-row [data-testid="stNumberInput"] {
+    margin-bottom: 0;
+}
+.crawl-limits-row [data-testid="stNumberInput"] input {
+    min-height: 2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.85rem;
+}
+.crawl-action-center {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--pink-200);
+}
+.crawl-action-center [data-testid="stButton"] {
+    display: flex;
+    justify-content: center;
+}
+.crawl-action-center [data-testid="stButton"] button {
+    min-width: 240px;
+    max-width: 360px;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em;
+    box-shadow: var(--shadow-btn) !important;
+}
+.crawl-step1-wrap .crawl-side-tools [data-testid="stButton"] button {
+    min-height: 2rem;
+    font-size: 0.78rem !important;
+    padding: 0.35rem 0.65rem !important;
+    background: var(--pink-50) !important;
+    border: 1px solid var(--pink-200) !important;
+    color: var(--rose-dark) !important;
+    box-shadow: none !important;
+}
+.crawl-step1-wrap .crawl-side-tools [data-testid="stButton"] button:hover {
+    border-color: var(--pink-400) !important;
+    background: #FFF0F7 !important;
+}
+@media (max-width: 900px) {
+    .crawl-limits-row [data-testid="column"] {
+        min-width: 0;
+    }
+    .crawl-action-center [data-testid="stButton"] button {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}
 </style>
 """
 
@@ -347,10 +477,9 @@ def inject_pastel_pink_theme() -> None:
 def render_app_hero(*, gmc_mode: bool = False, redbubble_mode: bool = False) -> None:
     if gmc_mode:
         subtitle = (
-            "<strong>Quy trình GMC:</strong> Bước 1 Crawl → "
-            "<strong>Bước 2 cấu hình GMC</strong> → "
-            "Tùy chỉnh → Xem trước feed → "
-            "<strong>Xuất file Google Merchant</strong>"
+            "<strong>Quy trình GMC:</strong> "
+            "Bước 1 Crawl → Bước 2 trường feed → Bước 3 xem trước → "
+            "Bước 4 chỉnh feed → Bước 5 xuất file Google Merchant"
         )
         badge = "Google Merchant Center"
     elif redbubble_mode:

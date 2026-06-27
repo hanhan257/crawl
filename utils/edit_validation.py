@@ -18,6 +18,8 @@ EDIT_FIELD_LABELS: dict[str, str] = {
     "google_product_category": "Google product category",
     "gmc_size": "Size",
     "gmc_color": "Color",
+    "gmc_condition": "Condition",
+    "gmc_availability": "Availability",
     "gmc_gender": "Gender",
     "gmc_age_group": "Age group",
 }
@@ -44,6 +46,8 @@ GMC_OPTIONAL_EDIT_COLUMNS = (
     "google_product_category",
     "gmc_size",
     "gmc_color",
+    "gmc_condition",
+    "gmc_availability",
     "gmc_gender",
     "gmc_age_group",
 )

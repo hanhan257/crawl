@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urljoin
 
@@ -8,6 +9,10 @@ import requests
 
 from crawlers.base import BaseCrawler
 from models.product import Product
+from utils.crawl_parallel import fetch_pages_in_waves
+from utils.http_retry import DEFAULT_REQUEST_TIMEOUT, get_with_retry
+
+CrawlProgressCallback = Callable[[int, int, int], None]
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -46,14 +51,56 @@ class WooCommerceCrawler(BaseCrawler):
         max_pages: int | None = None,
         status: str = "publish",
         per_page: int = 100,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         if self.use_public_api:
-            return self._crawl_store_api(limit=limit, max_pages=max_pages, per_page=per_page)
+            return self._crawl_store_api(
+                limit=limit,
+                max_pages=max_pages,
+                per_page=per_page,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
         return self._crawl_rest_api(
             limit=limit,
             max_pages=max_pages,
             status=status,
             per_page=per_page,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
+
+    def crawl_search(
+        self,
+        query: str,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        per_page: int = 100,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[Product]:
+        search = query.strip()
+        if not search:
+            raise ValueError("Thiếu từ khóa tìm kiếm.")
+
+        if self.use_public_api:
+            return self._crawl_store_api(
+                limit=limit,
+                max_pages=max_pages,
+                per_page=per_page,
+                search=search,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+
+        return self._crawl_rest_api(
+            limit=limit,
+            max_pages=max_pages,
+            per_page=per_page,
+            search=search,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
         )
 
     def crawl_category(
@@ -61,6 +108,8 @@ class WooCommerceCrawler(BaseCrawler):
         category_slug: str,
         limit: int | None = None,
         max_pages: int | None = None,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         category_id = self._resolve_category_id(category_slug)
         if category_id is None:
@@ -72,6 +121,8 @@ class WooCommerceCrawler(BaseCrawler):
                 max_pages=max_pages,
                 category_id=category_id,
                 category_slug=category_slug,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
             )
 
         return self._crawl_rest_api(
@@ -79,6 +130,8 @@ class WooCommerceCrawler(BaseCrawler):
             max_pages=max_pages,
             category_id=category_id,
             category_slug=category_slug,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
         )
 
     def crawl_product(self, slug: str) -> list[Product]:
@@ -133,6 +186,45 @@ class WooCommerceCrawler(BaseCrawler):
 
         return None
 
+    def _worker_session(self) -> requests.Session:
+        session = requests.Session()
+        session.headers.update(self.session.headers)
+        session.verify = self.session.verify
+        return session
+
+    def _fetch_store_page(self, page: int, params_base: dict[str, Any]) -> list[dict[str, Any]]:
+        session = self._worker_session()
+        params = {**params_base, "page": page}
+        response = get_with_retry(
+            session,
+            f"{self.site_url}/wp-json/wc/store/v1/products",
+            params=params,
+            timeout=DEFAULT_REQUEST_TIMEOUT,
+        )
+        batch = response.json()
+        if not isinstance(batch, list):
+            return []
+        if self.request_delay and page > 1:
+            time.sleep(self.request_delay / max(1, min(32, 4)))
+        return batch
+
+    def _fetch_rest_page(self, page: int, params_base: dict[str, Any]) -> list[dict[str, Any]]:
+        session = self._worker_session()
+        params = {**params_base, "page": page}
+        response = get_with_retry(
+            session,
+            f"{self.site_url}/wp-json/wc/v3/products",
+            params=params,
+            auth=(self.consumer_key, self.consumer_secret),
+            timeout=DEFAULT_REQUEST_TIMEOUT,
+        )
+        batch = response.json()
+        if not isinstance(batch, list):
+            return []
+        if self.request_delay and page > 1:
+            time.sleep(self.request_delay / max(1, min(32, 4)))
+        return batch
+
     def _crawl_store_api(
         self,
         limit: int | None = None,
@@ -140,40 +232,44 @@ class WooCommerceCrawler(BaseCrawler):
         per_page: int = 100,
         category_id: int | None = None,
         category_slug: str | None = None,
+        search: str | None = None,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        per_page = min(per_page, 100)
+        params_base: dict[str, Any] = {"per_page": per_page}
+        if category_id:
+            params_base["category"] = category_id
+        if search:
+            params_base["search"] = search
+
+        categories = [category_slug] if category_slug else []
+        if search:
+            categories = [search]
+
+        first_batch = self._fetch_store_page(1, params_base)
+        if progress_callback:
+            est_pages = max_pages
+            if est_pages is None and limit is not None:
+                est_pages = max(1, (limit + per_page - 1) // per_page)
+            elif est_pages is None:
+                est_pages = 1 if len(first_batch) < per_page else 2
+            matched = min(len(first_batch), limit) if limit else len(first_batch)
+            progress_callback(1, est_pages or 1, matched)
+
+        raw_items, _pages = fetch_pages_in_waves(
+            lambda page: self._fetch_store_page(page, params_base),
+            per_page=per_page,
+            first_batch=first_batch,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            limit=limit,
+            progress_callback=progress_callback,
+        )
+
         products: list[Product] = []
-        page = 1
-
-        while True:
-            if max_pages and page > max_pages:
-                break
-
-            params: dict[str, Any] = {"page": page, "per_page": min(per_page, 100)}
-            if category_id:
-                params["category"] = category_id
-
-            response = self.session.get(
-                f"{self.site_url}/wp-json/wc/store/v1/products",
-                params=params,
-                timeout=30,
-            )
-            response.raise_for_status()
-            batch = response.json()
-            if not isinstance(batch, list) or not batch:
-                break
-
-            categories = [category_slug] if category_slug else []
-            for item in batch:
-                products.append(self._map_store_product(item, categories=categories))
-                if limit and len(products) >= limit:
-                    return products
-
-            if len(batch) < min(per_page, 100):
-                break
-
-            page += 1
-            time.sleep(self.request_delay)
-
+        for item in raw_items:
+            products.append(self._map_store_product(item, categories=categories))
         return products
 
     def _crawl_rest_api(
@@ -184,49 +280,48 @@ class WooCommerceCrawler(BaseCrawler):
         per_page: int = 100,
         category_id: int | None = None,
         category_slug: str | None = None,
+        search: str | None = None,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        per_page = min(per_page, 100)
+        params_base: dict[str, Any] = {
+            "per_page": per_page,
+            "status": status,
+        }
+        if category_id:
+            params_base["category"] = category_id
+        if search:
+            params_base["search"] = search
+
+        first_batch = self._fetch_rest_page(1, params_base)
+        if progress_callback:
+            est_pages = max_pages
+            if est_pages is None and limit is not None:
+                est_pages = max(1, (limit + per_page - 1) // per_page)
+            elif est_pages is None:
+                est_pages = 1 if len(first_batch) < per_page else 2
+            matched = min(len(first_batch), limit) if limit else len(first_batch)
+            progress_callback(1, est_pages or 1, matched)
+
+        raw_items, _pages = fetch_pages_in_waves(
+            lambda page: self._fetch_rest_page(page, params_base),
+            per_page=per_page,
+            first_batch=first_batch,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            limit=limit,
+            progress_callback=progress_callback,
+        )
+
         products: list[Product] = []
-        page = 1
-
-        while True:
-            if max_pages and page > max_pages:
-                break
-
-            params: dict[str, Any] = {
-                "page": page,
-                "per_page": min(per_page, 100),
-                "status": status,
-            }
-            if category_id:
-                params["category"] = category_id
-
-            response = self.session.get(
-                f"{self.site_url}/wp-json/wc/v3/products",
-                params=params,
-                auth=(self.consumer_key, self.consumer_secret),
-                timeout=30,
-            )
-            response.raise_for_status()
-            batch = response.json()
-
-            if not isinstance(batch, list) or not batch:
-                break
-
-            for item in batch:
-                product = self._map_product(item, fetch_variations=True)
-                if category_slug:
-                    product.categories = [category_slug]
-                products.append(product)
-                if limit and len(products) >= limit:
-                    return products
-
-            total_pages = int(response.headers.get("X-WP-TotalPages", page))
-            if page >= total_pages:
-                break
-
-            page += 1
-            time.sleep(self.request_delay)
-
+        for item in raw_items:
+            product = self._map_product(item, fetch_variations=True)
+            if category_slug:
+                product.categories = [category_slug]
+            elif search:
+                product.categories = [search]
+            products.append(product)
         return products
 
     def _map_store_product(

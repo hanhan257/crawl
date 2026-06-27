@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 import time
+import threading
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urlparse
 
@@ -45,6 +47,7 @@ class GenericWebCrawler(BaseCrawler):
     ):
         self.site_url = self._normalize_site_url(site_url)
         self.request_delay = request_delay
+        self._proxy_url = proxy_url
         self.session = create_http_session(proxy_url)
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._build_id: str | None = None
@@ -65,6 +68,7 @@ class GenericWebCrawler(BaseCrawler):
         max_pages: int | None = None,
         category_slug: str | None = None,
         progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
     ) -> list[Product]:
         if self._uses_shop_catalog():
             return self._crawl_shop_catalog(
@@ -72,6 +76,7 @@ class GenericWebCrawler(BaseCrawler):
                 max_pages=max_pages,
                 category_slug=category_slug,
                 progress_callback=progress_callback,
+                max_workers=max_workers,
             )
         product_urls = self._discover_product_urls(max_sitemaps=max_pages)
         return self._crawl_urls(
@@ -79,6 +84,7 @@ class GenericWebCrawler(BaseCrawler):
             limit=limit,
             category_slug=category_slug,
             progress_callback=progress_callback,
+            max_workers=max_workers,
         )
 
     def crawl_product(self, product_id: str) -> Product | None:
@@ -183,6 +189,70 @@ class GenericWebCrawler(BaseCrawler):
         return ""
 
     def _crawl_urls(
+        self,
+        urls: list[str],
+        limit: int | None = None,
+        category_slug: str | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
+    ) -> list[Product]:
+        total = len(urls)
+        if total == 0:
+            return []
+
+        workers = max(1, min(max_workers, 32))
+        if workers <= 1:
+            return self._crawl_urls_sequential(
+                urls,
+                limit=limit,
+                category_slug=category_slug,
+                progress_callback=progress_callback,
+            )
+
+        products: list[Product] = []
+        lock = threading.Lock()
+        processed = 0
+
+        def matches(product: Product) -> bool:
+            return not category_slug or category_slug in {"", "Tất cả"} or any(
+                self.category_slug(cat) == category_slug for cat in product.categories
+            )
+
+        def fetch_one(url: str) -> Product | None:
+            match = GENERIC_PRODUCT_PATH.search(urlparse(url).path or "")
+            if not match:
+                return None
+            worker = GenericWebCrawler(self.site_url, proxy_url=self._proxy_url)
+            worker._build_id = self._build_id
+            worker._init_data = self._init_data
+            worker._shop_catalog_mode = self._shop_catalog_mode
+            worker.session = create_http_session(None)
+            worker.session.headers.update(self.session.headers)
+            return worker._fetch_product(url, match.group(1))
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(fetch_one, url): url for url in urls}
+            for future in as_completed(futures):
+                processed += 1
+                product = future.result()
+                if product and matches(product):
+                    with lock:
+                        if limit is None or len(products) < limit:
+                            products.append(product)
+                if progress_callback and (
+                    processed == total or processed % 5 == 0
+                ):
+                    progress_callback(processed, total, len(products))
+                if limit is not None and len(products) >= limit:
+                    for fut in futures:
+                        fut.cancel()
+                    break
+
+        if progress_callback and total:
+            progress_callback(total, total, len(products))
+        return products
+
+    def _crawl_urls_sequential(
         self,
         urls: list[str],
         limit: int | None = None,
@@ -500,6 +570,7 @@ class GenericWebCrawler(BaseCrawler):
         max_pages: int | None = None,
         category_slug: str | None = None,
         progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
     ) -> list[Product]:
         category_name = self._resolve_category_name(category_slug)
         if category_slug and category_slug not in {"", "Tất cả"} and not category_name:

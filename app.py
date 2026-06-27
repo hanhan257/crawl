@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +17,7 @@ import os
 import re
 
 import pandas as pd
+import requests
 import streamlit as st
 
 from app_brand import APP_NAME, APP_PAGE_ICON, APP_TAGLINE, APP_VERSION
@@ -27,6 +28,8 @@ from models.export_fields import PRESET_LABELS, EXPORT_FIELD_LABELS, ExportField
 from models.export_rules import ExportRules, apply_export_rules, apply_rules_to_products
 from models.product import Product
 from utils.credentials import CrawlCredentials
+from utils.crawl_preflight import check_shop_reachable
+from utils.crawl_report import save_crawl_report
 from utils.crawl_runner import CrawlError, run_auto_crawl
 from utils.csv_import import (
     filter_products_by_category,
@@ -34,11 +37,10 @@ from utils.csv_import import (
     parse_csv_to_products,
     slug_from_category,
 )
-from utils.detector import UnsupportedUrlError, resolve_url
+from utils.detector import UnsupportedUrlError, normalize_url, resolve_url
 from utils.export_preview import (
     all_export_columns,
     build_export_file_preview,
-    build_product_preview_table,
     image_batch_summary,
 )
 from utils.image_fetch import fetch_image_bytes
@@ -50,6 +52,7 @@ from utils.edit_validation import (
     validate_edited_df,
 )
 from utils.gmc_feed_editor import (
+    apply_bulk_to_gmc_feed_edits,
     build_gmc_feed_edit_rows,
     merge_gmc_feed_edits,
 )
@@ -78,6 +81,12 @@ from utils.product_editor import (
 )
 from utils.shop_probe import build_category_crawl_url, probe_shop_stats
 from utils.ui_theme import inject_pastel_pink_theme, render_app_hero
+from ui.crawl_step1_layout import (
+    close_crawl_step1_wrap,
+    open_crawl_step1_wrap,
+    render_crawl_action_centered,
+    render_crawl_limits_row,
+)
 from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from utils.url_preview import describe_url
@@ -106,9 +115,13 @@ FORMAT_NOTES = {
     "gmc-feed-csv": "Google Merchant: 16 cột — id, title, link, price, image link, brand, size, color…",
 }
 
+GMC_CONDITION_OPTIONS = ["", "new", "refurbished", "used"]
+GMC_BULK_CATEGORY_OPTIONS = [""] + list(GMC_CATEGORY_DROPDOWN_OPTIONS)
+
 GENERAL_EXPORT_FORMATS = ["woocommerce-csv", "shopify-csv", "web-feed-csv"]
 SHOP_EXPORT_FORMATS = GENERAL_EXPORT_FORMATS + ["gmc-feed-csv"]
 DEFAULT_EXPORT_WORKERS = min(16, max(4, (os.cpu_count() or 4) * 2))
+DEFAULT_CRAWL_WORKERS = DEFAULT_EXPORT_WORKERS
 
 WORKFLOW_MODES = {
     "crawl": "Crawl từ link (Shopify / Woo / web)",
@@ -158,7 +171,7 @@ def init_session() -> None:
         "output_name": None,
         "last_error": None,
         "last_info": None,
-        "export_format": "woocommerce-csv",
+        "export_format": None,
         "export_name": "products",
         "export_field_preset": "shop",
         "export_fields_custom": list(ExportFields.from_preset("shop").enabled),
@@ -173,6 +186,12 @@ def init_session() -> None:
         "csv_import_sig": "",
         "crawl_limit": 0,
         "crawl_pages": 0,
+        "crawl_workers": DEFAULT_CRAWL_WORKERS,
+        "crawl_report_json": None,
+        "crawl_report_csv": None,
+        "crawl_running": False,
+        "crawl_matched_count": 0,
+        "crawl_expected_total": None,
         "crawl_category_pill": "Tất cả",
         "gmc_currency": "USD",
         "gmc_condition": "new",
@@ -181,6 +200,14 @@ def init_session() -> None:
         "gmc_default_age_group": GMC_AGE_GROUP_DEFAULT,
         "gmc_gtin_default": "",
         "gmc_variant_mode": "all_variations",
+        "gmc_bulk_brand": "",
+        "gmc_bulk_size": "",
+        "gmc_bulk_color": "",
+        "gmc_bulk_condition": "",
+        "gmc_bulk_google_category": "",
+        "gmc_bulk_gender": "",
+        "gmc_bulk_age_group": "",
+        "gmc_bulk_only_empty": False,
         "edit_quantity": 0,
         "edit_order": "original",
         "export_workers": DEFAULT_EXPORT_WORKERS,
@@ -191,6 +218,10 @@ def init_session() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+    if not st.session_state.get("_export_pick_required_v1"):
+        st.session_state.export_format = None
+        st.session_state._export_pick_required_v1 = True
 
     if st.session_state.get("image_export_mode") == "pipe":
         st.session_state.image_export_mode = "comma"
@@ -214,13 +245,6 @@ def init_session() -> None:
 
     if st.session_state.get("workflow_mode") == "crawl-gmc":
         st.session_state.export_format = "gmc-feed-csv"
-    elif st.session_state.get("workflow_mode") == "redbubble":
-        if st.session_state.get("export_format") not in (
-            "web-feed-csv",
-            "woocommerce-csv",
-            "shopify-csv",
-        ):
-            st.session_state.export_format = "web-feed-csv"
 
 
 def is_redbubble_workflow(mode: str | None = None) -> bool:
@@ -233,13 +257,48 @@ def is_gmc_workflow(mode: str | None = None) -> bool:
     return active == "crawl-gmc"
 
 
-def default_export_format(mode: str | None = None) -> str:
+_GMC_INTERNAL_TO_DISPLAY: dict[int, int] = {
+    1: 1,
+    4: 2,
+    5: 3,
+    6: 4,
+    7: 5,
+}
+
+
+def gmc_display_step(internal_step: int) -> int:
+    """GMC bỏ Bước 2 (chọn format) và Bước 3 (tùy chỉnh) — hiển thị liên tục 1→5."""
+    return _GMC_INTERNAL_TO_DISPLAY.get(internal_step, internal_step)
+
+
+def gmc_workflow_step(step: int) -> int:
+    return gmc_display_step(step)
+
+
+def workflow_step_heading(step: int, title: str, *, gmc: bool | None = None) -> str:
+    if gmc is None:
+        gmc = is_gmc_workflow()
+    number = gmc_display_step(step) if gmc else step
+    return f"### Bước {number} · {title}"
+
+
+def edit_step_number(*, gmc: bool | None = None) -> int:
+    if gmc is None:
+        gmc = is_gmc_workflow()
+    return gmc_display_step(6) if gmc else 6
+
+
+def export_step_number(*, gmc: bool | None = None) -> int:
+    if gmc is None:
+        gmc = is_gmc_workflow()
+    return gmc_display_step(7) if gmc else 7
+
+
+def default_export_format(mode: str | None = None) -> str | None:
     active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
     if is_gmc_workflow(active):
         return "gmc-feed-csv"
-    if is_redbubble_workflow(active):
-        return "web-feed-csv"
-    return "woocommerce-csv"
+    return st.session_state.get("export_format")
 
 
 def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
@@ -247,16 +306,10 @@ def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
     if is_gmc_workflow(active):
         st.session_state.export_format = "gmc-feed-csv"
         return
-    if is_redbubble_workflow(active):
-        if st.session_state.get("export_format") not in (
-            "web-feed-csv",
-            "woocommerce-csv",
-            "shopify-csv",
-        ):
-            st.session_state.export_format = "web-feed-csv"
-        return
-    if st.session_state.get("export_format") not in GENERAL_EXPORT_FORMATS:
-        st.session_state.export_format = "woocommerce-csv"
+    current = st.session_state.get("export_format")
+    allowed = SHOP_EXPORT_FORMATS if is_redbubble_workflow(active) else GENERAL_EXPORT_FORMATS
+    if current and current not in allowed:
+        st.session_state.export_format = None
 
 
 def _clear_image_cache() -> None:
@@ -282,11 +335,20 @@ def _is_stale_homepage_crawl_error(message: str) -> bool:
     return any(marker in text for marker in markers)
 
 
+def _clear_url_probe_cache() -> None:
+    _cached_describe_url.clear()
+    _cached_probe_shop.clear()
+    _cached_generic_product_count.clear()
+
+
 def _refresh_crawl_messages(url: str) -> None:
     """Xóa thông báo lỗi/info cũ khi link hiện tại đã hợp lệ."""
     cleaned = url.strip()
-    if st.session_state.get("_crawl_url_sig") != cleaned:
-        st.session_state._crawl_url_sig = cleaned
+    if st.session_state.get("crawl_url_sig") != cleaned:
+        if cleaned and st.session_state.get("crawl_url_sig"):
+            _clear_url_probe_cache()
+        st.session_state.crawl_url_sig = cleaned
+        st.session_state.crawl_expected_total = None
         st.session_state.last_error = None
         last_info = st.session_state.get("last_info") or ""
         if last_info.startswith(("Nhận diện:", "Crawl xong")) or "Trang chủ" in last_info:
@@ -378,6 +440,11 @@ def _url_ready_for_probe(url: str) -> bool:
 
 
 def load_products_into_session(products: list[Product], export_name: str, info: str) -> None:
+    if _current_export_format() == "gmc-feed-csv" or is_gmc_workflow():
+        default_condition = st.session_state.get("gmc_condition", "new")
+        for product in products:
+            if not str(product.gmc_condition or "").strip():
+                product.gmc_condition = default_condition
     st.session_state.products_raw = deepcopy(products)
     apply_edit_filter(products)
     st.session_state.export_name = export_name
@@ -388,8 +455,11 @@ def load_products_into_session(products: list[Product], export_name: str, info: 
     st.session_state.pending_rule_reset = False
 
 
-def _current_export_format() -> str:
-    return st.session_state.get("export_format", default_export_format())
+def _current_export_format() -> str | None:
+    fmt = st.session_state.get("export_format")
+    if fmt in SHOP_EXPORT_FORMATS:
+        return fmt
+    return None
 
 
 def apply_edit_filter(products: list[Product] | None = None) -> None:
@@ -397,7 +467,7 @@ def apply_edit_filter(products: list[Product] | None = None) -> None:
     if st.session_state.products_raw is None:
         return
 
-    export_format = _current_export_format()
+    export_format = _current_export_format() or "web-feed-csv"
     if st.session_state.edited_df is not None:
         st.session_state.products_raw = merge_edited_rows(
             st.session_state.products_raw,
@@ -410,10 +480,12 @@ def apply_edit_filter(products: list[Product] | None = None) -> None:
     order = st.session_state.get("edit_order", "original")
     gmc_google_default = ""
     gmc_defaults: dict[str, str] | None = None
+    gmc_condition = "new"
     if export_format == "gmc-feed-csv":
         gmc_kw = _gmc_preview_kwargs()
         gmc_google_default = category_id_from_option(gmc_kw["gmc_google_category"])
         gmc_defaults = gmc_kw["gmc_defaults"]
+        gmc_condition = gmc_kw["gmc_condition"]
     rows = build_edit_subset_rows(
         source,
         quantity=quantity,
@@ -421,6 +493,7 @@ def apply_edit_filter(products: list[Product] | None = None) -> None:
         export_format=export_format,
         google_category_default=gmc_google_default,
         gmc_defaults=gmc_defaults,
+        gmc_condition=gmc_condition,
     )
     st.session_state.edited_df = pd.DataFrame(rows)
     st.session_state.output_bytes = None
@@ -590,6 +663,56 @@ def render_product_image(product: Product, proxy_url: str) -> None:
         st.caption("Không tải được ảnh preview")
 
 
+def _render_preview_chip(product: Product, proxy_url: str, *, image_width: int = 58) -> None:
+    title = html.unescape(product.title or "—")
+    short_title = title if len(title) <= 20 else f"{title[:19]}…"
+    price_text = f"${product.price:.2f}" if product.price is not None else "—"
+
+    if product.image_urls:
+        image_url = product.image_urls[0]
+        try:
+            if "redbubble.net" in image_url.lower():
+                image_bytes = _cached_product_image(
+                    image_url,
+                    proxy_url or "",
+                    st.session_state.image_cache_nonce,
+                )
+                if image_bytes:
+                    st.image(image_bytes, width=image_width)
+                else:
+                    st.caption("Ảnh")
+            else:
+                st.image(image_url, width=image_width)
+        except Exception:
+            st.caption("Ảnh")
+    else:
+        st.caption("—")
+
+    st.markdown(
+        f'<p class="preview-chip-title" title="{html.escape(title)}">{html.escape(short_title)}</p>'
+        f'<p class="preview-chip-price">{html.escape(price_text)}</p>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_compact_product_preview_row(
+    products: list[Product],
+    *,
+    limit: int = 10,
+    proxy_url: str = "",
+) -> None:
+    preview = products[:limit]
+    if not preview:
+        return
+
+    st.markdown('<div class="preview-compact-wrap">', unsafe_allow_html=True)
+    cols = st.columns(len(preview), gap="small")
+    for col, product in zip(cols, preview):
+        with col:
+            _render_preview_chip(product, proxy_url)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def _gmc_preview_kwargs() -> dict:
     return {
         "gmc_currency": st.session_state.get("gmc_currency", "USD"),
@@ -628,6 +751,16 @@ def _gmc_data_editor_column_config(hr: dict[str, str]) -> dict:
         ),
         "gmc_size": st.column_config.TextColumn(column_header_label("gmc_size", hr)),
         "gmc_color": st.column_config.TextColumn(column_header_label("gmc_color", hr)),
+        "gmc_condition": st.column_config.SelectboxColumn(
+            column_header_label("gmc_condition", hr),
+            options=["new", "refurbished", "used"],
+            help="Tình trạng sản phẩm cho Google Merchant",
+        ),
+        "gmc_availability": st.column_config.TextColumn(
+            column_header_label("gmc_availability", hr),
+            help="in_stock / out_of_stock — lấy từ tồn kho khi crawl",
+            disabled=True,
+        ),
         "gmc_gender": st.column_config.SelectboxColumn(
             column_header_label("gmc_gender", hr),
             options=GMC_GENDER_OPTIONS,
@@ -641,21 +774,126 @@ def _gmc_data_editor_column_config(hr: dict[str, str]) -> dict:
     }
 
 
-def _gmc_feed_data_editor_column_config() -> dict:
-    return {
-        "feed_key": None,
-        "id": st.column_config.TextColumn("ID", disabled=True),
-        "title": st.column_config.TextColumn("Title", disabled=True, width="medium"),
-        "brand": st.column_config.TextColumn("Brand", width="small"),
-        "size": st.column_config.TextColumn("Size", width="small"),
-        "color": st.column_config.TextColumn("Color", width="small"),
-        "gender": st.column_config.SelectboxColumn("Gender", options=GMC_GENDER_OPTIONS),
-        "age group": st.column_config.SelectboxColumn(
-            "Age group",
+def _gmc_bulk_option_label(value: str) -> str:
+    return "— giữ nguyên —" if not str(value or "").strip() else str(value)
+
+
+def _build_current_gmc_feed_rows() -> list[dict[str, str]]:
+    products_raw = st.session_state.products_raw
+    edited_df = st.session_state.edited_df
+    if not products_raw or edited_df is None:
+        return []
+
+    export_products = products_from_edit_table(
+        products_raw,
+        edited_df.to_dict("records"),
+        export_format="gmc-feed-csv",
+    )
+    row_ids = [int(v) for v in edited_df["row_id"].tolist()]
+    gmc_kw = _gmc_preview_kwargs()
+    return build_gmc_feed_edit_rows(
+        export_products,
+        row_ids,
+        variant_mode=gmc_kw["gmc_variant_mode"],
+        currency=gmc_kw["gmc_currency"],
+        condition=gmc_kw["gmc_condition"],
+        google_category_default=gmc_kw["gmc_google_category"],
+        gmc_defaults=gmc_kw["gmc_defaults"],
+    )
+
+
+def _render_gmc_feed_bulk_fields() -> None:
+    st.markdown(
+        "**Chỉnh hàng loạt feed** — brand, size, color, condition, "
+        "google product category, gender, age group"
+    )
+    st.caption(
+        "Điền trường cần đổi rồi bấm **Áp dụng hàng loạt feed** — ghi vào **tất cả dòng feed**. "
+        "Để trống / **— giữ nguyên —** = không đổi cột đó. "
+        "**Chỉ ô trống** = chỉ điền giá trị còn thiếu."
+    )
+    brand_col, size_col, color_col = st.columns(3)
+    with brand_col:
+        st.text_input("Brand (hàng loạt)", key="gmc_bulk_brand")
+    with size_col:
+        st.text_input("Size (hàng loạt)", key="gmc_bulk_size")
+    with color_col:
+        st.text_input("Color (hàng loạt)", key="gmc_bulk_color")
+
+    cond_col, cat_col, empty_col = st.columns([2, 3, 1])
+    with cond_col:
+        st.selectbox(
+            "Condition (hàng loạt)",
+            options=GMC_CONDITION_OPTIONS,
+            format_func=_gmc_bulk_option_label,
+            key="gmc_bulk_condition",
+        )
+    with cat_col:
+        st.selectbox(
+            "Google product category (hàng loạt)",
+            options=GMC_BULK_CATEGORY_OPTIONS,
+            format_func=_gmc_bulk_option_label,
+            key="gmc_bulk_google_category",
+        )
+    with empty_col:
+        st.write("")
+        st.checkbox("Chỉ ô trống", key="gmc_bulk_only_empty")
+
+    gender_col, age_col, _ = st.columns([2, 2, 1])
+    with gender_col:
+        st.selectbox(
+            "Gender (hàng loạt)",
+            options=GMC_GENDER_OPTIONS,
+            format_func=_gmc_bulk_option_label,
+            key="gmc_bulk_gender",
+        )
+    with age_col:
+        st.selectbox(
+            "Age group (hàng loạt)",
             options=GMC_AGE_GROUP_OPTIONS,
-            help=f"Mặc định {GMC_AGE_GROUP_DEFAULT}",
+            format_func=_gmc_bulk_option_label,
+            key="gmc_bulk_age_group",
+        )
+
+
+def _apply_gmc_feed_bulk_from_session() -> None:
+    base_rows = _build_current_gmc_feed_rows()
+    if not base_rows:
+        st.warning("Chưa có dòng feed — kiểm tra bảng SP bên dưới.")
+        return
+
+    updated_rows, applied_fields = apply_bulk_to_gmc_feed_edits(
+        base_rows,
+        brand=str(st.session_state.get("gmc_bulk_brand") or ""),
+        size=str(st.session_state.get("gmc_bulk_size") or ""),
+        color=str(st.session_state.get("gmc_bulk_color") or ""),
+        condition=str(st.session_state.get("gmc_bulk_condition") or ""),
+        google_category=category_id_from_option(
+            st.session_state.get("gmc_bulk_google_category")
         ),
-    }
+        gender=str(st.session_state.get("gmc_bulk_gender") or ""),
+        age_group=str(st.session_state.get("gmc_bulk_age_group") or ""),
+        only_empty=bool(st.session_state.get("gmc_bulk_only_empty")),
+    )
+    if not applied_fields:
+        st.warning(
+            "Nhập ít nhất một trường (brand, size, color, condition, category, gender hoặc age group)."
+        )
+        return
+
+    products_raw = st.session_state.products_raw
+    if products_raw is None:
+        return
+
+    st.session_state.gmc_feed_edits = None
+    merge_gmc_feed_edits(products_raw, updated_rows)
+    apply_edit_filter()
+    st.session_state.output_bytes = None
+    labels = ", ".join(applied_fields)
+    st.session_state.last_info = (
+        f"Đã áp dụng hàng loạt **{labels}** cho **{len(updated_rows)}** dòng feed GMC."
+    )
+    st.session_state.last_error = None
 
 
 def _required_fields_caption(export_format: str) -> str:
@@ -771,22 +1009,24 @@ def render_gmc_feed_settings(*, include_variant_mode: bool = True) -> None:
     st.text_input(
         "GTIN mặc định (hàng loạt)",
         key="gmc_gtin_default",
-        help="Áp dụng cho SP chưa có GTIN — vẫn sửa từng dòng ở Bước 6.",
+        help=f"Áp dụng cho SP chưa có GTIN — vẫn sửa từng dòng ở Bước {edit_step_number()}.",
     )
 
 
-def render_gmc_step2_panel() -> str:
-    st.markdown("### Bước 2 · Cấu hình feed GMC")
-    st.info(f"**{FORMAT_OPTIONS['gmc-feed-csv']}** — crawl xong xuất thẳng file Google Merchant.")
-    render_gmc_feed_settings(include_variant_mode=False)
-    variant_mode = st.session_state.get("gmc_variant_mode", "all_variations")
-    st.caption(
-        f"Biến thể đã chọn ở **Bước 1**: **{GMC_VARIANT_MODES.get(variant_mode, variant_mode)}**."
-    )
-    return "gmc-feed-csv"
+def render_gmc_bulk_feed_block() -> None:
+    with st.container(border=True):
+        _render_gmc_feed_bulk_fields()
+        if st.button(
+            "Áp dụng hàng loạt feed",
+            type="primary",
+            use_container_width=True,
+            key="gmc_feed_bulk_apply",
+        ):
+            _apply_gmc_feed_bulk_from_session()
+            st.rerun()
 
 
-def render_export_format_selector() -> str:
+def render_export_format_selector() -> str | None:
     st.markdown("### Bước 2 · Chọn file cần xuất")
     _ensure_export_format_for_workflow()
     export_format = st.radio(
@@ -794,8 +1034,12 @@ def render_export_format_selector() -> str:
         options=GENERAL_EXPORT_FORMATS,
         format_func=lambda key: FORMAT_OPTIONS[key],
         horizontal=True,
+        index=None,
         key="export_format",
     )
+    if not export_format:
+        st.caption("Chưa chọn định dạng — bấm một tuỳ chọn phía trên trước khi xuất file.")
+        return None
     if export_format in FORMAT_NOTES:
         st.caption(FORMAT_NOTES[export_format])
     return export_format
@@ -818,44 +1062,28 @@ def render_preview_section(
     format_label = FORMAT_OPTIONS.get(export_format, export_format)
     display_products = apply_rules_to_products(products, rules)
 
-    st.markdown(f"### Bước 5 · Xem trước {preview_n}/{count} sản phẩm")
-    st.caption(
-        f"Định dạng xuất: **{format_label}** · "
-        "Dữ liệu **đã áp dụng** từ Bước 3. "
-        "Chỉnh thêm từng SP → tab **File feed xuất** ở Bước 6."
-    )
-
-    tab_products, tab_csv = st.tabs(["Sản phẩm", f"File CSV ({format_label})"])
-
-    max_img = None if max_images_per_product <= 0 else max_images_per_product
-    if export_format == "woocommerce-csv" and image_mode == "split_columns":
-        st.caption(image_batch_summary(products, max_img))
-
-    with tab_products:
-        preview_df = pd.DataFrame(build_product_preview_table(display_products, limit=preview_n))
-        st.dataframe(
-            preview_df,
-            column_config={
-                "url": st.column_config.LinkColumn("URL"),
-                "price": st.column_config.NumberColumn("Price", format="%.2f"),
-                "image": st.column_config.TextColumn("Ảnh URL"),
-            },
-            use_container_width=True,
-            hide_index=True,
-            height=min(420, 80 + preview_n * 36),
+    preview_step = gmc_display_step(5) if is_gmc_workflow() else 5
+    edit_step = edit_step_number()
+    st.markdown(f"### Bước {preview_step} · Xem trước {preview_n}/{count} sản phẩm")
+    if is_gmc_workflow():
+        st.caption(
+            f"**{format_label}** · chỉnh feed ở **Bước {edit_step}**."
+        )
+    else:
+        st.caption(
+            f"**{format_label}** · chỉnh chi tiết ở **Bước {edit_step}**."
         )
 
-        with st.expander(f"Xem ảnh thumbnail ({preview_n} SP)", expanded=True):
-            cols = st.columns(min(preview_n, 5))
-            for idx, product in enumerate(display_products[:preview_n]):
-                with cols[idx % len(cols)]:
-                    with st.container(border=True):
-                        render_product_image(product, st.session_state.proxy_url)
-                        st.markdown(f"**{html.unescape(product.title or '')[:45]}**")
-                        price_text = f"${product.price:.2f}" if product.price else "—"
-                        st.caption(price_text)
+    _render_compact_product_preview_row(
+        display_products,
+        limit=preview_n,
+        proxy_url=st.session_state.get("proxy_url") or "",
+    )
 
-    with tab_csv:
+    max_img = None if max_images_per_product <= 0 else max_images_per_product
+    with st.expander(f"Mẫu file {format_label}", expanded=False):
+        if export_format == "woocommerce-csv" and image_mode == "split_columns":
+            st.caption(image_batch_summary(products, max_img))
         render_export_file_preview_block(
             products,
             export_format,
@@ -1247,9 +1475,14 @@ def _render_data_status_banner() -> None:
         else:
             st.caption("Ảnh")
     with info_col:
+        scroll_hint = (
+            f"Cuộn xuống **Bước {gmc_display_step(5)}** (xem trước) và "
+            f"**Bước {edit_step_number(gmc=True)}** (chỉnh hàng loạt feed + bảng SP)."
+            if is_gmc_workflow(mode)
+            else "Cuộn xuống **Bước 5** (xem trước) và **Bước 6** (bảng chỉnh sửa) sau Bước 4."
+        )
         st.success(
-            f"**{count}** sản phẩm sẵn sàng · **{title}** · Giá mẫu: **{price_text}** · "
-            "Cuộn xuống **Bước 5** (xem trước) và **Bước 6** (bảng chỉnh sửa) sau Bước 4."
+            f"**{count}** sản phẩm sẵn sàng · **{title}** · Giá mẫu: **{price_text}** · {scroll_hint}"
         )
 
 
@@ -1371,11 +1604,11 @@ def render_customization_panel() -> ExportRules:
 
 
 def render_export_fields_panel() -> ExportFields:
-    export_format = st.session_state.get("export_format", "woocommerce-csv")
+    export_format = _current_export_format()
     gmc_mode = is_gmc_workflow()
 
     if gmc_mode:
-        st.markdown("### Bước 4 · Trường feed GMC")
+        st.markdown(workflow_step_heading(4, "Trường feed GMC", gmc=True))
         variant_mode = st.session_state.get("gmc_variant_mode", "all_variations")
         st.caption(
             f"Chế độ biến thể: **{GMC_VARIANT_MODES.get(variant_mode, variant_mode)}** · "
@@ -1383,6 +1616,11 @@ def render_export_fields_panel() -> ExportFields:
         )
         st.info("Cột: " + " · ".join(GMC_FEED_COLUMNS))
         return ExportFields.from_preset("all")
+
+    if not export_format:
+        st.markdown("### Bước 4 · Chọn trường trong file xuất")
+        st.info("Chọn định dạng file ở **Bước 2** trước — sau đó mới chọn trường xuất.")
+        return ExportFields.from_preset("shop")
 
     st.markdown("### Bước 4 · Chọn trường trong file xuất")
     st.caption(
@@ -1445,6 +1683,38 @@ def render_export_fields_panel() -> ExportFields:
     return fields
 
 
+def render_crawl_report_downloads() -> None:
+    json_path = st.session_state.get("crawl_report_json")
+    csv_path = st.session_state.get("crawl_report_csv")
+    if not json_path and not csv_path:
+        return
+
+    st.caption("Báo cáo crawl — tải file để xem số SP và link từng sản phẩm:")
+    col_json, col_csv = st.columns(2)
+    if json_path and Path(json_path).is_file():
+        with col_json:
+            st.download_button(
+                "Tải báo cáo JSON",
+                data=Path(json_path).read_bytes(),
+                file_name=Path(json_path).name,
+                mime="application/json",
+                use_container_width=True,
+                key="download_crawl_report_json",
+            )
+            st.caption(f"`{json_path}`")
+    if csv_path and Path(csv_path).is_file():
+        with col_csv:
+            st.download_button(
+                "Tải danh sách link SP (CSV)",
+                data=Path(csv_path).read_bytes(),
+                file_name=Path(csv_path).name,
+                mime="text/csv",
+                use_container_width=True,
+                key="download_crawl_report_csv",
+            )
+            st.caption(f"`{csv_path}` · cột **url** = link sản phẩm")
+
+
 def run_crawl_only(
     url: str,
     limit: int,
@@ -1453,13 +1723,20 @@ def run_crawl_only(
     woo_key: str,
     woo_secret: str,
     category_slug: str = "Tất cả",
+    action_area=None,
+    live_area=None,
 ) -> None:
+    st.session_state.crawl_running = True
+    st.session_state.crawl_matched_count = 0
     st.session_state.last_error = None
     st.session_state.last_info = None
     st.session_state.output_bytes = None
     st.session_state.output_name = None
+    st.session_state.crawl_report_json = None
+    st.session_state.crawl_report_csv = None
 
     if not url.strip():
+        st.session_state.crawl_running = False
         st.session_state.last_error = "Vui lòng nhập link cần crawl."
         return
 
@@ -1471,8 +1748,18 @@ def run_crawl_only(
     if woo_secret:
         creds.woocommerce_secret = woo_secret
 
+    expected_total: int | None = st.session_state.get("crawl_expected_total")
+    _update_crawl_live_ui(action_area, live_area, 0, expected_total)
+    if live_area is not None:
+        live_area.info("Đang kết nối shop và tải trang 1…")
+
     try:
         crawl_url = url.strip()
+        preflight_error = check_shop_reachable(crawl_url)
+        if preflight_error:
+            st.session_state.last_error = preflight_error
+            return
+
         if is_redbubble_workflow():
             from ui.redbubble_workflow import validate_redbubble_url
 
@@ -1492,7 +1779,9 @@ def run_crawl_only(
         )
         if preview["ok"] and category_slug and category_slug != "Tất cả" and not rb_mode:
             target = preview["target"]
-            if target.platform == "generic-web":
+            if getattr(target, "crawl_type", "") == "search":
+                pass
+            elif target.platform == "generic-web":
                 category_filter = category_slug
             else:
                 crawl_url = build_category_crawl_url(
@@ -1513,30 +1802,47 @@ def run_crawl_only(
                     or "Link chưa đủ thông tin để crawl."
                 )
                 return
+        elif not preview.get("ok"):
+            st.session_state.last_error = preview.get("message") or "Link chưa hợp lệ để crawl."
+            return
+
         progress_callback = None
         progress_bar = None
         progress_text = None
         target_preview = preview.get("target") if preview.get("ok") else None
-        rb_platform = (
-            target_preview
-            and getattr(target_preview, "platform", "") == "redbubble"
+        crawl_platform = (
+            getattr(target_preview, "platform", "") if target_preview else ""
         )
-        if target_preview and getattr(target_preview, "platform", "") == "generic-web":
-            progress_bar = st.progress(0.0, text="Đang chuẩn bị crawl web thuần…")
+        rb_platform = crawl_platform == "redbubble"
+        workers = int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))
+
+        if target_preview and crawl_platform != "redbubble":
+            progress_bar = st.progress(0.0, text="Đang chuẩn bị crawl…")
             progress_text = st.empty()
 
             def progress_callback(current: int, total: int, matched: int) -> None:
+                _update_crawl_live_ui(action_area, live_area, matched, expected_total)
                 if progress_bar is not None and total:
-                    progress_bar.progress(
-                        min(current / total, 1.0),
-                        text=f"Đang crawl {current}/{total} link · {matched} SP khớp",
-                    )
-                if progress_text is not None and total:
-                    est_min = max(1, int(total * 1.4 / 60))
-                    progress_text.caption(
-                        f"Web thuần quét từng link trong sitemap — crawl hết **~{est_min} phút**. "
-                        f"Đặt **Giới hạn SP = 10–50** để test nhanh."
-                    )
+                    ratio = min(current / total, 1.0)
+                    if crawl_platform == "generic-web":
+                        label = f"Link {current}/{total} · {matched} SP"
+                    else:
+                        label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                    progress_bar.progress(ratio, text=label)
+                if progress_text is not None:
+                    if crawl_platform == "generic-web" and total:
+                        est_min = max(1, int(total * 1.4 / 60 / max(workers, 1)))
+                        progress_text.caption(
+                            f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
+                        )
+                    elif expected_total:
+                        progress_text.caption(
+                            f"Đã lấy **{matched}** / ~**{expected_total:,}** SP dự kiến".replace(
+                                ",", "."
+                            )
+                        )
+                    else:
+                        progress_text.caption(f"Đã lấy **{matched}** SP · {workers} luồng song song.")
 
         crawl_kwargs = dict(
             url=crawl_url,
@@ -1546,7 +1852,9 @@ def run_crawl_only(
             proxy_url=st.session_state.proxy_url.strip() or None,
             category_slug=category_filter,
             progress_callback=progress_callback,
+            max_workers=workers,
         )
+        started_at = datetime.now(timezone.utc)
         if rb_platform:
             spinner_msg = (
                 "Đang crawl Redbubble… (~82 SP/trang). "
@@ -1554,8 +1862,10 @@ def run_crawl_only(
             )
             with st.spinner(spinner_msg):
                 products, target = run_auto_crawl(**crawl_kwargs)
+            _update_crawl_live_ui(action_area, live_area, len(products), expected_total)
         else:
             products, target = run_auto_crawl(**crawl_kwargs)
+            _update_crawl_live_ui(action_area, live_area, len(products), expected_total)
         if progress_bar is not None:
             progress_bar.empty()
         if progress_text is not None:
@@ -1565,27 +1875,61 @@ def run_crawl_only(
         st.session_state.export_name = (
             target.category_slug or target.handle or target.query or "products"
         )
+        report = save_crawl_report(
+            products,
+            target,
+            crawl_url,
+            workers=workers,
+            limit=limit if limit > 0 else None,
+            max_pages=pages if pages > 0 else None,
+            expected_total=expected_total,
+            started_at=started_at,
+        )
+        st.session_state.crawl_report_json = report.json_path
+        st.session_state.crawl_report_csv = report.urls_csv_path
         variant_mode = st.session_state.get("gmc_variant_mode", "all_variations")
         feed_rows = count_gmc_export_rows(products, variant_mode)
+        report_note = (
+            f"Báo cáo: `{report.urls_csv_path}` · `{report.json_path}`"
+        )
         if is_gmc_workflow() or st.session_state.get("export_format") == "gmc-feed-csv":
             st.session_state.last_info = (
                 f"Crawl xong **{len(products)}** SP → **{feed_rows}** dòng feed GMC "
                 f"({GMC_VARIANT_MODES.get(variant_mode, variant_mode)}) · "
-                f"{preview.get('message', '')}"
+                f"{preview.get('message', '')} · {report.summary()} · {report_note}"
             )
         else:
             st.session_state.last_info = (
-                f"Crawl xong **{len(products)}** sản phẩm · {preview.get('message', '')}"
+                f"Crawl xong **{len(products)}** sản phẩm · {preview.get('message', '')} · "
+                f"{report.summary()} · {report_note}"
             )
         st.session_state.imported_products_all = None
     except UnsupportedUrlError as exc:
         st.session_state.last_error = str(exc)
     except CrawlError as exc:
         st.session_state.last_error = str(exc)
-    except Exception as exc:
+    except requests.exceptions.Timeout as exc:
         st.session_state.last_error = (
-            f"Lỗi: {exc}. Nếu vẫn lặp lại, tắt app và mở lại **{APP_NAME}**."
+            f"Server phản hồi chậm (timeout): {exc}. "
+            "Thử **Luồng crawl = 4–8**, giảm **Giới hạn SP**, hoặc crawl lại sau vài phút."
         )
+    except requests.exceptions.ConnectionError as exc:
+        st.session_state.last_error = (
+            f"Lỗi kết nối: {exc}. Thử giảm **Luồng crawl** hoặc bật **Proxy**."
+        )
+    except Exception as exc:
+        err_text = str(exc)
+        if "timed out" in err_text.lower() or "timeout" in err_text.lower():
+            st.session_state.last_error = (
+                f"Server phản hồi chậm: {err_text}. "
+                "Thử **Luồng crawl = 4–8** và crawl lại."
+            )
+        else:
+            st.session_state.last_error = (
+                f"Lỗi: {exc}. Nếu vẫn lặp lại, tắt app và mở lại **{APP_NAME}**."
+            )
+    finally:
+        st.session_state.crawl_running = False
 
 
 def export_current_products(
@@ -1606,14 +1950,6 @@ def export_current_products(
         edited_df.to_dict("records"),
         export_format=export_format,
     )
-    if export_format == "gmc-feed-csv":
-        feed_edits = st.session_state.get("gmc_feed_edits") or []
-        merge_gmc_feed_edits(st.session_state.products_raw, feed_edits)
-        products = products_from_edit_table(
-            deepcopy(st.session_state.products_raw),
-            edited_df.to_dict("records"),
-            export_format=export_format,
-        )
     total_raw = len(st.session_state.products_raw)
 
     validation = validate_edited_df(edited_df, export_format)
@@ -1697,10 +2033,39 @@ def _format_sp_count(count: int | None) -> str:
     return f"{count:,}".replace(",", ".")
 
 
+def _crawl_status_label(matched: int, expected_total: int | None = None) -> str:
+    count_text = _format_sp_count(matched)
+    if expected_total is not None and expected_total > 0:
+        return (
+            f"Đang crawl dữ liệu · {count_text} / ~{_format_sp_count(expected_total)} SP"
+        )
+    return f"Đang crawl dữ liệu · {count_text} SP"
+
+
+def _update_crawl_live_ui(
+    action_area,
+    live_area,
+    matched: int,
+    expected_total: int | None = None,
+) -> None:
+    st.session_state.crawl_matched_count = matched
+    label = _crawl_status_label(matched, expected_total)
+    if action_area is not None:
+        action_area.markdown(
+            f'<div class="crawl-busy-btn">{html.escape(label)}</div>',
+            unsafe_allow_html=True,
+        )
+    if live_area is not None:
+        parts = [f"**{_format_sp_count(matched)}** SP đã crawl"]
+        if expected_total is not None and expected_total > 0:
+            parts.append(f"/ ~**{_format_sp_count(expected_total)}** dự kiến")
+        live_area.info(" · ".join(parts))
+
+
 def render_crawl_category_pills(probe: dict) -> None:
     platform = probe.get("platform") or ""
     categories = probe.get("categories") or []
-    if not categories or probe.get("crawl_type") == "product":
+    if not categories or probe.get("crawl_type") in ("product", "search"):
         return
 
     slugs = [cat["slug"] for cat in categories if cat.get("slug")]
@@ -1854,6 +2219,11 @@ def render_url_preview(
         else:
             status.update(label=info["message"], state="error", expanded=False)
 
+    if info.get("ok") and probe.get("ok"):
+        st.session_state.crawl_expected_total = probe.get("total_products")
+    elif info.get("ok") is False or not probe.get("ok"):
+        st.session_state.crawl_expected_total = None
+
     if info.get("notice") and not info.get("crawl_ready", True):
         st.error(info["notice"])
     elif info.get("ok") and not info.get("crawl_ready", True):
@@ -1878,12 +2248,21 @@ def render_url_preview(
                 )
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
+        elif probe.get("crawl_type") == "search" and probe.get("url_category_slug"):
+            st.caption(
+                f"Tìm kiếm **`{probe['url_category_slug']}`** — "
+                "đặt **Giới hạn SP** (vd. 24–100) rồi bấm **Crawl dữ liệu**."
+            )
 
     if info.get("ok") and probe.get("ok"):
         url_sig = cleaned
+        if probe.get("crawl_type") == "search":
+            st.session_state["crawl_category_pill"] = "Tất cả"
         if st.session_state.get("crawl_url_sig") != url_sig:
             st.session_state.crawl_url_sig = url_sig
             default_cat = probe.get("url_category_slug") or "Tất cả"
+            if probe.get("crawl_type") == "search":
+                default_cat = "Tất cả"
             if platform == "redbubble" and probe.get("categories"):
                 first_slug = probe["categories"][0].get("slug")
                 if first_slug:
@@ -1920,7 +2299,8 @@ def render_download_button(label: str | None = None) -> None:
 def render_edit_validation_alert(report: dict) -> bool:
     """Hiển thị cột thiếu dữ liệu — trả về True nếu đủ để xuất file."""
     if report["ok"]:
-        st.success("✓ Đủ thông tin các cột — có thể xuất file ở Bước 7.")
+        export_step = export_step_number()
+        st.success(f"✓ Đủ thông tin các cột — có thể xuất file ở Bước {export_step}.")
         return True
 
     parts: list[str] = []
@@ -1951,9 +2331,25 @@ def render_export_actions(
     total_raw: int,
     export_ready: bool = True,
 ) -> tuple[bool, Any, Any, Any]:
-    """Xuất file, tiến trình và tải — Bước 7."""
-    st.markdown("### Bước 7 · Xuất file")
-    export_format = st.session_state.get("export_format", default_export_format())
+    """Xuất file, tiến trình và tải."""
+    export_step = export_step_number()
+    edit_step = edit_step_number()
+    st.markdown(f"### Bước {export_step} · Xuất file")
+    export_format = _current_export_format()
+    if not export_format:
+        st.caption("Chọn định dạng file ở **Bước 2** trước khi xuất.")
+        export_clicked = st.button(
+            "Xuất file",
+            type="primary",
+            use_container_width=True,
+            disabled=True,
+            help="Chọn WooCommerce / Shopify / Feed web ở Bước 2.",
+        )
+        progress_area = st.empty()
+        status_area = st.empty()
+        download_area = st.empty()
+        return export_clicked, progress_area, status_area, download_area
+
     st.caption(
         f"Định dạng: **{FORMAT_OPTIONS.get(export_format, export_format)}** "
         + (
@@ -1961,7 +2357,7 @@ def render_export_actions(
             if is_gmc_workflow()
             else "(đổi ở Bước 2). "
         )
-        + f"Xuất **{edit_count}** SP đang hiển thị ở Bước 6"
+        + f"Xuất **{edit_count}** SP đang hiển thị ở Bước {edit_step}"
         + (f" (trong tổng **{total_raw}** SP gốc)" if edit_count != total_raw else "")
     )
 
@@ -1970,10 +2366,10 @@ def render_export_actions(
         type="primary",
         use_container_width=True,
         disabled=st.session_state.edited_df is None or not export_ready,
-        help=f"Cần đủ {_required_fields_caption(export_format)} ở Bước 6.",
+        help=f"Cần đủ {_required_fields_caption(export_format)} ở Bước {edit_step}.",
     )
     if not export_ready:
-        st.caption("⛔ Chưa thể xuất — kiểm tra các cột 🔴 đỏ ở Bước 6.")
+        st.caption(f"⛔ Chưa thể xuất — kiểm tra các cột 🔴 đỏ ở Bước {edit_step}.")
 
     worker_col, _ = st.columns([1, 2])
     with worker_col:
@@ -2020,96 +2416,118 @@ def render_workflow_selector() -> str:
 
 
 def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
-    """Bước 1 — full width, category pill xuống dòng khi nhiều."""
+    """Bước 1 — link & nhận diện bên trái, cài đặt crawl bên phải."""
     gmc_mode = is_gmc_workflow()
     if gmc_mode:
         st.markdown("### Bước 1 · Crawl link → feed GMC")
         st.caption(
-            "Chọn cách tách biến thể trước khi crawl. "
-            "WooCommerce variable product: nhập **Woo key/secret** ở expander API để lấy đủ biến thể."
+            "Chọn cách tách biến thể bên phải trước khi crawl. "
+            "WooCommerce variable product: nhập **Woo key/secret** ở expander API."
         )
-        render_gmc_variant_mode_selector()
     else:
         st.markdown("### Bước 1 · Crawl link")
-    url = st.text_input(
-        "Link shop / category / sản phẩm",
-        placeholder="https://www.redbubble.com/shop/shower-curtains",
-        help=(
-            "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
-            "Shopify/Woo: trang chủ shop, /collections/..., /products/...\n"
-            "Web thuần: trang chủ hoặc /shop/..., /product/..."
-        ),
-        key="crawl_url",
-        on_change=_on_crawl_url_change,
-    )
-    _refresh_crawl_messages(url)
 
-    with st.expander("API (Shopify / Woo)", expanded=False):
-        shopify_token = st.text_input("Shopify token", type="password", key="crawl_shopify_token")
-        woo_key = st.text_input("WooCommerce key", type="password", key="crawl_woo_key")
-        woo_secret = st.text_input("WooCommerce secret", type="password", key="crawl_woo_secret")
-    shopify_token = st.session_state.get("crawl_shopify_token", "")
-    woo_key = st.session_state.get("crawl_woo_key", "")
-    woo_secret = st.session_state.get("crawl_woo_secret", "")
+    open_crawl_step1_wrap()
+    left_col, right_col = st.columns([3, 2], gap="medium")
 
-    render_url_preview(url, shopify_token, woo_key, woo_secret)
+    with left_col:
+        url = st.text_input(
+            "Link shop / category / sản phẩm",
+            placeholder="https://www.redbubble.com/shop/shower-curtains",
+            help=(
+                "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
+                "Shopify/Woo: trang chủ shop, /collections/..., /products/...\n"
+                "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
+                "Web thuần: trang chủ hoặc /shop/..., /product/..."
+            ),
+            key="crawl_url",
+            on_change=_on_crawl_url_change,
+        )
+        _refresh_crawl_messages(url)
 
-    if url.strip():
-        url_info = describe_url(url.strip())
-        if url_info.get("ok") and url_info.get("crawl_ready", True):
-            st.caption(f"Link OK · **{url_info['message']}**")
-        elif url_info.get("ok"):
-            st.warning(
-                url_info.get("notice")
-                or url_info.get("hint")
-                or "Link Redbubble chưa đúng — cần `/shop/từ-khóa` hoặc `/i/...`."
+        with st.expander("API (Shopify / Woo)", expanded=False):
+            shopify_token = st.text_input(
+                "Shopify token", type="password", key="crawl_shopify_token"
+            )
+            woo_key = st.text_input("WooCommerce key", type="password", key="crawl_woo_key")
+            woo_secret = st.text_input(
+                "WooCommerce secret", type="password", key="crawl_woo_secret"
             )
 
-    lim_col, page_col = st.columns(2)
-    with lim_col:
-        st.number_input(
-            "Giới hạn SP",
-            min_value=0,
-            help="0 = lấy hết. Web thuần ~2000 SP có thể mất ~45 phút — nên thử 10–50 trước.",
-            key="crawl_limit",
+        shopify_token = st.session_state.get("crawl_shopify_token", "")
+        woo_key = st.session_state.get("crawl_woo_key", "")
+        woo_secret = st.session_state.get("crawl_woo_secret", "")
+
+        render_url_preview(url, shopify_token, woo_key, woo_secret)
+
+        if url.strip():
+            url_info = describe_url(url.strip())
+            if url_info.get("ok") and url_info.get("crawl_ready", True):
+                st.caption(f"Link OK · **{url_info['message']}**")
+            elif url_info.get("ok"):
+                st.warning(
+                    url_info.get("notice")
+                    or url_info.get("hint")
+                    or "Link Redbubble chưa đúng — cần `/shop/từ-khóa` hoặc `/i/...`."
+                )
+
+    with right_col:
+        st.markdown('<div class="crawl-side-tools">', unsafe_allow_html=True)
+        if gmc_mode:
+            render_gmc_variant_mode_selector()
+        render_proxy_panel(
+            expanded=False,
+            title="Proxy & Redbubble",
+            key_prefix="crawl_",
         )
-    with page_col:
-        st.number_input(
-            "Số trang",
-            min_value=0,
-            help="0 = hết trang.",
-            key="crawl_pages",
-        )
+        if st.button(
+            "Làm mới session HTTP",
+            use_container_width=True,
+            key="crawl_reset_session",
+        ):
+            _clear_image_cache()
+            st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    render_crawl_limits_row(include_workers=True)
+
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))
-
-    render_proxy_panel(
-        expanded=False,
-        title="Proxy & Redbubble",
-        key_prefix="crawl_",
-    )
-    if st.button("Làm mới session HTTP", use_container_width=True, key="crawl_reset_session"):
-        _clear_image_cache()
-        st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
 
     crawl_ready = True
     if url.strip():
         url_info = describe_url(url.strip())
         crawl_ready = bool(url_info.get("ok") and url_info.get("crawl_ready", True))
 
-    crawl_clicked = st.button(
-        "Crawl → GMC" if gmc_mode else "Crawl dữ liệu",
-        type="primary",
-        use_container_width=True,
-        key="crawl_data_btn",
-        disabled=not crawl_ready,
-        help=(
-            None
-            if crawl_ready
-            else "Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được."
-        ),
+    if st.session_state.get("crawl_running") and st.session_state.products_raw is None:
+        st.session_state.crawl_running = False
+
+    crawl_clicked, crawl_action, crawl_live = render_crawl_action_centered(
+        label="Crawl → GMC" if gmc_mode else "Crawl dữ liệu",
+        button_key="crawl_data_btn",
+        crawl_ready=crawl_ready,
+        not_ready_help="Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được.",
+        is_running=bool(st.session_state.get("crawl_running")),
+        update_live_ui=_update_crawl_live_ui,
+        matched_count=int(st.session_state.get("crawl_matched_count", 0)),
     )
-    return url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked
+    close_crawl_step1_wrap()
+
+    if crawl_clicked and crawl_ready:
+        run_crawl_only(
+            url,
+            limit,
+            pages,
+            shopify_token,
+            woo_key,
+            woo_secret,
+            category_slug=st.session_state.get("crawl_category_pill", "Tất cả"),
+            action_area=crawl_action,
+            live_area=crawl_live,
+        )
+        st.rerun()
+
+    return url, limit, pages, shopify_token, woo_key, woo_secret, False
 
 
 def main() -> None:
@@ -2138,6 +2556,8 @@ def main() -> None:
                 refresh_crawl_messages=_refresh_crawl_messages,
                 on_crawl_url_change=_on_crawl_url_change,
                 clear_image_cache=_clear_image_cache,
+                run_crawl=run_crawl_only,
+                update_crawl_ui=_update_crawl_live_ui,
             )
     elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
@@ -2150,8 +2570,7 @@ def main() -> None:
 
     with st.container(border=True):
         if gmc_mode:
-            export_format = render_gmc_step2_panel()
-            st.session_state.export_format = export_format
+            _ensure_export_format_for_workflow(workflow_mode)
         elif rb_mode:
             export_format = render_redbubble_export_selector()
         else:
@@ -2181,19 +2600,9 @@ def _render_main_workflow(
 ) -> None:
     _refresh_crawl_messages(str(st.session_state.get("crawl_url") or url or ""))
 
-    if workflow_mode in ("crawl", "crawl-gmc", "redbubble") and crawl_clicked:
-        run_crawl_only(
-            url,
-            limit,
-            pages,
-            shopify_token,
-            woo_key,
-            woo_secret,
-            category_slug=st.session_state.get("crawl_category_pill", "Tất cả"),
-        )
-
     if st.session_state.last_info:
         st.success(st.session_state.last_info)
+    render_crawl_report_downloads()
     crawl_error = _current_crawl_error()
     if crawl_error:
         st.error(crawl_error)
@@ -2201,23 +2610,28 @@ def _render_main_workflow(
     _render_data_status_banner()
 
     export_format = st.session_state.get("export_format", default_export_format(workflow_mode))
+    gmc_mode = is_gmc_workflow(workflow_mode)
 
-    with st.container(border=True):
-        rules = render_customization_panel()
+    if not gmc_mode:
+        with st.container(border=True):
+            render_customization_panel()
 
     with st.container(border=True):
         export_fields = render_export_fields_panel()
 
     if st.session_state.products_raw is not None:
         working_products = get_working_products()
+        preview_format = export_format or "web-feed-csv"
         render_preview_section(
             working_products,
-            export_format,
+            preview_format,
             export_fields,
             build_export_rules(),
             image_mode=st.session_state.get("image_export_mode", "comma"),
             max_images_per_product=int(st.session_state.get("max_images_per_product", 0)),
         )
+        if not export_format:
+            st.caption("Xem trước mẫu feed web — chọn định dạng **Bước 2** để xuất đúng template.")
 
     export_clicked = False
     if st.session_state.edited_df is not None:
@@ -2230,19 +2644,27 @@ def _render_main_workflow(
         edit_qty = int(st.session_state.get("edit_quantity", 0))
         edit_order = st.session_state.get("edit_order", "original")
 
-        st.markdown(f"### Bước 6 · Chỉnh sửa chi tiết ({count} sản phẩm)")
         export_format = st.session_state.get("export_format", default_export_format())
         format_label = FORMAT_OPTIONS.get(export_format, export_format)
         is_gmc = export_format == "gmc-feed-csv"
+
+        st.markdown(
+            workflow_step_heading(
+                6,
+                "Chỉnh sửa feed GMC" if is_gmc else "Chỉnh sửa chi tiết",
+                gmc=is_gmc,
+            )
+            + f" ({count} sản phẩm)"
+        )
+        if is_gmc:
+            render_gmc_bulk_feed_block()
         required_text = _required_fields_caption(export_format)
         if is_gmc:
             st.caption(
-                "Chọn số lượng và thứ tự → **Áp dụng lọc**. "
+                "**Chỉnh hàng loạt feed** phía trên → **Áp dụng hàng loạt feed**. "
+                "Chọn số lượng → **Áp dụng lọc**. "
                 f"Bắt buộc: **{required_text}**. "
-                "**Google product category** — dropdown + gợi ý tự động theo title/tags "
-                "([productcategory.net](https://productcategory.net/)). "
-                "**Gender · age group** — dropdown (age group mặc định **adult**). "
-                "Tab **File feed xuất** = brand, size, color, gender, age group."
+                "Tab **File feed xuất** = xem trước file GMC cuối (16 cột)."
             )
         else:
             st.caption(
@@ -2355,49 +2777,17 @@ def _render_main_workflow(
                 edited_df.to_dict("records"),
                 export_format=export_format,
             )
-            if is_gmc:
-                row_ids = [int(v) for v in edited_df["row_id"].tolist()]
-                gmc_kw = _gmc_preview_kwargs()
-                feed_rows = build_gmc_feed_edit_rows(
-                    export_products,
-                    row_ids,
-                    variant_mode=gmc_kw["gmc_variant_mode"],
-                    currency=gmc_kw["gmc_currency"],
-                    condition=gmc_kw["gmc_condition"],
-                    google_category_default=gmc_kw["gmc_google_category"],
-                    gmc_defaults=gmc_kw["gmc_defaults"],
-                )
-                st.markdown("**Chỉnh feed GMC** — brand, size, color, gender, age group")
-                st.caption(
-                    f"Age group mặc định **{GMC_AGE_GROUP_DEFAULT}** nếu để trống · "
-                    "Google category gợi ý tự động ở tab **Thông tin chính** "
-                    "(tra thêm tại [productcategory.net](https://productcategory.net/))."
-                )
-                edited_feed = st.data_editor(
-                    pd.DataFrame(feed_rows),
-                    column_config=_gmc_feed_data_editor_column_config(),
-                    disabled=["feed_key", "id", "title"],
-                    hide_index=True,
-                    use_container_width=True,
-                    num_rows="fixed",
-                    key="gmc_feed_edit_table",
-                    height=min(420, 80 + len(feed_rows) * 36),
-                )
-                st.session_state.gmc_feed_edits = edited_feed.to_dict("records")
-                merge_gmc_feed_edits(
-                    st.session_state.products_raw,
-                    st.session_state.gmc_feed_edits,
-                )
-                export_products = products_from_edit_table(
-                    st.session_state.products_raw,
-                    edited_df.to_dict("records"),
-                    export_format=export_format,
-                )
+            gmc_kw = _gmc_preview_kwargs() if is_gmc else {}
             feed_count = (
-                count_gmc_export_rows(export_products, gmc_kw["gmc_variant_mode"])
+                count_gmc_export_rows(export_products, gmc_kw.get("gmc_variant_mode", "all_variations"))
                 if is_gmc
                 else len(export_products)
             )
+            if is_gmc:
+                st.caption(
+                    f"File GMC cuối — **{feed_count}** dòng · "
+                    f"age group mặc định **{GMC_AGE_GROUP_DEFAULT}** nếu để trống."
+                )
             render_export_file_preview_block(
                 export_products,
                 export_format,
@@ -2419,7 +2809,7 @@ def _render_main_workflow(
 
         if export_clicked and not export_ready:
             st.session_state.last_error = (
-                "Không xuất file — còn cột thiếu dữ liệu. Xem cảnh báo đỏ ở Bước 6."
+                f"Không xuất file — còn cột thiếu dữ liệu. Xem cảnh báo đỏ ở Bước {edit_step_number(gmc=is_gmc)}."
             )
             export_clicked = False
 

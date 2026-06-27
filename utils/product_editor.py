@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 
 from models.product import Product
+from exporters.gmc_feed_import import expand_gmc_variants, product_to_gmc_row
 from utils.export_selection import apply_export_selection_indexed
 from utils.gmc_taxonomy import (
     category_id_from_option,
@@ -35,6 +36,8 @@ GMC_EDIT_COLUMNS = [
     "google_product_category",
     "gmc_size",
     "gmc_color",
+    "gmc_condition",
+    "gmc_availability",
     "gmc_gender",
     "gmc_age_group",
 ]
@@ -55,14 +58,28 @@ def _is_missing_price(value: object) -> bool:
     return text in {"", "nan", "none", "null"}
 
 
+def _primary_gmc_variant(product: Product) -> dict | None:
+    expanded = expand_gmc_variants(product, "all_variations")
+    return expanded[0] if expanded else None
+
+
 def _product_to_gmc_row(
     product: Product,
     index: int,
     *,
     google_category_default: str = "",
     gmc_defaults: dict[str, str] | None = None,
+    gmc_condition: str = "new",
 ) -> dict:
     gmc_defaults = gmc_defaults or {}
+    variant = _primary_gmc_variant(product)
+    gmc_row = product_to_gmc_row(
+        product,
+        variant=variant,
+        condition=gmc_condition,
+        google_category_default=google_category_default,
+        defaults=gmc_defaults,
+    )
     return {
         "row_id": index,
         "title": product.title,
@@ -74,8 +91,10 @@ def _product_to_gmc_row(
         "google_product_category": resolve_gmc_category_display(
             product, google_category_default
         ),
-        "gmc_size": product.gmc_size or "",
-        "gmc_color": product.gmc_color or "",
+        "gmc_size": gmc_row["size"],
+        "gmc_color": gmc_row["color"],
+        "gmc_condition": gmc_row["condition"],
+        "gmc_availability": gmc_row["availability"],
         "gmc_gender": resolve_gmc_gender_display(product, gmc_defaults.get("gender", "")),
         "gmc_age_group": resolve_gmc_age_group_display(
             product, gmc_defaults.get("age group", "")
@@ -89,6 +108,7 @@ def products_to_rows(
     *,
     google_category_default: str = "",
     gmc_defaults: dict[str, str] | None = None,
+    gmc_condition: str = "new",
 ) -> list[dict]:
     rows = []
     for index, product in enumerate(products):
@@ -99,6 +119,7 @@ def products_to_rows(
                     index,
                     google_category_default=google_category_default,
                     gmc_defaults=gmc_defaults,
+                    gmc_condition=gmc_condition,
                 )
             )
             continue
@@ -162,6 +183,7 @@ def _merge_gmc_fields(product: Product, row: dict) -> None:
     product.google_product_category = category_raw.strip() or None
     product.gmc_size = str(row.get("gmc_size") or "").strip() or None
     product.gmc_color = str(row.get("gmc_color") or "").strip() or None
+    product.gmc_condition = str(row.get("gmc_condition") or "").strip() or None
     product.gmc_gender = str(row.get("gmc_gender") or "").strip() or None
     product.gmc_age_group = str(row.get("gmc_age_group") or "").strip() or None
 
@@ -245,6 +267,7 @@ def build_edit_subset_rows(
     *,
     google_category_default: str = "",
     gmc_defaults: dict[str, str] | None = None,
+    gmc_condition: str = "new",
 ) -> list[dict]:
     indexed = list(enumerate(products))
     selected = apply_export_selection_indexed(indexed, quantity=quantity, order=order)
@@ -255,6 +278,7 @@ def build_edit_subset_rows(
             export_format=export_format,
             google_category_default=google_category_default,
             gmc_defaults=gmc_defaults,
+            gmc_condition=gmc_condition,
         )[0]
         row["row_id"] = row_id
         rows.append(row)

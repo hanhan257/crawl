@@ -32,6 +32,7 @@ GMC_PREVIEW_COLUMNS = [
     "title",
     "link",
     "price",
+    "condition",
     "availability",
     "image link",
     "gtin",

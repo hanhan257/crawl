@@ -47,6 +47,11 @@ _ATTR_ALIASES = {
     "age group": ("age group", "age", "độ tuổi", "do tuoi"),
 }
 
+_SIZE_VALUE_RE = re.compile(
+    r"^(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL|5XL|\d+(?:\.\d+)?(?:cm|mm|in|\"|'')?)$",
+    re.I,
+)
+
 
 def _plain_description(value: str | None, limit: int = 5000) -> str:
     if not value:
@@ -73,23 +78,78 @@ def _safe_float(value: object) -> float | None:
         return None
 
 
+def _looks_like_size(value: str) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return False
+    return bool(_SIZE_VALUE_RE.match(text))
+
+
+def _parse_slash_parts(variant: dict[str, Any]) -> tuple[str, str]:
+    """Suy ra (color, size) từ title variant hoặc option1/2/3."""
+    part = str(variant.get("title") or "").strip()
+    if not part or part.lower() in {"default title", "default"}:
+        options = [
+            str(variant.get(key) or "").strip()
+            for key in ("option1", "option2", "option3")
+        ]
+        part = " / ".join(option for option in options if option)
+    if not part:
+        return "", ""
+    if " / " not in part:
+        if _looks_like_size(part):
+            return "", part
+        return part, ""
+    parts = [piece.strip() for piece in part.split(" / ") if piece.strip()]
+    if len(parts) >= 2:
+        if _looks_like_size(parts[-1]):
+            return " / ".join(parts[:-1]), parts[-1]
+        if _looks_like_size(parts[0]):
+            return parts[1] if len(parts) > 1 else "", parts[0]
+        return parts[0], parts[-1]
+    return parts[0], ""
+
+
+def _shopify_variant_available(variant: dict[str, Any]) -> bool | None:
+    if "available" in variant and variant.get("available") is not None:
+        return bool(variant.get("available"))
+    stock = str(variant.get("stock_status") or "").lower()
+    if stock in {"outofstock", "out_of_stock"}:
+        return False
+    if stock in {"instock", "in_stock", "onbackorder"}:
+        return True
+    mgmt = variant.get("inventory_management")
+    if mgmt in (None, ""):
+        return True
+    qty = variant.get("inventory_quantity")
+    if qty is not None:
+        try:
+            return int(qty) > 0
+        except (TypeError, ValueError):
+            return True
+    return None
+
+
 def _availability(status: str | None, variant: dict[str, Any] | None = None) -> str:
-    if variant is not None and "available" in variant:
-        if variant.get("available") is False:
+    if variant is not None:
+        shopify_avail = _shopify_variant_available(variant)
+        if shopify_avail is False:
             return "out_of_stock"
-        if variant.get("available") is True:
+        if shopify_avail is True:
             return "in_stock"
-    if variant is not None and variant.get("stock_status"):
-        stock = str(variant.get("stock_status")).lower()
-        if stock in {"outofstock", "out_of_stock"}:
-            return "out_of_stock"
-        if stock in {"instock", "in_stock", "onbackorder"}:
-            return "in_stock"
+        if variant.get("stock_status"):
+            stock = str(variant.get("stock_status")).lower()
+            if stock in {"outofstock", "out_of_stock"}:
+                return "out_of_stock"
+            if stock in {"instock", "in_stock", "onbackorder"}:
+                return "in_stock"
     if not status:
         return "in_stock"
     normalized = str(status).lower().replace("_", "").replace("-", "")
     if normalized in {"outofstock", "draft", "private", "disabled"}:
         return "out_of_stock"
+    if normalized in {"instock", "active", "publish", "published"}:
+        return "in_stock"
     return "in_stock"
 
 
@@ -111,16 +171,45 @@ def _attr_from_woo_variants(product: Product, field: str) -> str:
 
 
 def _attr_from_shopify_variant(variant: dict[str, Any], field: str) -> str:
+    if not variant:
+        return ""
+
+    option_names = variant.get("_shopify_option_names") or []
+    aliases = _ATTR_ALIASES.get(field, (field,))
+    for index, name in enumerate(option_names[:3]):
+        if not _match_option_name(str(name), aliases):
+            continue
+        key = f"option{index + 1}"
+        value = str(variant.get(key) or "").strip()
+        if value and value.lower() not in {"default title", "default"}:
+            return value
+
+    color, size = _parse_slash_parts(variant)
+    if field == "color" and color:
+        return color
+    if field == "size" and size:
+        return size
+
+    opt1 = str(variant.get("option1") or "").strip()
+    opt2 = str(variant.get("option2") or "").strip()
+    opt3 = str(variant.get("option3") or "").strip()
+    for value in (opt1, opt2, opt3):
+        if value.lower() in {"default title", "default"}:
+            continue
     if field == "size":
-        value = variant.get("option1") or variant.get("title") or ""
-        text = str(value).strip()
-        if text.lower() in {"default title", "default"}:
-            return ""
-        return text
+        if _looks_like_size(opt1):
+            return opt1
+        if _looks_like_size(opt2):
+            return opt2
+        if _looks_like_size(opt3):
+            return opt3
+        return opt2 or opt1
     if field == "color":
-        return str(variant.get("option2") or "").strip()
+        for value in (opt1, opt2, opt3):
+            if value and not _looks_like_size(value):
+                return value
     if field == "gender":
-        return str(variant.get("option3") or "").strip()
+        return opt3
     return ""
 
 
@@ -298,7 +387,7 @@ def product_to_gmc_row(
         "title": _variant_title(product, variant),
         "description": _plain_description(product.description),
         "link": _variant_link(product, variant),
-        "condition": condition or "new",
+        "condition": (str(product.gmc_condition or "").strip() or condition or "new"),
         "price": _format_gmc_price(_variant_price(product, variant), code),
         "availability": _availability(product.status, variant),
         "image link": _variant_image(product, variant),
