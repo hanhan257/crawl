@@ -2813,6 +2813,8 @@ def _render_main_workflow(
             )
             export_clicked = False
 
+        rules = build_export_rules()
+
         if export_clicked:
             export_format = st.session_state.get("export_format", "woocommerce-csv")
             max_workers = int(st.session_state.get("export_workers", DEFAULT_EXPORT_WORKERS))
