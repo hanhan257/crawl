@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import html
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -53,12 +54,20 @@ _SIZE_VALUE_RE = re.compile(
 )
 
 
-def _plain_description(value: str | None, limit: int = 5000) -> str:
+def _plain_gmc_text(value: str | None, *, limit: int | None = None) -> str:
+    """Chuyển HTML/entity (&#8211;, &amp;…) sang plain text cho feed GMC."""
     if not value:
         return ""
-    text = re.sub(r"<[^>]+>", " ", value)
+    text = html.unescape(str(value))
+    text = re.sub(r"<[^>]+>", " ", text)
     text = " ".join(text.split())
-    return text[:limit]
+    if limit is not None and limit > 0:
+        return text[:limit]
+    return text
+
+
+def _plain_description(value: str | None, limit: int = 5000) -> str:
+    return _plain_gmc_text(value, limit=limit)
 
 
 def _format_gmc_price(price: object, currency: str = "USD") -> str:
@@ -305,13 +314,13 @@ def _variant_link(product: Product, variant: dict[str, Any] | None) -> str:
 
 
 def _variant_title(product: Product, variant: dict[str, Any] | None) -> str:
-    base = (product.title or "").strip()
+    base = _plain_gmc_text(product.title)
     if not variant:
         return base
-    part = str(variant.get("title") or "").strip()
+    part = _plain_gmc_text(variant.get("title"))
     if not part or part.lower() in {"default title", "default"}:
         options = [
-            str(variant.get(key) or "").strip()
+            _plain_gmc_text(variant.get(key))
             for key in ("option1", "option2", "option3")
         ]
         part = " / ".join(option for option in options if option)
@@ -358,6 +367,18 @@ def _resolve_mpn(product: Product, variant: dict[str, Any] | None) -> str:
         if sku:
             return sku
     return (product.sku or "").strip()
+
+
+def finalize_gmc_feed_row(row: dict[str, str], fields: ExportFields) -> dict[str, str]:
+    """Áp dụng cùng quy tắc ẩn trường cho preview và file xuất GMC."""
+    updated = dict(row)
+    if not fields.includes("images"):
+        updated["image link"] = ""
+    if not fields.includes("description"):
+        updated["description"] = ""
+    if not fields.includes("vendor"):
+        updated["brand"] = ""
+    return updated
 
 
 def product_to_gmc_row(
@@ -455,13 +476,7 @@ def export_gmc_feed_import(
                 google_category_default=google_category_default,
                 defaults=gmc_defaults,
             )
-            if not fields.includes("images"):
-                row["image link"] = ""
-            if not fields.includes("description"):
-                row["description"] = ""
-            if not fields.includes("vendor"):
-                row["brand"] = ""
-            writer.writerow(row)
+            writer.writerow(finalize_gmc_feed_row(row, fields))
             if progress:
                 progress.product(index, total)
 

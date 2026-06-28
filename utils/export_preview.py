@@ -9,7 +9,12 @@ from exporters.image_urls import (
     resolve_image_column_count,
     woocommerce_image_column_names,
 )
-from exporters.gmc_feed_import import GMC_FEED_COLUMNS, expand_gmc_variants, product_to_gmc_row
+from exporters.gmc_feed_import import (
+    GMC_FEED_COLUMNS,
+    expand_gmc_variants,
+    finalize_gmc_feed_row,
+    product_to_gmc_row,
+)
 from exporters.shopify_import import SHOPIFY_COLUMNS, product_to_shopify_rows
 from exporters.web_feed_import import WEB_FEED_COLUMNS, product_to_web_feed_row
 from exporters.woocommerce_import import WOOCOMMERCE_COLUMNS, product_to_woocommerce_row
@@ -26,24 +31,6 @@ FORMAT_LABELS = {
     "csv": "CSV thô",
     "json": "JSON",
 }
-
-GMC_PREVIEW_COLUMNS = [
-    "id",
-    "title",
-    "link",
-    "price",
-    "condition",
-    "availability",
-    "image link",
-    "gtin",
-    "mpn",
-    "brand",
-    "google product category",
-    "size",
-    "gender",
-    "age group",
-    "color",
-]
 
 WOO_PREVIEW_BASE = ["Name", "SKU", "Regular price", "Categories", "Tags"]
 
@@ -192,20 +179,21 @@ def _gmc_export_rows(
         for variant in expand_gmc_variants(product, gmc_variant_mode):
             if count >= limit:
                 break
-            row = product_to_gmc_row(
-                apply_export_rules(product, rules),
-                rules=rules,
-                variant=variant,
-                currency=gmc_currency,
-                condition=gmc_condition,
-                google_category_default=gmc_google_category,
-                defaults=gmc_defaults,
+            row = finalize_gmc_feed_row(
+                product_to_gmc_row(
+                    product,
+                    rules=rules,
+                    variant=variant,
+                    currency=gmc_currency,
+                    condition=gmc_condition,
+                    google_category_default=gmc_google_category,
+                    defaults=gmc_defaults,
+                ),
+                fields,
             )
-            if not fields.includes("images"):
-                row["image link"] = ""
-            if not fields.includes("description"):
-                row["description"] = ""
-            rows.append({col: _truncate(row.get(col, ""), 120) for col in GMC_PREVIEW_COLUMNS})
+            rows.append(
+                {col: _truncate(row.get(col, ""), 120) for col in GMC_FEED_COLUMNS}
+            )
             count += 1
     return rows
 
@@ -258,7 +246,7 @@ def build_export_file_preview(
                 gmc_defaults=gmc_defaults,
                 gmc_variant_mode=gmc_variant_mode,
             ),
-            GMC_PREVIEW_COLUMNS,
+            GMC_FEED_COLUMNS,
             label,
         )
     if export_format == "json":

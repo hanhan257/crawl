@@ -99,7 +99,8 @@ def export_products(
     prog = ExportProgress(progress, len(products))
 
     prog.step("prepare", 0.0)
-    filtered = fields.apply_to_products(products)
+    # GMC: giữ đủ dữ liệu SP — chỉ làm trống ô theo trường xuất khi ghi từng dòng.
+    filtered = products if fmt == "gmc-feed-csv" else fields.apply_to_products(products)
     prog.step("prepare", 1.0)
 
     if fmt == "shopify-csv":

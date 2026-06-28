@@ -462,13 +462,17 @@ def _current_export_format() -> str | None:
     return None
 
 
-def apply_edit_filter(products: list[Product] | None = None) -> None:
+def apply_edit_filter(
+    products: list[Product] | None = None,
+    *,
+    skip_merge: bool = False,
+) -> None:
     """Lọc số lượng/thứ tự vào bảng Bước 6; gộp chỉnh sửa hiện tại vào products_raw trước."""
     if st.session_state.products_raw is None:
         return
 
     export_format = _current_export_format() or "web-feed-csv"
-    if st.session_state.edited_df is not None:
+    if not skip_merge and st.session_state.edited_df is not None:
         st.session_state.products_raw = merge_edited_rows(
             st.session_state.products_raw,
             st.session_state.edited_df.to_dict("records"),
@@ -857,6 +861,19 @@ def _render_gmc_feed_bulk_fields() -> None:
 
 
 def _apply_gmc_feed_bulk_from_session() -> None:
+    products_raw = st.session_state.products_raw
+    edited_df = st.session_state.edited_df
+    if products_raw is None or edited_df is None:
+        st.warning("Chưa có dòng feed — kiểm tra bảng SP bên dưới.")
+        return
+
+    # Gộp chỉnh sửa bảng trước — tránh mất title/description khi rebuild.
+    st.session_state.products_raw = merge_edited_rows(
+        products_raw,
+        edited_df.to_dict("records"),
+        export_format="gmc-feed-csv",
+    )
+
     base_rows = _build_current_gmc_feed_rows()
     if not base_rows:
         st.warning("Chưa có dòng feed — kiểm tra bảng SP bên dưới.")
@@ -881,13 +898,10 @@ def _apply_gmc_feed_bulk_from_session() -> None:
         )
         return
 
-    products_raw = st.session_state.products_raw
-    if products_raw is None:
-        return
-
     st.session_state.gmc_feed_edits = None
-    merge_gmc_feed_edits(products_raw, updated_rows)
-    apply_edit_filter()
+    merge_gmc_feed_edits(st.session_state.products_raw, updated_rows)
+    # Không merge lại edited_df cũ — nó còn vendor trống và sẽ ghi đè brand vừa áp dụng.
+    apply_edit_filter(skip_merge=True)
     st.session_state.output_bytes = None
     labels = ", ".join(applied_fields)
     st.session_state.last_info = (
@@ -1950,6 +1964,11 @@ def export_current_products(
         edited_df.to_dict("records"),
         export_format=export_format,
     )
+    st.session_state.products_raw = merge_edited_rows(
+        st.session_state.products_raw,
+        edited_df.to_dict("records"),
+        export_format=export_format,
+    )
     total_raw = len(st.session_state.products_raw)
 
     validation = validate_edited_df(edited_df, export_format)
@@ -2370,6 +2389,11 @@ def render_export_actions(
     )
     if not export_ready:
         st.caption(f"⛔ Chưa thể xuất — kiểm tra các cột 🔴 đỏ ở Bước {edit_step}.")
+    elif not st.session_state.output_bytes:
+        st.caption(
+            "Sau khi chỉnh sửa ở Bước trước, bấm **Xuất file** lại để tải bản mới — "
+            "file cũ sẽ không còn hiển thị."
+        )
 
     worker_col, _ = st.columns([1, 2])
     with worker_col:
@@ -2769,6 +2793,12 @@ def _render_main_workflow(
         )
         column_order = [c for c in edit_columns_for_format(export_format) if c in edited_df.columns]
         edited_df = edited_df[column_order]
+        prev_fp = st.session_state.get("_edited_df_fingerprint")
+        new_fp = edited_df.to_json()
+        if prev_fp is not None and prev_fp != new_fp:
+            st.session_state.output_bytes = None
+            st.session_state.output_name = None
+        st.session_state._edited_df_fingerprint = new_fp
         st.session_state.edited_df = edited_df
 
         with tab_feed:
@@ -2785,8 +2815,8 @@ def _render_main_workflow(
             )
             if is_gmc:
                 st.caption(
-                    f"File GMC cuối — **{feed_count}** dòng · "
-                    f"age group mặc định **{GMC_AGE_GROUP_DEFAULT}** nếu để trống."
+                    f"File GMC cuối — **{feed_count}** dòng · **{len(GMC_FEED_COLUMNS)}** cột "
+                    f"(trùng file tải về) · age group mặc định **{GMC_AGE_GROUP_DEFAULT}** nếu để trống."
                 )
             render_export_file_preview_block(
                 export_products,
@@ -2816,7 +2846,7 @@ def _render_main_workflow(
         rules = build_export_rules()
 
         if export_clicked:
-            export_format = st.session_state.get("export_format", "woocommerce-csv")
+            export_format = _current_export_format() or default_export_format() or "gmc-feed-csv"
             max_workers = int(st.session_state.get("export_workers", DEFAULT_EXPORT_WORKERS))
             with progress_area.container():
                 progress_bar = st.progress(0.0, text="Đang chuẩn bị...")
