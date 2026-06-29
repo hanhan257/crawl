@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
 
@@ -17,6 +18,8 @@ REDBUBBLE_SHOP = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_PRODUCT = re.compile(r"/product/([^/?#]+)")
 GENERIC_WEB_SHOP_CATEGORY = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_CATEGORY = re.compile(r"/category/([^/?#]+)")
+MAGENTO_SEARCH = re.compile(r"/catalogsearch/result", re.I)
+HTML_CATALOG_SEARCH = MAGENTO_SEARCH
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -68,62 +71,87 @@ def detect_url(url: str) -> DetectedTarget:
 
 
 def probe_platform(url: str, session: requests.Session | None = None) -> str | None:
-    session = session or requests.Session()
-    session.headers["User-Agent"] = DEFAULT_USER_AGENT
     parsed = urlparse(normalize_url(url))
     base = f"{parsed.scheme}://{parsed.netloc}"
+    normalized = normalize_url(url)
 
-    try:
-        shopify_resp = session.get(f"{base}/products.json", params={"limit": 1}, timeout=15)
-        if shopify_resp.status_code == 200:
-            data = shopify_resp.json()
-            if isinstance(data, dict) and isinstance(data.get("products"), list):
-                return "shopify"
-    except (requests.RequestException, ValueError):
-        pass
+    def fresh_session() -> requests.Session:
+        s = requests.Session()
+        s.headers["User-Agent"] = DEFAULT_USER_AGENT
+        if session is not None:
+            s.headers.update(session.headers)
+            if session.proxies:
+                s.proxies.update(session.proxies)
+        return s
 
-    try:
-        woo_store = session.get(
-            f"{base}/wp-json/wc/store/v1/products",
-            params={"per_page": 1},
-            timeout=15,
-        )
-        if woo_store.status_code == 200:
-            data = woo_store.json()
-            if isinstance(data, list):
-                return "woocommerce"
-    except (requests.RequestException, ValueError):
-        pass
+    def check_shopify() -> str | None:
+        try:
+            shopify_resp = fresh_session().get(
+                f"{base}/products.json", params={"limit": 1}, timeout=10
+            )
+            if shopify_resp.status_code == 200:
+                data = shopify_resp.json()
+                if isinstance(data, dict) and isinstance(data.get("products"), list):
+                    return "shopify"
+        except (requests.RequestException, ValueError):
+            pass
+        return None
 
-    try:
-        wp_json = session.get(f"{base}/wp-json/", timeout=15)
-        if wp_json.status_code == 200:
-            data = wp_json.json()
-            routes = str(data.get("routes", {}))
-            if "wc/v3" in routes or "wc/store" in routes:
-                return "woocommerce"
-    except (requests.RequestException, ValueError):
-        pass
+    def check_woo_store() -> str | None:
+        try:
+            woo_store = fresh_session().get(
+                f"{base}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=10,
+            )
+            if woo_store.status_code == 200:
+                data = woo_store.json()
+                if isinstance(data, list):
+                    return "woocommerce"
+        except (requests.RequestException, ValueError):
+            pass
+        return None
 
-    try:
-        page = session.get(normalize_url(url), timeout=15)
-        if page.status_code == 200:
-            text = page.text.lower()
-            if "cdn.shopify.com" in text or "shopify.shop" in text:
-                return "shopify"
-            if "woocommerce" in text or "wc-block" in text:
-                return "woocommerce"
-    except requests.RequestException:
-        pass
+    def check_wp_json() -> str | None:
+        try:
+            wp_json = fresh_session().get(f"{base}/wp-json/", timeout=10)
+            if wp_json.status_code == 200:
+                data = wp_json.json()
+                routes = str(data.get("routes", {}))
+                if "wc/v3" in routes or "wc/store" in routes:
+                    return "woocommerce"
+        except (requests.RequestException, ValueError):
+            pass
+        return None
 
-    try:
-        from crawlers.generic_web import GenericWebCrawler
+    def check_generic() -> str | None:
+        try:
+            if GenericWebCrawler.site_supports(base, session=fresh_session()):
+                return "generic-web"
+        except Exception:
+            pass
+        return None
 
-        if GenericWebCrawler.site_supports(base, session=session):
-            return "generic-web"
-    except Exception:
-        pass
+    def check_html_signals() -> str | None:
+        try:
+            page = fresh_session().get(normalized, timeout=10)
+            if page.status_code == 200:
+                text = page.text.lower()
+                if "cdn.shopify.com" in text or "shopify.shop" in text:
+                    return "shopify"
+                if "woocommerce" in text or "wc-block" in text:
+                    return "woocommerce"
+        except requests.RequestException:
+            pass
+        return None
 
+    checks = (check_shopify, check_woo_store, check_wp_json, check_generic, check_html_signals)
+    with ThreadPoolExecutor(max_workers=len(checks)) as executor:
+        futures = [executor.submit(fn) for fn in checks]
+        for future in as_completed(futures):
+            platform = future.result()
+            if platform:
+                return platform
     return None
 
 
@@ -133,6 +161,8 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
     try:
         target = detect_url(normalized)
         if target.crawl_type != "unknown":
+            if target.platform == "generic-web":
+                target = _refine_generic_web_target(target, session=session)
             return target
     except UnsupportedUrlError:
         target = None
@@ -166,6 +196,7 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     if platform == "generic-web":
         generic_target = _detect_generic_web(normalized, path)
+        generic_target = _refine_generic_web_target(generic_target, session=session)
         if generic_target.crawl_type != "unknown":
             return generic_target
         return DetectedTarget(
@@ -195,8 +226,8 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, WooCommerce, Redbubble, Web thuần (Next.js/sitemap).\n"
-        "Ví dụ web thuần: keeptee.com",
+        "Hiện hỗ trợ: Shopify, WooCommerce, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
+        "Ví dụ: keeptee.com · silverbene.com/earrings.html",
         platform="unknown",
     )
 
@@ -371,7 +402,30 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
 
 
 def _detect_generic_web(url: str, path: str) -> DetectedTarget:
+    from crawlers.generic_html import GenericHtmlCatalog
+
     base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+
+    search_query = _extract_html_catalog_search_query(url)
+    if search_query:
+        return DetectedTarget(
+            platform="generic-web",
+            crawl_type="search",
+            url=url,
+            base_url=base_url,
+            query=search_query,
+        )
+
+    if path.lower().endswith(".html"):
+        slug_path = path.strip("/").removesuffix(".html")
+        return DetectedTarget(
+            platform="generic-web",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=slug_path,
+            category_slug=GenericHtmlCatalog.category_slug(slug_path),
+        )
 
     product_match = GENERIC_WEB_PRODUCT.search(path)
     if product_match:
@@ -421,3 +475,45 @@ def _detect_generic_web(url: str, path: str) -> DetectedTarget:
         url=url,
         base_url=base_url,
     )
+
+
+def _extract_html_catalog_search_query(url: str) -> str | None:
+    parsed = urlparse(url)
+    if not HTML_CATALOG_SEARCH.search(parsed.path or ""):
+        return None
+    raw = parse_qs(parsed.query).get("q", [None])[0]
+    if not raw:
+        return None
+    query = unquote_plus(str(raw)).strip()
+    return query or None
+
+
+def _refine_generic_web_target(
+    target: DetectedTarget,
+    session: requests.Session | None = None,
+) -> DetectedTarget:
+    if target.platform != "generic-web" or target.crawl_type != "category":
+        return target
+    if not (target.url or "").lower().endswith(".html"):
+        return target
+
+    session = session or requests.Session()
+    session.headers.setdefault("User-Agent", DEFAULT_USER_AGENT)
+    try:
+        response = session.get(target.url, timeout=20)
+        if response.status_code != 200:
+            return target
+        from crawlers.generic_html import GenericHtmlCatalog
+
+        if GenericHtmlCatalog.is_product_page_html(response.text):
+            handle = urlparse(target.url).path.strip("/").removesuffix(".html")
+            return DetectedTarget(
+                platform="generic-web",
+                crawl_type="product",
+                url=target.url,
+                base_url=target.base_url,
+                handle=handle,
+            )
+    except requests.RequestException:
+        pass
+    return target

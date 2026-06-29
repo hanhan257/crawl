@@ -20,6 +20,8 @@ def fetch_image_bytes(
     elif "redbubble.net" in url.lower():
         headers["Referer"] = "https://www.redbubble.com/"
         headers["Accept"] = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+    elif "silverbene.com" in url.lower():
+        headers["Referer"] = "https://silverbene.com/"
 
     try:
         response = session.get(url, headers=headers, timeout=25)

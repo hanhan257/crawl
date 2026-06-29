@@ -47,17 +47,24 @@ def _slugify(text: str) -> str:
     return slug.strip("_") or "products"
 
 
-def default_output_path(platform: str, name: str, fmt: str = "csv") -> str:
+def export_download_name(name: str, fmt: str = "csv") -> str:
+    """Tên file khi user tải về (không gồm đường dẫn)."""
     ext = EXPORT_FORMATS.get(fmt, "csv")
+    slug = _slugify(name)
     if fmt == "shopify-csv":
-        return f"output/shopify_import_{_slugify(name)}.{ext}"
+        return f"shopify_import_{slug}.{ext}"
     if fmt == "woocommerce-csv":
-        return f"output/woocommerce_import_{_slugify(name)}.csv"
+        return f"woocommerce_import_{slug}.csv"
     if fmt == "web-feed-csv":
-        return f"output/web_feed_{_slugify(name)}.csv"
+        return f"web_feed_{slug}.csv"
     if fmt == "gmc-feed-csv":
-        return f"output/gmc_feed_{_slugify(name)}.csv"
-    return f"output/{platform}_{_slugify(name)}.{ext}"
+        return f"gmc_feed_{slug}.csv"
+    return f"{slug}.{ext}"
+
+
+def default_output_path(platform: str, name: str, fmt: str = "csv") -> str:
+    """Đường dẫn ghi file khi chạy CLI (main.py) — vẫn dùng output/."""
+    return f"output/{export_download_name(name, fmt)}"
 
 
 def _row_for_csv(product: Product, columns: list[str] | None = None) -> dict[str, str | float | None]:

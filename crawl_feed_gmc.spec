@@ -12,6 +12,7 @@ datas = [
     (str(root / "app_brand.py"), "."),
     (str(root / ".streamlit"), ".streamlit"),
     (str(root / "utils"), "utils"),
+    (str(root / "ui"), "ui"),
     (str(root / "models"), "models"),
     (str(root / "crawlers"), "crawlers"),
     (str(root / "exporters"), "exporters"),
@@ -19,9 +20,11 @@ datas = [
 ]
 
 hiddenimports = collect_submodules("utils")
+hiddenimports += collect_submodules("ui")
 hiddenimports += collect_submodules("models")
 hiddenimports += collect_submodules("crawlers")
 hiddenimports += collect_submodules("exporters")
+hiddenimports += collect_submodules("crawlers")
 
 for package in ("streamlit", "pandas", "altair", "pyarrow", "PIL", "click"):
     try:

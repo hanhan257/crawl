@@ -23,6 +23,7 @@ Bước 3–7 Tuy chinh, xem truoc, xuat file CSV GMC
 
 Ghi chu
 -------
+- Giai nen day du thu muc truoc khi chay (khong chay truc tiep trong WinRAR/zip)
 - Dong cua so console = tat app
 - Port mac dinh: 8501
 - Cau hinh: config.json (xem config.example.json)

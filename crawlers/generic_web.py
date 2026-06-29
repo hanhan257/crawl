@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import requests
 
 from crawlers.base import BaseCrawler
+from crawlers.generic_html import HTML_MAX_WORKERS, HTML_REQUEST_DELAY
 from models.product import Product
 from utils.http_session import create_http_session
 
@@ -43,7 +44,7 @@ class GenericWebCrawler(BaseCrawler):
         site_url: str,
         *,
         proxy_url: str | None = None,
-        request_delay: float = 0.35,
+        request_delay: float = HTML_REQUEST_DELAY,
     ):
         self.site_url = self._normalize_site_url(site_url)
         self.request_delay = request_delay
@@ -53,6 +54,16 @@ class GenericWebCrawler(BaseCrawler):
         self._build_id: str | None = None
         self._init_data: dict[str, Any] | None = None
         self._shop_catalog_mode: bool | None = None
+        self._html_catalog_mode: bool | None = None
+
+    def _html_catalog(self):
+        from crawlers.generic_html import GenericHtmlCatalog
+
+        return GenericHtmlCatalog(
+            self.site_url,
+            proxy_url=self._proxy_url,
+            request_delay=self.request_delay,
+        )
 
     @staticmethod
     def _normalize_site_url(site_url: str) -> str:
@@ -78,6 +89,14 @@ class GenericWebCrawler(BaseCrawler):
                 progress_callback=progress_callback,
                 max_workers=max_workers,
             )
+        if self._uses_html_catalog():
+            return self._html_catalog().crawl(
+                limit=limit,
+                max_pages=max_pages,
+                category_slug=category_slug,
+                progress_callback=progress_callback,
+                max_workers=max_workers,
+            )
         product_urls = self._discover_product_urls(max_sitemaps=max_pages)
         return self._crawl_urls(
             product_urls,
@@ -89,8 +108,45 @@ class GenericWebCrawler(BaseCrawler):
 
     def crawl_product(self, product_id: str) -> Product | None:
         product_id = product_id.strip().strip("/")
+        if self._uses_html_catalog():
+            items = self._html_catalog().crawl_product_path(product_id)
+            return items[0] if items else None
         url = f"{self.site_url}/product/{product_id}"
         return self._fetch_product(url, product_id)
+
+    def crawl_category_path(
+        self,
+        category_path: str,
+        *,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
+    ) -> list[Product]:
+        return self._html_catalog().crawl_category_path(
+            category_path,
+            limit=limit,
+            max_pages=max_pages,
+            progress_callback=progress_callback,
+            max_workers=max_workers,
+        )
+
+    def crawl_search(
+        self,
+        query: str,
+        *,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
+    ) -> list[Product]:
+        return self._html_catalog().crawl_search(
+            query,
+            limit=limit,
+            max_pages=max_pages,
+            progress_callback=progress_callback,
+            max_workers=max_workers,
+        )
 
     def crawl_product_url(self, url: str) -> Product | None:
         match = GENERIC_PRODUCT_PATH.search(urlparse(url).path or "")
@@ -108,6 +164,8 @@ class GenericWebCrawler(BaseCrawler):
         if self._uses_shop_catalog():
             data = self._fetch_shop_catalog_page(category=None, page=1, limit=1)
             return int(data.get("total") or 0)
+        if self._uses_html_catalog() and max_sitemaps is None:
+            return 0
 
         sitemap_urls = self._collect_product_sitemaps()
         if max_sitemaps and max_sitemaps > 0:
@@ -123,23 +181,42 @@ class GenericWebCrawler(BaseCrawler):
     def probe_categories(
         self,
         sample_size: int = 50,
+        *,
+        max_workers: int = 12,
     ) -> tuple[list[dict[str, Any]], str]:
-        if self._uses_shop_catalog():
-            return self._probe_shop_categories()
+        if self._uses_html_catalog():
+            return self._html_catalog().probe_categories(max_workers=max_workers)
 
-        # Lấy danh mục từ field category của SP mẫu (web thuần không có API collection).
+        if self._uses_shop_catalog():
+            return self._probe_shop_categories(max_workers=max_workers)
+
         product_urls = self._discover_product_urls(max_sitemaps=2)[:sample_size]
         counts: dict[str, int] = {}
         labels: dict[str, str] = {}
+        workers = max(1, min(max_workers, 48))
 
-        for index, url in enumerate(product_urls):
+        def sample_one(url: str) -> tuple[str, str] | None:
             match = GENERIC_PRODUCT_PATH.search(urlparse(url).path or "")
             if not match:
-                continue
-            category = self._fetch_product_category(url, match.group(1))
+                return None
+            worker = GenericWebCrawler(self.site_url, proxy_url=self._proxy_url, request_delay=0)
+            category = worker._fetch_product_category(url, match.group(1))
             if not category:
+                return None
+            return self.category_slug(category), category
+
+        if workers <= 1 or len(product_urls) <= 1:
+            samples = [sample_one(url) for url in product_urls]
+        else:
+            samples = []
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                for result in executor.map(sample_one, product_urls):
+                    samples.append(result)
+
+        for item in samples:
+            if not item:
                 continue
-            slug = self.category_slug(category)
+            slug, category = item
             counts[slug] = counts.get(slug, 0) + 1
             labels.setdefault(slug, category)
 
@@ -200,7 +277,7 @@ class GenericWebCrawler(BaseCrawler):
         if total == 0:
             return []
 
-        workers = max(1, min(max_workers, 32))
+        workers = max(1, min(max_workers, HTML_MAX_WORKERS))
         if workers <= 1:
             return self._crawl_urls_sequential(
                 urls,
@@ -421,6 +498,23 @@ class GenericWebCrawler(BaseCrawler):
         self._shop_catalog_mode = False
         return False
 
+    def _uses_html_catalog(self) -> bool:
+        if self._html_catalog_mode is not None:
+            return self._html_catalog_mode
+        if self._shop_catalog_mode is True:
+            self._html_catalog_mode = False
+            return False
+        if self._count_sitemap_product_urls() > 0:
+            self._html_catalog_mode = False
+            return False
+        from crawlers.generic_html import GenericHtmlCatalog
+
+        self._html_catalog_mode = GenericHtmlCatalog.site_supports(
+            self.site_url,
+            session=self.session,
+        )
+        return self._html_catalog_mode
+
     def _count_sitemap_product_urls(self) -> int:
         total = 0
         for sitemap_url in self._collect_product_sitemaps():
@@ -505,7 +599,11 @@ class GenericWebCrawler(BaseCrawler):
                 return str(name)
         return None
 
-    def _probe_shop_categories(self) -> tuple[list[dict[str, Any]], str]:
+    def _probe_shop_categories(
+        self,
+        *,
+        max_workers: int = 12,
+    ) -> tuple[list[dict[str, Any]], str]:
         overview = self._fetch_shop_catalog_page(
             category=None,
             page=1,
@@ -513,11 +611,22 @@ class GenericWebCrawler(BaseCrawler):
             include_categories=True,
         )
         names = [str(name) for name in (overview.get("categories") or []) if str(name).strip()]
+        workers = max(1, min(max_workers, 48))
+
+        def count_category(name: str) -> tuple[str, int]:
+            worker = GenericWebCrawler(self.site_url, proxy_url=self._proxy_url, request_delay=0)
+            cat_data = worker._fetch_shop_catalog_page(category=name, page=1, limit=1)
+            return name, int(cat_data.get("total") or 0)
+
+        if workers <= 1 or len(names) <= 1:
+            counted = [count_category(name) for name in names]
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                counted = list(executor.map(count_category, names))
+
         categories: list[dict[str, Any]] = []
         total = 0
-        for name in names:
-            cat_data = self._fetch_shop_catalog_page(category=name, page=1, limit=1)
-            count = int(cat_data.get("total") or 0)
+        for name, count in counted:
             total += count
             categories.append(
                 {"slug": self.category_slug(name), "name": name, "count": count}
@@ -761,5 +870,11 @@ class GenericWebCrawler(BaseCrawler):
             if shop.status_code == 200 and "initialShopData" in shop.text:
                 return True
         except (requests.RequestException, ValueError, json.JSONDecodeError):
+            pass
+
+        try:
+            from crawlers.generic_html import GenericHtmlCatalog
+
+            return GenericHtmlCatalog.site_supports(base, session=session)
+        except Exception:
             return False
-        return False
