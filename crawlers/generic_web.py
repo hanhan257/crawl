@@ -31,6 +31,14 @@ NEXT_DATA_PATTERN = re.compile(
 )
 GENERIC_PRODUCT_PATH = re.compile(r"/product/([^/?#]+)", re.I)
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+LD_JSON_PATTERN = re.compile(
+    r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+    re.DOTALL | re.I,
+)
+OUT_OF_STOCK_HTML = re.compile(
+    r"\b(out of stock|out-of-stock|sold out|h[eê]t h[aà]ng)\b",
+    re.I,
+)
 
 
 class GenericWebCrawler(BaseCrawler):
@@ -285,6 +293,9 @@ class GenericWebCrawler(BaseCrawler):
         return products
 
     def _fetch_product(self, url: str, product_id: str) -> Product | None:
+        product_data: dict[str, Any] | None = None
+        html = ""
+
         build_id = self._get_build_id()
         if build_id:
             api_url = f"{self.site_url}/_next/data/{build_id}/product/{product_id}.json"
@@ -292,32 +303,190 @@ class GenericWebCrawler(BaseCrawler):
                 resp = self.session.get(api_url, timeout=25)
                 if resp.status_code == 200:
                     payload = resp.json()
-                    product_data = (
+                    candidate = (
                         payload.get("pageProps", {}).get("productData")
                         if isinstance(payload, dict)
                         else None
                     )
-                    if isinstance(product_data, dict):
-                        return self._product_from_payload(product_data, url=url)
+                    if isinstance(candidate, dict):
+                        product_data = candidate
             except (requests.RequestException, ValueError):
                 pass
 
-        try:
-            resp = self.session.get(url, timeout=25)
-            if resp.status_code != 200:
+        if product_data is None:
+            try:
+                resp = self.session.get(url, timeout=25)
+                if resp.status_code != 200:
+                    return None
+                html = resp.text
+                match = NEXT_DATA_PATTERN.search(html)
+                if not match:
+                    return None
+                payload = json.loads(match.group(1))
+                candidate = payload.get("props", {}).get("pageProps", {}).get("productData")
+                if isinstance(candidate, dict):
+                    product_data = candidate
+            except (requests.RequestException, ValueError, json.JSONDecodeError):
                 return None
-            match = NEXT_DATA_PATTERN.search(resp.text)
-            if not match:
-                return None
-            payload = json.loads(match.group(1))
-            product_data = payload.get("props", {}).get("pageProps", {}).get("productData")
-            if isinstance(product_data, dict):
-                return self._product_from_payload(product_data, url=url)
-        except (requests.RequestException, ValueError, json.JSONDecodeError):
+
+        if not isinstance(product_data, dict):
             return None
+
+        if not html:
+            try:
+                resp = self.session.get(url, timeout=25)
+                if resp.status_code == 200:
+                    html = resp.text
+            except requests.RequestException:
+                pass
+
+        return self._product_from_payload(product_data, url=url, html=html)
+
+    @staticmethod
+    def _normalize_stock_status(value: object) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return "instock" if value else "out_of_stock"
+        if isinstance(value, (int, float)):
+            return "instock" if float(value) > 0 else "out_of_stock"
+        text = str(value).strip().lower()
+        if not text:
+            return None
+        if text.startswith("http"):
+            text = text.rsplit("/", 1)[-1]
+        normalized = text.replace("-", "").replace("_", "").replace(" ", "")
+        if normalized in {"outofstock", "soldout", "discontinued", "unavailable"}:
+            return "out_of_stock"
+        if normalized in {
+            "instock",
+            "available",
+            "active",
+            "publish",
+            "published",
+            "onlineonly",
+            "limitedavailability",
+            "onbackorder",
+            "preorder",
+            "presale",
+        }:
+            return "instock"
         return None
 
-    def _product_from_payload(self, data: dict[str, Any], url: str) -> Product | None:
+    def _stock_status_from_html(self, html: str) -> str | None:
+        if not html:
+            return None
+        for match in LD_JSON_PATTERN.finditer(html):
+            try:
+                payload = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            items = payload if isinstance(payload, list) else [payload]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                offers = item.get("offers")
+                if isinstance(offers, list):
+                    offers = offers[0] if offers else {}
+                if isinstance(offers, dict):
+                    status = self._normalize_stock_status(offers.get("availability"))
+                    if status:
+                        return status
+        if OUT_OF_STOCK_HTML.search(html):
+            return "out_of_stock"
+        return None
+
+    def _resolve_stock_status(self, data: dict[str, Any], html: str = "") -> str | None:
+        for key in (
+            "stock_status",
+            "stockStatus",
+            "availability",
+            "available",
+            "inStock",
+            "in_stock",
+            "isAvailable",
+            "is_available",
+        ):
+            if key in data and data.get(key) is not None:
+                status = self._normalize_stock_status(data.get(key))
+                if status:
+                    return status
+        if data.get("isSoldOut") or data.get("soldOut"):
+            return "out_of_stock"
+
+        for key in ("stock", "inventory", "inventory_quantity", "quantity", "qty"):
+            if key in data and data.get(key) is not None:
+                status = self._normalize_stock_status(data.get(key))
+                if status:
+                    return status
+
+        variants = data.get("variants")
+        if isinstance(variants, list) and variants:
+            any_available = False
+            has_signal = False
+            for variant in variants:
+                if not isinstance(variant, dict):
+                    continue
+                if variant.get("available") is not None:
+                    has_signal = True
+                    any_available = any_available or bool(variant.get("available"))
+                    continue
+                status = self._normalize_stock_status(
+                    variant.get("stock_status")
+                    or variant.get("stockStatus")
+                    or variant.get("in_stock")
+                    or variant.get("inStock")
+                )
+                if status:
+                    has_signal = True
+                    any_available = any_available or status == "instock"
+            if has_signal:
+                return "instock" if any_available else "out_of_stock"
+
+        return self._stock_status_from_html(html)
+
+    def _map_variants_from_payload(self, data: dict[str, Any]) -> list[dict[str, Any]]:
+        variants = data.get("variants")
+        if not isinstance(variants, list):
+            return []
+        mapped: list[dict[str, Any]] = []
+        for variant in variants:
+            if not isinstance(variant, dict):
+                continue
+            available = variant.get("available")
+            if available is None:
+                stock = self._normalize_stock_status(
+                    variant.get("stock_status")
+                    or variant.get("stockStatus")
+                    or variant.get("in_stock")
+                    or variant.get("inStock")
+                )
+                if stock == "instock":
+                    available = True
+                elif stock == "out_of_stock":
+                    available = False
+            mapped.append(
+                {
+                    "id": variant.get("id"),
+                    "title": variant.get("title") or variant.get("name"),
+                    "sku": variant.get("sku"),
+                    "price": variant.get("price"),
+                    "available": available,
+                    "stock_status": variant.get("stock_status") or variant.get("stockStatus"),
+                    "option1": variant.get("option1"),
+                    "option2": variant.get("option2"),
+                    "option3": variant.get("option3"),
+                }
+            )
+        return mapped
+
+    def _product_from_payload(
+        self,
+        data: dict[str, Any],
+        url: str,
+        *,
+        html: str = "",
+    ) -> Product | None:
         title = str(data.get("name") or data.get("title") or "").strip()
         if not title:
             return None
@@ -332,10 +501,12 @@ class GenericWebCrawler(BaseCrawler):
 
         category = str(data.get("category") or "").strip()
         tags = self._normalize_tags(data.get("tag") or data.get("tags"))
-        brand = str(data.get("brand") or "").strip() or None
         description = data.get("description")
         if description is not None:
             description = str(description).strip() or None
+
+        variants = self._map_variants_from_payload(data)
+        status = self._resolve_stock_status(data, html)
 
         return Product(
             source=self.source,
@@ -345,12 +516,13 @@ class GenericWebCrawler(BaseCrawler):
             price=price,
             url=url,
             image_urls=images,
-            vendor=brand,
+            vendor=None,
             sku=product_id,
             tags=tags,
             categories=[category] if category else [],
             product_type=str(data.get("template") or "").strip() or None,
-            status="active",
+            status=status,
+            variants=variants,
         )
 
     @staticmethod
@@ -532,7 +704,6 @@ class GenericWebCrawler(BaseCrawler):
         if not product_id or not title:
             return None
         category = str(data.get("category") or "").strip()
-        vendor = str(data.get("vendor") or data.get("brand") or "").strip() or None
         return Product(
             source=self.source,
             id=product_id,
@@ -540,10 +711,10 @@ class GenericWebCrawler(BaseCrawler):
             price=self._parse_price(data.get("price")),
             url=f"{self.site_url}/product/{product_id}",
             image_urls=self._normalize_images(data.get("image") or data.get("images")),
-            vendor=vendor,
+            vendor=None,
             sku=product_id,
             categories=[category] if category else [],
-            status="active",
+            status=self._resolve_stock_status(data),
         )
 
     def _enrich_product_detail(self, product: Product) -> Product:
@@ -560,8 +731,10 @@ class GenericWebCrawler(BaseCrawler):
             product.price = detailed.price
         if detailed.categories:
             product.categories = detailed.categories
-        if detailed.vendor:
-            product.vendor = detailed.vendor
+        if detailed.status:
+            product.status = detailed.status
+        if detailed.variants:
+            product.variants = detailed.variants
         return product
 
     def _crawl_shop_catalog(

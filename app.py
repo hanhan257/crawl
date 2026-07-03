@@ -22,7 +22,7 @@ import streamlit as st
 
 from app_brand import APP_NAME, APP_PAGE_ICON, APP_TAGLINE, APP_VERSION
 from exporters.export import default_output_path, export_products
-from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows
+from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows, is_supplier_vendor
 from exporters.image_urls import IMAGE_EXPORT_MODES
 from models.export_fields import PRESET_LABELS, EXPORT_FIELD_LABELS, ExportFields
 from models.export_rules import ExportRules, apply_export_rules, apply_rules_to_products
@@ -70,6 +70,15 @@ from utils.export_selection import (
     EXPORT_ORDER_OPTIONS,
     describe_edit_selection,
 )
+from utils.feed_history import (
+    delete_all_feed_history,
+    delete_feed_history_entry,
+    format_created_at,
+    format_file_size,
+    list_feed_history,
+    register_feed_export,
+    total_feed_history_bytes,
+)
 from utils.product_editor import (
     EDIT_COLUMNS,
     GMC_EDIT_COLUMNS,
@@ -79,7 +88,7 @@ from utils.product_editor import (
     products_from_edit_table,
     products_to_rows,
 )
-from utils.shop_probe import build_category_crawl_url, probe_shop_stats
+from utils.shop_probe import build_category_crawl_url, probe_shop_stats, shop_brand_from_url
 from utils.ui_theme import inject_pastel_pink_theme, render_app_hero
 from ui.crawl_step1_layout import (
     close_crawl_step1_wrap,
@@ -207,6 +216,7 @@ def init_session() -> None:
         "gmc_bulk_google_category": "",
         "gmc_bulk_gender": "",
         "gmc_bulk_age_group": "",
+        "shop_brand_default": "",
         "gmc_bulk_only_empty": False,
         "edit_quantity": 0,
         "edit_order": "original",
@@ -439,12 +449,60 @@ def _url_ready_for_probe(url: str) -> bool:
     return len(cleaned) >= 10
 
 
+def _resolve_shop_brand_default(url: str | None = None) -> str:
+    brand = str(st.session_state.get("shop_brand_default") or "").strip()
+    if brand:
+        return brand
+    return shop_brand_from_url(url or str(st.session_state.get("crawl_url") or ""))
+
+
+def _apply_shop_brand_defaults(
+    products: list[Product],
+    url: str | None = None,
+) -> str:
+    """Gán brand GMC = tên shop (từ domain), ghi đè vendor nhà cung cấp (vd. Trendsi)."""
+    brand = shop_brand_from_url(url or str(st.session_state.get("crawl_url") or ""))
+    if brand:
+        st.session_state.shop_brand_default = brand
+    if not brand:
+        return ""
+    if not (is_gmc_workflow() or _current_export_format() == "gmc-feed-csv"):
+        return brand
+    for product in products:
+        vendor = str(product.vendor or "").strip()
+        if not vendor or is_supplier_vendor(vendor):
+            product.vendor = brand
+    return brand
+
+
+def _refresh_gmc_shop_brand_in_products() -> bool:
+    """Thay Trendsi / vendor trống bằng tên shop — không cần crawl lại."""
+    products = st.session_state.products_raw
+    if not products:
+        return False
+    brand = _resolve_shop_brand_default()
+    if not brand:
+        return False
+    changed = False
+    for product in products:
+        vendor = str(product.vendor or "").strip()
+        if not vendor or is_supplier_vendor(vendor):
+            if product.vendor != brand:
+                product.vendor = brand
+                changed = True
+    if changed:
+        st.session_state.shop_brand_default = brand
+        apply_edit_filter(skip_merge=True)
+    return changed
+
+
 def load_products_into_session(products: list[Product], export_name: str, info: str) -> None:
     if _current_export_format() == "gmc-feed-csv" or is_gmc_workflow():
         default_condition = st.session_state.get("gmc_condition", "new")
         for product in products:
             if not str(product.gmc_condition or "").strip():
                 product.gmc_condition = default_condition
+        _apply_shop_brand_defaults(products)
     st.session_state.products_raw = deepcopy(products)
     apply_edit_filter(products)
     st.session_state.export_name = export_name
@@ -729,6 +787,7 @@ def _gmc_preview_kwargs() -> dict:
             "gender": st.session_state.get("gmc_default_gender", GMC_DEFAULT_GENDER),
             "age group": st.session_state.get("gmc_default_age_group", GMC_AGE_GROUP_DEFAULT),
             "gtin": st.session_state.get("gmc_gtin_default", ""),
+            "brand": _resolve_shop_brand_default(),
         },
     }
 
@@ -986,6 +1045,12 @@ def render_gmc_feed_settings(*, include_variant_mode: bool = True) -> None:
         "File GMC — **16 cột**: id, title, description, link, condition, price, availability, "
         "image link, gtin, mpn, brand, google product category, size, gender, age group, color."
     )
+    shop_brand = _resolve_shop_brand_default()
+    if shop_brand:
+        st.caption(
+            f"**Brand mặc định:** {shop_brand} (từ tên shop / domain crawl) — "
+            "ghi đè vendor nhà cung cấp (Trendsi…); sửa từng dòng hoặc hàng loạt ở Bước chỉnh sửa."
+        )
     gmc_col1, gmc_col2, gmc_col3 = st.columns(3)
     with gmc_col1:
         st.text_input("Currency", key="gmc_currency", help="Ví dụ: USD")
@@ -1885,7 +1950,8 @@ def run_crawl_only(
         if progress_text is not None:
             progress_text.empty()
         st.session_state.products_raw = deepcopy(products)
-        apply_edit_filter(products)
+        _apply_shop_brand_defaults(st.session_state.products_raw, crawl_url)
+        apply_edit_filter(st.session_state.products_raw)
         st.session_state.export_name = (
             target.category_slug or target.handle or target.query or "products"
         )
@@ -2013,6 +2079,7 @@ def export_current_products(
             "gender": st.session_state.get("gmc_default_gender", GMC_DEFAULT_GENDER),
             "age group": st.session_state.get("gmc_default_age_group", GMC_AGE_GROUP_DEFAULT),
             "gtin": st.session_state.get("gmc_gtin_default", ""),
+            "brand": _resolve_shop_brand_default(),
         },
         gmc_variant_mode=st.session_state.get("gmc_variant_mode", "all_variations"),
     )
@@ -2020,19 +2087,118 @@ def export_current_products(
     st.session_state.output_bytes = exported.read_bytes()
     st.session_state.output_name = Path(exported).name
 
-    st.session_state.last_error = None
+    row_count: int | None = None
     if export_format == "gmc-feed-csv":
         variant_mode = st.session_state.get("gmc_variant_mode", "all_variations")
-        feed_rows = count_gmc_export_rows(products, variant_mode)
+        row_count = count_gmc_export_rows(products, variant_mode)
+    else:
+        row_count = len(products)
+
+    try:
+        register_feed_export(
+            exported,
+            export_format=export_format,
+            shop_label=str(st.session_state.export_name or ""),
+            row_count=row_count,
+        )
+    except OSError:
+        pass
+
+    st.session_state.last_error = None
+    if export_format == "gmc-feed-csv":
         st.session_state.last_info = (
-            f"Đã xuất **{feed_rows}** dòng feed GMC ({len(products)} SP gốc) · "
-            f"`{st.session_state.output_name}`"
+            f"Đã xuất **{row_count}** dòng feed GMC ({len(products)} SP gốc) · "
+            f"`{st.session_state.output_name}` — đã lưu vào **Lịch sử file feed**."
         )
     else:
         st.session_state.last_info = (
             f"Đã xuất **{len(products)}** SP từ bảng Bước 6 / {total_raw} SP gốc · "
-            f"{len(fields.enabled)} trường → `{st.session_state.output_name}`"
+            f"{len(fields.enabled)} trường → `{st.session_state.output_name}` — "
+            "đã lưu vào **Lịch sử file feed**."
         )
+
+
+def render_feed_history_panel(*, in_sidebar: bool = False) -> None:
+    """Lịch sử file feed đã xuất — tải lại hoặc xóa để giảm dung lượng."""
+    entries = list_feed_history()
+    title = "Lịch sử file feed"
+    ui = st
+
+    with ui.expander(title, expanded=bool(entries)):
+        if not entries:
+            ui.caption(
+                "Chưa có file. Bấm **Xuất file** ở bước cuối — file lưu tại đây để tải lại hoặc xóa."
+            )
+            return
+
+        total_size = total_feed_history_bytes()
+        ui.caption(f"**{len(entries)}** file · **{format_file_size(total_size)}**")
+
+        if ui.button(
+            "Xóa toàn bộ",
+            type="secondary",
+            use_container_width=True,
+            key="feed_history_clear_all",
+        ):
+            removed = delete_all_feed_history()
+            st.session_state.output_bytes = None
+            st.session_state.output_name = None
+            st.session_state.last_info = f"Đã xóa **{removed}** file feed khỏi lịch sử."
+            st.rerun()
+
+        for index, entry in enumerate(entries):
+            entry_id = str(entry.get("id") or "")
+            filename = str(entry.get("filename") or "feed.csv")
+            short_name = filename if len(filename) <= 28 else filename[:25] + "…"
+            fmt_key = str(entry.get("export_format") or "")
+            fmt_label = FORMAT_OPTIONS.get(fmt_key, fmt_key)
+            created = format_created_at(str(entry.get("created_at") or ""))
+            size_text = format_file_size(int(entry.get("size_bytes") or 0))
+            rows = entry.get("row_count")
+            meta_parts = [created, size_text]
+            if rows is not None:
+                meta_parts.append(f"{rows} dòng")
+
+            ui.markdown(f"**{html.escape(short_name)}**")
+            ui.caption(f"{fmt_label} · {' · '.join(meta_parts)}")
+
+            dl_col, del_col = ui.columns(2)
+            file_path = Path(str(entry.get("path") or ""))
+            with dl_col:
+                if file_path.is_file():
+                    mime = (
+                        "text/csv"
+                        if filename.endswith(".csv")
+                        else "application/json"
+                        if filename.endswith(".json")
+                        else "application/octet-stream"
+                    )
+                    ui.download_button(
+                        "Tải",
+                        data=file_path.read_bytes(),
+                        file_name=filename,
+                        mime=mime,
+                        use_container_width=True,
+                        key=f"feed_hist_dl_{entry_id}",
+                    )
+            with del_col:
+                if ui.button(
+                    "Xóa",
+                    type="secondary",
+                    use_container_width=True,
+                    key=f"feed_hist_del_{entry_id}",
+                ):
+                    delete_feed_history_entry(entry_id)
+                    if st.session_state.get("output_name") == filename:
+                        st.session_state.output_bytes = None
+                        st.session_state.output_name = None
+                    st.rerun()
+
+            if in_sidebar and index < len(entries) - 1:
+                ui.markdown(
+                    '<hr style="margin:0.35rem 0;border:none;border-top:1px solid #f0c4d4;">',
+                    unsafe_allow_html=True,
+                )
 
 
 def _crawl_category_pill_label(slug: str, categories: list[dict]) -> str:
@@ -2429,7 +2595,7 @@ def render_workflow_selector() -> str:
     with st.sidebar:
         st.markdown("##### Chế độ làm việc")
         st.caption("Chọn nguồn dữ liệu")
-        return st.radio(
+        mode = st.radio(
             "Nguồn dữ liệu",
             options=list(WORKFLOW_MODES.keys()),
             format_func=lambda key: WORKFLOW_MODES[key],
@@ -2437,6 +2603,9 @@ def render_workflow_selector() -> str:
             label_visibility="collapsed",
             on_change=_on_workflow_mode_change,
         )
+        st.divider()
+        render_feed_history_panel(in_sidebar=True)
+        return mode
 
 
 def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
@@ -2682,6 +2851,7 @@ def _render_main_workflow(
         )
         if is_gmc:
             render_gmc_bulk_feed_block()
+            _refresh_gmc_shop_brand_in_products()
         required_text = _required_fields_caption(export_format)
         if is_gmc:
             st.caption(

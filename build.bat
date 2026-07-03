@@ -20,7 +20,7 @@ pip install pyinstaller -q
 
 echo.
 echo Dang build (co the mat vai phut)...
-pyinstaller crawl_feed_gmc.spec --noconfirm
+python -m PyInstaller crawl_feed_gmc.spec --noconfirm
 if errorlevel 1 (
     echo [LOI] Build that bai.
     pause

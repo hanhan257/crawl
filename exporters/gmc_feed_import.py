@@ -139,6 +139,32 @@ def _shopify_variant_available(variant: dict[str, Any]) -> bool | None:
     return None
 
 
+def _normalize_availability_status(status: str | None) -> str | None:
+    if not status:
+        return None
+    text = str(status).strip().lower()
+    if text.startswith("http"):
+        text = text.rsplit("/", 1)[-1]
+    normalized = text.replace("-", "").replace("_", "").replace(" ", "")
+    if normalized in {"outofstock", "soldout", "discontinued", "unavailable"}:
+        return "out_of_stock"
+    if normalized in {
+        "instock",
+        "active",
+        "publish",
+        "published",
+        "onlineonly",
+        "limitedavailability",
+        "onbackorder",
+        "preorder",
+        "presale",
+    }:
+        return "in_stock"
+    if normalized in {"draft", "private", "disabled"}:
+        return "out_of_stock"
+    return None
+
+
 def _availability(status: str | None, variant: dict[str, Any] | None = None) -> str:
     if variant is not None:
         shopify_avail = _shopify_variant_available(variant)
@@ -147,17 +173,13 @@ def _availability(status: str | None, variant: dict[str, Any] | None = None) -> 
         if shopify_avail is True:
             return "in_stock"
         if variant.get("stock_status"):
-            stock = str(variant.get("stock_status")).lower()
-            if stock in {"outofstock", "out_of_stock"}:
-                return "out_of_stock"
-            if stock in {"instock", "in_stock", "onbackorder"}:
-                return "in_stock"
+            mapped = _normalize_availability_status(str(variant.get("stock_status")))
+            if mapped:
+                return mapped
+    mapped = _normalize_availability_status(status)
+    if mapped:
+        return mapped
     if not status:
-        return "in_stock"
-    normalized = str(status).lower().replace("_", "").replace("-", "")
-    if normalized in {"outofstock", "draft", "private", "disabled"}:
-        return "out_of_stock"
-    if normalized in {"instock", "active", "publish", "published"}:
         return "in_stock"
     return "in_stock"
 
@@ -369,6 +391,44 @@ def _resolve_mpn(product: Product, variant: dict[str, Any] | None) -> str:
     return (product.sku or "").strip()
 
 
+_SUPPLIER_VENDOR_NAMES = frozenset(
+    {
+        "trendsi",
+        "cjdropshipping",
+        "cj dropshipping",
+        "oberlo",
+        "spocket",
+        "syncee",
+        "modalyst",
+        "printful",
+        "printify",
+    }
+)
+
+
+def is_supplier_vendor(name: str) -> bool:
+    return str(name or "").strip().lower() in _SUPPLIER_VENDOR_NAMES
+
+
+def _resolve_gmc_brand(
+    product: Product,
+    defaults: dict[str, str] | None = None,
+) -> str:
+    """Brand GMC: ưu tiên tên shop; bỏ vendor nhà cung cấp dropship (Trendsi…)."""
+    defaults = defaults or {}
+    shop_brand = str(defaults.get("brand") or "").strip()
+    vendor = (product.vendor or "").strip()
+    vendor_key = vendor.lower()
+
+    if shop_brand and vendor_key in _SUPPLIER_VENDOR_NAMES:
+        return shop_brand
+    if shop_brand and (not vendor or vendor_key == shop_brand.lower()):
+        return shop_brand
+    if vendor:
+        return vendor
+    return shop_brand or (product.product_type or "").strip()
+
+
 def finalize_gmc_feed_row(row: dict[str, str], fields: ExportFields) -> dict[str, str]:
     """Áp dụng cùng quy tắc ẩn trường cho preview và file xuất GMC."""
     updated = dict(row)
@@ -401,7 +461,7 @@ def product_to_gmc_row(
 
     gtin = _resolve_gtin(product, variant, defaults)
     mpn = _resolve_mpn(product, variant)
-    brand = (product.vendor or product.product_type or "").strip()
+    brand = _resolve_gmc_brand(product, defaults)
 
     return {
         "id": row_id,

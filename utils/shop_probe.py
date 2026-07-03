@@ -10,6 +10,37 @@ import requests
 from utils.credentials import CrawlCredentials
 from utils.detector import DetectedTarget, UnsupportedUrlError, resolve_url
 
+_GENERIC_HOST_LABELS = frozenset({"www", "shop", "store", "m", "mobile", "app"})
+_COMMON_TLDS = frozenset({"com", "net", "org", "io", "co", "uk", "shop", "store", "vn"})
+
+
+def shop_brand_from_url(url: str) -> str:
+    """Suy ra tên brand từ domain shop — vd. dawelli.com → Dawelli."""
+    text = (url or "").strip()
+    if not text:
+        return ""
+    if "://" not in text:
+        text = f"https://{text}"
+    host = urlparse(text).netloc.lower().removeprefix("www.")
+    if not host or host in {"localhost", "127.0.0.1"}:
+        return ""
+
+    labels = [part for part in host.split(".") if part]
+    if not labels:
+        return ""
+
+    if len(labels) >= 2 and labels[-1] in _COMMON_TLDS:
+        candidate = labels[-2]
+        if candidate in _GENERIC_HOST_LABELS and len(labels) >= 3:
+            candidate = labels[-3]
+    else:
+        candidate = labels[0]
+        if candidate in _GENERIC_HOST_LABELS and len(labels) > 1:
+            candidate = labels[1]
+
+    words = re.split(r"[-_]+", candidate)
+    return " ".join(word.capitalize() for word in words if word)
+
 
 @dataclass
 class ShopCategoryInfo:
