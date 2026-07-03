@@ -44,7 +44,7 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
                 {
                     "min_value": 1,
                     "max_value": 32,
-                    "help": "Song song hóa tải trang. Woo/Shop lớn: **4–8** ổn định.",
+                    "help": "Khuyến nghị **16–32**. Quá cao dễ thiếu SP / lỗi ảnh (Silverbene chặn request).",
                 },
             )
         )

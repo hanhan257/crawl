@@ -6,7 +6,7 @@ PLATFORM_LABELS = {
     "shopify": "Shopify",
     "woocommerce": "WooCommerce",
     "redbubble": "Redbubble",
-    "generic-web": "Web thuần (Next.js)",
+    "generic-web": "Web thuần",
 }
 
 CRAWL_TYPE_LABELS = {
@@ -29,9 +29,10 @@ CRAWL_HINTS = {
     ("redbubble", "category"): "Link /shop/... → crawl kết quả tìm kiếm / category",
     ("redbubble", "product"): "Link /i/... → crawl 1 sản phẩm",
     ("redbubble", "unknown"): "Trang chủ — dán link /shop/từ-khóa hoặc /i/.../sản-phẩm",
-    ("generic-web", "shop"): "Trang chủ /shop → lấy SP qua sitemap-products hoặc API /shop",
-    ("generic-web", "category"): "Link /shop/danh-mục hoặc /category/... → crawl theo danh mục",
-    ("generic-web", "product"): "Link /product/... → crawl 1 sản phẩm (JSON Next.js)",
+    ("generic-web", "shop"): "Trang chủ → crawl qua sitemap, API /shop hoặc danh mục HTML",
+    ("generic-web", "category"): "Link danh mục → đếm SP trên link đó và crawl (.html, /shop/..., /category/...)",
+    ("generic-web", "search"): "Link tìm kiếm (vd. /catalogsearch/result/?q=...)",
+    ("generic-web", "product"): "Link sản phẩm (/product/... hoặc .html)",
 }
 
 

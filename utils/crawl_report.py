@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 
 from models.product import Product
 from utils.detector import DetectedTarget
@@ -33,8 +33,10 @@ class CrawlReport:
     products_crawled: int = 0
     pages_fetched: int = 0
     errors: list[str] = field(default_factory=list)
-    json_path: str = ""
-    urls_csv_path: str = ""
+    json_name: str = ""
+    urls_csv_name: str = ""
+    json_bytes: bytes = b""
+    urls_csv_bytes: bytes = b""
 
     def summary(self) -> str:
         parts = [f"**{self.products_crawled:,}** SP".replace(",", ".")]
@@ -66,26 +68,24 @@ def save_crawl_report(
     export_name = target.query or target.category_slug or target.handle or "products"
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     base = _slugify(str(export_name))
+    json_name = f"crawl_report_{base}_{ts}.json"
+    csv_name = f"crawl_urls_{base}_{ts}.csv"
 
-    output_dir = Path("output")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    json_path = output_dir / f"crawl_report_{base}_{ts}.json"
-    csv_path = output_dir / f"crawl_urls_{base}_{ts}.csv"
-
-    with csv_path.open("w", newline="", encoding="utf-8-sig") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["id", "title", "url", "price", "sku", "source"])
-        for product in products:
-            writer.writerow(
-                [
-                    product.id,
-                    product.title,
-                    product.url or "",
-                    product.price if product.price is not None else "",
-                    product.sku or "",
-                    product.source,
-                ]
-            )
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["id", "title", "url", "price", "sku", "source"])
+    for product in products:
+        writer.writerow(
+            [
+                product.id,
+                product.title,
+                product.url or "",
+                product.price if product.price is not None else "",
+                product.sku or "",
+                product.source,
+            ]
+        )
+    urls_csv_bytes = buffer.getvalue().encode("utf-8-sig")
 
     report = CrawlReport(
         source_url=source_url,
@@ -103,14 +103,17 @@ def save_crawl_report(
         products_crawled=len(products),
         pages_fetched=pages_fetched,
         errors=list(errors or [])[:50],
-        json_path=str(json_path),
-        urls_csv_path=str(csv_path),
+        json_name=json_name,
+        urls_csv_name=csv_name,
     )
 
     payload = asdict(report)
+    payload.pop("json_bytes", None)
+    payload.pop("urls_csv_bytes", None)
     payload["message"] = (
         f"Crawl {report.products_crawled} sản phẩm từ {report.platform} "
         f"({report.crawl_type}) trong {report.duration_seconds}s"
     )
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    report.json_bytes = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    report.urls_csv_bytes = urls_csv_bytes
     return report

@@ -30,7 +30,7 @@ class WooCommerceCrawler(BaseCrawler):
         site_url: str,
         consumer_key: str = "",
         consumer_secret: str = "",
-        request_delay: float = 0.5,
+        request_delay: float = 0.15,
         verify_ssl: bool = True,
         use_public_api: bool = False,
     ):

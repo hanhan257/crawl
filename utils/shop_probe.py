@@ -77,7 +77,10 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
     if platform == "shopify":
         return f"{base}/collections/{category_slug}"
     if platform == "generic-web":
-        return base_url
+        from crawlers.generic_html import GenericHtmlCatalog
+
+        path = GenericHtmlCatalog.path_from_category_slug(category_slug)
+        return f"{base}/{path}" if path else base_url
     return base_url
 
 
@@ -85,10 +88,13 @@ def _probe_generic_web(
     target: DetectedTarget,
     base_url: str,
     url_category: str | None,
+    *,
+    max_workers: int = 12,
 ) -> ShopProbeResult:
     from crawlers.generic_web import GenericWebCrawler
 
     crawler = GenericWebCrawler(base_url)
+    uses_html = crawler._uses_html_catalog()
 
     if target.crawl_type == "product":
         return ShopProbeResult(
@@ -96,30 +102,84 @@ def _probe_generic_web(
             platform="generic-web",
             crawl_type="product",
             base_url=base_url,
-            message="**1** SP · link sản phẩm /product/...",
+            message="**1** SP · link sản phẩm (/product/... hoặc .html)",
             total_products=1,
             categories=[],
             url_category_slug=url_category or target.handle,
         )
 
+    if target.crawl_type == "search" and target.query and uses_html:
+        html = crawler._html_catalog()
+        total = html.count_search_results(target.query)
+        total_text = f"**{total}** SP" if total is not None else "**?** SP"
+        return ShopProbeResult(
+            ok=True,
+            platform="generic-web",
+            crawl_type="search",
+            base_url=base_url,
+            message=f"{total_text} · tìm kiếm `{target.query}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=target.query,
+        )
+
+    if target.crawl_type == "category" and target.handle and uses_html:
+        html = crawler._html_catalog()
+        path = f"{target.handle}.html"
+        total, raw_subs = html.probe_listing_page(
+            path,
+            include_subcategories=True,
+            max_subcategories=24,
+            max_workers=max_workers,
+        )
+        slug = target.category_slug or url_category or html.category_slug(target.handle)
+        name = target.handle.split("/")[-1].replace("-", " ").title()
+        categories = [
+            ShopCategoryInfo(slug=slug, name=f"{name} (link này)", count=total),
+        ]
+        for item in raw_subs:
+            categories.append(
+                ShopCategoryInfo(
+                    slug=str(item["slug"]),
+                    name=str(item["name"]),
+                    count=int(item["count"]) if item.get("count") is not None else None,
+                )
+            )
+        message = f"**{total}** SP trên link này"
+        if raw_subs:
+            message = f"{message} · **{len(raw_subs)}** link con trong menu"
+        return ShopProbeResult(
+            ok=True,
+            platform="generic-web",
+            crawl_type="category",
+            base_url=base_url,
+            message=message,
+            total_products=total,
+            categories=categories,
+            url_category_slug=url_category or slug,
+        )
+
     uses_shop_catalog = crawler._uses_shop_catalog()
     total = crawler.count_sitemap_products()
-    if total <= 0 and not uses_shop_catalog:
+    if total <= 0 and not uses_shop_catalog and not uses_html:
         return ShopProbeResult(
             ok=True,
             platform="generic-web",
             crawl_type=target.crawl_type,
             base_url=base_url,
             message=(
-                "Không đếm được SP — site thiếu **sitemap-products**. "
-                "Chỉ crawl được link **/product/...** trực tiếp."
+                "Không đếm được SP — thử link danh mục **.html**, **/product/...** "
+                "hoặc site có **sitemap-products**."
             ),
             total_products=None,
             categories=[],
             url_category_slug=url_category,
         )
 
-    raw_categories, category_note = crawler.probe_categories(sample_size=24)
+    raw_categories, category_note = crawler.probe_categories(
+        sample_size=24,
+        max_workers=max_workers,
+    )
     categories = [
         ShopCategoryInfo(
             slug=str(item["slug"]),
@@ -148,6 +208,8 @@ def _probe_generic_web(
 def probe_shop_stats(
     url: str,
     credentials: CrawlCredentials | None = None,
+    *,
+    max_workers: int = 12,
 ) -> ShopProbeResult:
     credentials = credentials or CrawlCredentials.load()
     cleaned = url.strip()
@@ -198,7 +260,7 @@ def probe_shop_stats(
         return _probe_redbubble(target, credentials, base_url, url_category)
 
     if target.platform == "generic-web":
-        return _probe_generic_web(target, base_url, url_category)
+        return _probe_generic_web(target, base_url, url_category, max_workers=max_workers)
 
     return ShopProbeResult(
         ok=False,

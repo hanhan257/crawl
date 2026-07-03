@@ -35,7 +35,7 @@ class ShopifyCrawler(BaseCrawler):
         access_token: str | None = None,
         api_version: str = "2024-10",
         use_public_api: bool = False,
-        request_delay: float = 0.5,
+        request_delay: float = 0.15,
     ):
         self.shop_url = self._normalize_shop_url(shop_url)
         self.access_token = access_token

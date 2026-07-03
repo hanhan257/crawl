@@ -119,6 +119,19 @@ def validate_edited_df(
     }
 
 
+def first_issue_row(report: dict[str, Any], column: str | None = None) -> int | None:
+    """row_id đầu tiên còn thiếu (theo cột hoặc bất kỳ cột bắt buộc)."""
+    issues = report.get("issues_by_column") or {}
+    if column:
+        rows = issues.get(column) or []
+        return int(rows[0]) if rows else None
+    for col in report.get("required_columns") or ():
+        rows = issues.get(col) or []
+        if rows:
+            return int(rows[0])
+    return None
+
+
 def column_header_label(column: str, report: dict[str, Any]) -> str:
     base = EDIT_FIELD_LABELS.get(column, column)
     export_format = report.get("export_format", "woocommerce-csv")

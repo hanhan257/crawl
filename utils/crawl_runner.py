@@ -328,17 +328,71 @@ def run_auto_crawl(
 
             if target.crawl_type == "product" and target.handle:
 
-                product = crawler.crawl_product(target.handle)
+                if crawler._uses_html_catalog():
 
-                products = [product] if product else []
+                    products = crawler.crawl_product(target.handle)
 
-            elif target.crawl_type in ("shop", "category"):
+                    products = [products] if products else []
 
-                effective_category = category_slug
+                else:
 
-                if target.crawl_type == "category" and not effective_category:
+                    product = crawler.crawl_product(target.handle)
 
-                    effective_category = target.category_slug
+                    products = [product] if product else []
+
+            elif target.crawl_type == "category":
+
+                if crawler._uses_html_catalog() and target.handle:
+
+                    products = crawler.crawl_category_path(
+
+                        f"{target.handle}.html",
+
+                        limit=limit,
+
+                        max_pages=max_pages,
+
+                        progress_callback=progress_callback,
+
+                        max_workers=workers,
+
+                    )
+
+                else:
+
+                    effective_category = category_slug or target.category_slug
+
+                    products = crawler.crawl(
+
+                        limit=limit,
+
+                        max_pages=max_pages,
+
+                        category_slug=effective_category,
+
+                        progress_callback=progress_callback,
+
+                        max_workers=workers,
+
+                    )
+
+            elif target.crawl_type == "search" and target.query:
+
+                products = crawler.crawl_search(
+
+                    target.query,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            elif target.crawl_type == "shop":
 
                 products = crawler.crawl(
 
@@ -346,7 +400,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    category_slug=effective_category,
+                    category_slug=category_slug,
 
                     progress_callback=progress_callback,
 
@@ -374,7 +428,7 @@ def run_auto_crawl(
 
                 "Web thuần: không crawl được sản phẩm nào. "
 
-                "Site cần sitemap-products, trang /shop/... hoặc link /product/..."
+                "Thử link danh mục .html, /product/..., /shop/... hoặc sitemap-products."
 
             )
 
