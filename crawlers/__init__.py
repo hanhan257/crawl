@@ -1,3 +1,4 @@
+from .shopbase import ShopBaseCrawler
 from .generic_web import GenericWebCrawler
 from .redbubble import RedbubbleCrawler
 from .shopify import ShopifyCrawler
@@ -8,4 +9,5 @@ __all__ = [
     "WooCommerceCrawler",
     "RedbubbleCrawler",
     "GenericWebCrawler",
+    "ShopBaseCrawler",
 ]

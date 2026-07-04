@@ -124,6 +124,35 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_shopbase() -> str | None:
+        try:
+            session = fresh_session()
+            products_json = session.get(
+                f"{base}/products.json",
+                params={"limit": 1},
+                timeout=8,
+            )
+            if products_json.status_code == 200:
+                return None
+            catalog = session.get(
+                f"{base}/api/catalog/next/products.json",
+                params={"limit": 1, "page": 1},
+                timeout=8,
+            )
+            if catalog.status_code == 200:
+                payload = catalog.json()
+                if isinstance(payload.get("result"), dict):
+                    return "shopbase"
+            sitemap = session.get(f"{base}/sitemap.xml", timeout=8)
+            if sitemap.status_code == 200 and "sitemap_products" in sitemap.text.lower():
+                return "shopbase"
+            page = session.get(base, timeout=8)
+            if page.status_code == 200 and "shopbase" in page.text.lower():
+                return "shopbase"
+        except (requests.RequestException, ValueError):
+            pass
+        return None
+
     def check_generic() -> str | None:
         try:
             if GenericWebCrawler.site_supports(base, session=fresh_session()):
@@ -145,7 +174,14 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
-    checks = (check_shopify, check_woo_store, check_wp_json, check_generic, check_html_signals)
+    checks = (
+        check_shopify,
+        check_shopbase,
+        check_woo_store,
+        check_wp_json,
+        check_generic,
+        check_html_signals,
+    )
     with ThreadPoolExecutor(max_workers=len(checks)) as executor:
         futures = [executor.submit(fn) for fn in checks]
         for future in as_completed(futures):
@@ -178,6 +214,17 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
             return shopify_target
         return DetectedTarget(
             platform="shopify",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
+    if platform == "shopbase":
+        shopbase_target = _detect_shopbase(normalized, host, path)
+        if shopbase_target.crawl_type != "unknown":
+            return shopbase_target
+        return DetectedTarget(
+            platform="shopbase",
             crawl_type="shop",
             url=normalized,
             base_url=f"{parsed.scheme}://{parsed.netloc}",
@@ -226,8 +273,8 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, WooCommerce, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
-        "Ví dụ: keeptee.com · silverbene.com/earrings.html",
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
+        "Ví dụ: keeptee.com · wc.luminaaura.us · silverbene.com/earrings.html",
         platform="unknown",
     )
 
@@ -350,6 +397,12 @@ def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
         url=url,
         base_url=base_url,
     )
+
+
+def _detect_shopbase(url: str, host: str, path: str) -> DetectedTarget:
+    target = _detect_shopify(url, host, path)
+    target.platform = "shopbase"
+    return target
 
 
 def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:

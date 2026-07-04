@@ -135,7 +135,7 @@ DEFAULT_EXPORT_WORKERS = min(32, max(16, (os.cpu_count() or 4) * 2))
 DEFAULT_CRAWL_WORKERS = DEFAULT_EXPORT_WORKERS
 
 WORKFLOW_MODES = {
-    "crawl": "Crawl từ link (Shopify / Woo / web)",
+    "crawl": "Crawl từ link (Shopify / Woo / ShopBase / web)",
     "import": "Import CSV có sẵn → xuất file",
     "crawl-gmc": "Crawl → file feed GMC",
     "redbubble": "Crawl Redbubble → xuất file",
@@ -2075,7 +2075,9 @@ def run_crawl_only(
                 if progress_bar is not None and total:
                     ratio = min(current / total, 1.0)
                     if crawl_platform == "generic-web":
-                        label = f"Link {current}/{total} · {matched} SP"
+                        label = f"Đang xử lý {current}/{total} · {matched} SP"
+                    elif crawl_platform == "shopbase":
+                        label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     progress_bar.progress(ratio, text=label)
@@ -2507,7 +2509,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · WooCommerce · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Redbubble · Web thuần**…")
         info = _cached_describe_url(cleaned)
         target = info.get("target") if info.get("ok") else None
         platform = getattr(target, "platform", "") if target else ""
@@ -2933,9 +2935,10 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
             placeholder="https://www.redbubble.com/shop/shower-curtains",
             help=(
                 "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
-                "Shopify/Woo: trang chủ shop, /collections/..., /products/...\n"
+                "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
                 "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
-                "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com/earrings.html)"
+                "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com)\n"
+                "ShopBase: wc.luminaaura.us (sitemap + JSON-LD)"
             ),
             key="crawl_url",
             on_change=_on_crawl_url_change,

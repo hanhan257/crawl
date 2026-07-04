@@ -212,6 +212,87 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "shopbase":
+
+        from crawlers.shopbase import ShopBaseCrawler
+
+        crawler = ShopBaseCrawler(
+
+            site_url=target.base_url or target.url,
+
+            proxy_url=effective_proxy,
+
+        )
+
+        try:
+
+            if target.crawl_type == "product" and target.handle:
+
+                product = crawler.crawl_product(target.handle)
+
+                products = [product] if product else []
+
+            elif target.crawl_type == "category" and target.handle:
+
+                products = crawler.crawl_collection(
+
+                    target.handle,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            elif target.crawl_type == "shop":
+
+                products = crawler.crawl(
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            else:
+
+                raise CrawlError(f"ShopBase: chưa hỗ trợ loại link '{target.crawl_type}'")
+
+        except requests.RequestException as exc:
+
+            raise CrawlError(f"ShopBase: lỗi HTTP {exc}") from exc
+
+
+
+        if not products:
+
+            if target.crawl_type == "category" and target.handle:
+                meta = crawler._collection_meta(target.handle)
+                if meta is not None:
+                    try:
+                        count = int(meta.get("product_count") or 0)
+                    except (TypeError, ValueError):
+                        count = -1
+                    if count == 0:
+                        title = str(meta.get("title") or target.handle)
+                        raise CrawlError(
+                            f"ShopBase: collection **{title}** không có sản phẩm (0 SP). "
+                            "Chọn **Tất cả** hoặc danh mục khác."
+                        )
+            raise CrawlError("ShopBase: không crawl được sản phẩm nào từ link này.")
+
+        return products, target
+
+
+
     if target.platform == "woocommerce":
 
         host = urlparse(target.base_url or target.url).netloc

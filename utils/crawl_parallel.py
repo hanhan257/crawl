@@ -7,6 +7,7 @@ from typing import TypeVar
 T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
+API_LIST_MAX_WORKERS = 16
 
 
 def _matched_count(items: list, limit: int | None) -> int:
@@ -24,6 +25,22 @@ def _remaining_pages(limit: int | None, per_page: int, current_count: int) -> in
     return max(1, (remaining_items + per_page - 1) // per_page)
 
 
+def _merge_page_batches(
+    page_batches: dict[int, list[T]],
+    *,
+    limit: int | None = None,
+) -> list[T]:
+    items: list[T] = []
+    for page_num in sorted(page_batches.keys()):
+        batch = page_batches.get(page_num) or []
+        if not batch:
+            continue
+        items.extend(batch)
+        if limit is not None and len(items) >= limit:
+            return items[:limit]
+    return items
+
+
 def fetch_pages_in_waves(
     fetch_page: Callable[[int], list[T]],
     *,
@@ -33,28 +50,86 @@ def fetch_pages_in_waves(
     max_workers: int = 1,
     limit: int | None = None,
     progress_callback: ProgressCallback | None = None,
+    estimated_pages: int | None = None,
 ) -> tuple[list[T], int]:
     """Fetch paginated API results with optional parallel page waves."""
-    items: list[T] = list(first_batch)
+    page_batches: dict[int, list[T]] = {1: list(first_batch)}
     pages_fetched = 1
 
-    if limit is not None and len(items) >= limit:
+    def progress_total() -> int:
+        if estimated_pages and estimated_pages > 0:
+            return estimated_pages
+        if max_pages and max_pages > 0:
+            return max_pages
+        return max(pages_fetched, pages_fetched + 1)
+
+    def report_progress(items: list[T] | None = None) -> None:
         if progress_callback:
-            progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
-        return items[:limit], pages_fetched
+            progress_callback(
+                pages_fetched,
+                progress_total(),
+                _matched_count(items if items is not None else _merge_page_batches(page_batches, limit=limit), limit),
+            )
+
+    report_progress()
+
+    if limit is not None and len(first_batch) >= limit:
+        return first_batch[:limit], pages_fetched
 
     if len(first_batch) < per_page:
-        if progress_callback:
-            progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
-        return items, pages_fetched
+        return list(first_batch), pages_fetched
 
-    next_page = 2
-    workers = max(1, min(max_workers, 32))
+    workers = max(1, min(max_workers, API_LIST_MAX_WORKERS))
+    end_page = estimated_pages or max_pages
+    if end_page and end_page > 1 and workers > 1:
+        if max_pages:
+            end_page = min(end_page, max_pages)
+        pages_to_fetch = list(range(2, end_page + 1))
+        if limit is not None:
+            max_item_pages = max(1, (limit + per_page - 1) // per_page)
+            pages_to_fetch = [page for page in pages_to_fetch if page <= max_item_pages]
+
+        if pages_to_fetch:
+            with ThreadPoolExecutor(max_workers=min(workers, len(pages_to_fetch))) as executor:
+                futures = {
+                    executor.submit(fetch_page, page_num): page_num
+                    for page_num in pages_to_fetch
+                }
+                for future in as_completed(futures):
+                    page_num = futures[future]
+                    try:
+                        page_batches[page_num] = future.result()
+                    except Exception:
+                        page_batches[page_num] = []
+                    pages_fetched = len(page_batches)
+                    report_progress()
+
+            items = _merge_page_batches(page_batches, limit=limit)
+            last_batch = page_batches.get(end_page) or []
+            if (
+                (limit is None or len(items) < limit)
+                and len(last_batch) >= per_page
+                and estimated_pages
+                and end_page >= estimated_pages
+            ):
+                next_page = end_page + 1
+            else:
+                if progress_callback:
+                    progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
+                return items, pages_fetched
+        else:
+            items = _merge_page_batches(page_batches, limit=limit)
+            if progress_callback:
+                progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
+            return items, pages_fetched
+    else:
+        next_page = 2
+        items = list(first_batch)
 
     while True:
         if max_pages and next_page > max_pages:
             break
-        if limit is not None and len(items) >= limit:
+        if limit is not None and len(_merge_page_batches(page_batches, limit=limit)) >= limit:
             break
 
         if workers <= 1:
@@ -63,12 +138,11 @@ def fetch_pages_in_waves(
             except Exception:
                 break
             pages_fetched += 1
+            page_batches[next_page] = batch
             if not batch:
                 break
-            items.extend(batch)
-            if progress_callback:
-                est = max_pages or max(pages_fetched + 1, pages_fetched)
-                progress_callback(pages_fetched, est, _matched_count(items, limit))
+            report_progress()
+            items = _merge_page_batches(page_batches, limit=limit)
             if limit is not None and len(items) >= limit:
                 break
             if len(batch) < per_page:
@@ -77,7 +151,7 @@ def fetch_pages_in_waves(
             continue
 
         wave_size = workers
-        pages_left = _remaining_pages(limit, per_page, len(items))
+        pages_left = _remaining_pages(limit, per_page, len(_merge_page_batches(page_batches)))
         if pages_left is not None:
             wave_size = min(wave_size, pages_left)
 
@@ -87,7 +161,6 @@ def fetch_pages_in_waves(
         if not wave_pages:
             break
 
-        batches: dict[int, list[T]] = {}
         failed_pages: list[int] = []
 
         with ThreadPoolExecutor(max_workers=len(wave_pages)) as executor:
@@ -97,24 +170,25 @@ def fetch_pages_in_waves(
             for future in as_completed(futures):
                 page_num = futures[future]
                 try:
-                    batches[page_num] = future.result()
+                    page_batches[page_num] = future.result()
                 except Exception:
                     failed_pages.append(page_num)
 
         for page_num in sorted(failed_pages):
             try:
-                batches[page_num] = fetch_page(page_num)
+                page_batches[page_num] = fetch_page(page_num)
             except Exception:
-                batches[page_num] = []
+                page_batches[page_num] = []
 
         stop = False
-        for page_num in sorted(batches.keys()):
-            batch = batches[page_num]
-            pages_fetched += 1
+        for page_num in sorted(wave_pages):
+            batch = page_batches.get(page_num) or []
+            pages_fetched = len(page_batches)
             if not batch:
                 stop = True
                 break
-            items.extend(batch)
+            report_progress()
+            items = _merge_page_batches(page_batches, limit=limit)
             if limit is not None and len(items) >= limit:
                 stop = True
                 break
@@ -122,22 +196,12 @@ def fetch_pages_in_waves(
                 stop = True
                 break
 
-        if progress_callback:
-            est_total = max_pages or max(pages_fetched + wave_size, pages_fetched)
-            progress_callback(
-                min(pages_fetched, est_total),
-                est_total,
-                _matched_count(items, limit),
-            )
-
         if stop:
             break
         next_page += len(wave_pages)
 
-    if limit is not None and len(items) > limit:
-        items = items[:limit]
-
+    items = _merge_page_batches(page_batches, limit=limit)
     if progress_callback:
-        progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
+        progress_callback(len(page_batches), len(page_batches), _matched_count(items, limit))
 
-    return items, pages_fetched
+    return items, len(page_batches)

@@ -105,7 +105,10 @@ class GenericWebCrawler(BaseCrawler):
                 progress_callback=progress_callback,
                 max_workers=max_workers,
             )
-        product_urls = self._discover_product_urls(max_sitemaps=max_pages)
+        product_urls = self._discover_product_urls(
+            max_sitemaps=max_pages,
+            progress_callback=progress_callback,
+        )
         return self._crawl_urls(
             product_urls,
             limit=limit,
@@ -325,7 +328,8 @@ class GenericWebCrawler(BaseCrawler):
                         if limit is None or len(products) < limit:
                             products.append(product)
                 if progress_callback and (
-                    processed == total or processed % 5 == 0
+                    processed == total
+                    or processed % max(1, min(10, total // 20)) == 0
                 ):
                     progress_callback(processed, total, len(products))
                 if limit is not None and len(products) >= limit:
@@ -363,7 +367,10 @@ class GenericWebCrawler(BaseCrawler):
                     products.append(product)
                 if self.request_delay and index + 1 < total:
                     time.sleep(self.request_delay)
-            if progress_callback and (index + 1 == total or (index + 1) % 5 == 0):
+            if progress_callback and (
+                index + 1 == total
+                or (index + 1) % max(1, min(10, total // 20)) == 0
+            ):
                 progress_callback(index + 1, total, len(products))
         if progress_callback and total:
             progress_callback(total, total, len(products))
@@ -877,20 +884,39 @@ class GenericWebCrawler(BaseCrawler):
         processed = 0
 
         for name in categories:
-            page = 1
-            total_pages = 1
-            while page <= total_pages:
-                if max_pages and page > max_pages:
-                    break
-                data = self._fetch_shop_catalog_page(
-                    category=name,
-                    page=page,
-                    limit=SHOP_CATALOG_PAGE_SIZE,
-                )
-                total_pages = int(data.get("totalPages") or 1)
+            first_data = self._fetch_shop_catalog_page(
+                category=name,
+                page=1,
+                limit=SHOP_CATALOG_PAGE_SIZE,
+            )
+            total_pages = int(first_data.get("totalPages") or 1)
+            if max_pages:
+                total_pages = min(total_pages, max_pages)
+
+            page_cache: dict[int, dict[str, Any]] = {1: first_data}
+            remaining_pages = list(range(2, total_pages + 1))
+            if remaining_pages and max_workers > 1:
+                workers = min(max_workers, 16, len(remaining_pages))
+
+                def fetch_catalog_page(page_num: int) -> tuple[int, dict[str, Any]]:
+                    return page_num, self._fetch_shop_catalog_page(
+                        category=name,
+                        page=page_num,
+                        limit=SHOP_CATALOG_PAGE_SIZE,
+                    )
+
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    for page_num, payload in executor.map(
+                        fetch_catalog_page,
+                        remaining_pages,
+                    ):
+                        page_cache[page_num] = payload
+
+            for page_num in range(1, total_pages + 1):
+                data = page_cache.get(page_num)
+                if not data:
+                    continue
                 batch = data.get("products") or []
-                if not batch:
-                    break
                 for item in batch:
                     if limit is not None and len(products) >= limit:
                         break
@@ -899,19 +925,19 @@ class GenericWebCrawler(BaseCrawler):
                     product = self._product_from_shop_item(item)
                     if not product:
                         continue
-                    product = self._enrich_product_detail(product)
                     products.append(product)
                     processed += 1
                     if progress_callback and (
                         processed == estimated_total
-                        or processed % 5 == 0
+                        or processed % max(1, min(10, max(estimated_total, 1) // 20)) == 0
                     ):
-                        progress_callback(processed, max(estimated_total, processed), len(products))
-                    if self.request_delay:
-                        time.sleep(self.request_delay)
+                        progress_callback(
+                            processed,
+                            max(estimated_total, processed),
+                            len(products),
+                        )
                 if limit is not None and len(products) >= limit:
                     break
-                page += 1
             if limit is not None and len(products) >= limit:
                 break
 
@@ -937,19 +963,27 @@ class GenericWebCrawler(BaseCrawler):
         except (requests.RequestException, ValueError, json.JSONDecodeError):
             return None
 
-    def _discover_product_urls(self, max_sitemaps: int | None = None) -> list[str]:
+    def _discover_product_urls(
+        self,
+        max_sitemaps: int | None = None,
+        *,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[str]:
         sitemap_urls = self._collect_product_sitemaps()
         if max_sitemaps and max_sitemaps > 0:
             sitemap_urls = sitemap_urls[:max_sitemaps]
 
         product_urls: list[str] = []
         seen: set[str] = set()
-        for sitemap_url in sitemap_urls:
+        total_sitemaps = max(len(sitemap_urls), 1)
+        for index, sitemap_url in enumerate(sitemap_urls, start=1):
             for loc in self._parse_sitemap_locs(sitemap_url):
                 if GENERIC_PRODUCT_PATH.search(urlparse(loc).path or ""):
                     if loc not in seen:
                         seen.add(loc)
                         product_urls.append(loc)
+            if progress_callback:
+                progress_callback(index, total_sitemaps, len(product_urls))
             if self.request_delay:
                 time.sleep(self.request_delay)
         return product_urls

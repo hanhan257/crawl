@@ -35,7 +35,7 @@ class ShopifyCrawler(BaseCrawler):
         access_token: str | None = None,
         api_version: str = "2024-10",
         use_public_api: bool = False,
-        request_delay: float = 0.15,
+        request_delay: float = 0.0,
     ):
         self.shop_url = self._normalize_shop_url(shop_url)
         self.access_token = access_token
@@ -44,6 +44,7 @@ class ShopifyCrawler(BaseCrawler):
         self.request_delay = request_delay
         self.session = requests.Session()
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        self._page_local = threading.local()
 
         if not use_public_api and not access_token:
             raise ValueError("Shopify Admin API requires --token or use --public for storefront JSON")
@@ -76,7 +77,12 @@ class ShopifyCrawler(BaseCrawler):
                 max_workers=max_workers,
                 progress_callback=progress_callback,
             )
-        return self._crawl_admin(limit=limit, max_pages=max_pages, status=status)
+        return self._crawl_admin(
+            limit=limit,
+            max_pages=max_pages,
+            status=status,
+            progress_callback=progress_callback,
+        )
 
     def crawl_category(
         self,
@@ -94,36 +100,35 @@ class ShopifyCrawler(BaseCrawler):
                 progress_callback=progress_callback,
             )
 
+        per_page = 250
+
+        def fetch_page(page: int) -> list[dict[str, Any]]:
+            return self._fetch_collection_page(handle, page)
+
+        first_batch = fetch_page(1)
+        estimated_pages = max_pages
+        if estimated_pages is None:
+            if limit is not None:
+                estimated_pages = max(1, (limit + per_page - 1) // per_page)
+            elif len(first_batch) >= per_page:
+                estimated_pages = 2
+
+        raw_items, _pages = fetch_pages_in_waves(
+            fetch_page,
+            per_page=per_page,
+            first_batch=first_batch,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            limit=limit,
+            progress_callback=progress_callback,
+            estimated_pages=estimated_pages,
+        )
+
         products: list[Product] = []
-        page = 1
-
-        while True:
-            if max_pages and page > max_pages:
-                break
-
-            response = self.session.get(
-                f"{self.shop_url}/collections/{handle}/products.json",
-                params={"limit": 250, "page": page},
-                timeout=30,
-            )
-            response.raise_for_status()
-            batch = response.json().get("products", [])
-            if not batch:
-                break
-
-            for item in batch:
-                product = self._map_public_product(item)
-                product.categories = [handle]
-                products.append(product)
-                if limit and len(products) >= limit:
-                    return products
-
-            if len(batch) < 250:
-                break
-
-            page += 1
-            time.sleep(self.request_delay)
-
+        for item in raw_items:
+            product = self._map_public_product(item)
+            product.categories = [handle]
+            products.append(product)
         return products
 
     def crawl_product(self, handle: str) -> list[Product]:
@@ -168,7 +173,9 @@ class ShopifyCrawler(BaseCrawler):
                     product = batch[0]
                     product.categories = [search]
                     products.append(product)
-                if progress_callback and (index == total or index % 5 == 0):
+                if progress_callback and (
+                    index == total or index % max(1, min(10, total // 20)) == 0
+                ):
                     progress_callback(index, total, len(products))
             if progress_callback and total:
                 progress_callback(total, total, len(products))
@@ -195,7 +202,9 @@ class ShopifyCrawler(BaseCrawler):
                 if product:
                     with lock:
                         products.append(product)
-                if progress_callback and (processed == total or processed % 5 == 0):
+                if progress_callback and (
+                    processed == total or processed % max(1, min(10, total // 20)) == 0
+                ):
                     progress_callback(processed, total, len(products))
 
         if progress_callback and total:
@@ -282,11 +291,25 @@ class ShopifyCrawler(BaseCrawler):
             handles.append(handle)
         return handles
 
-    def _fetch_public_page(self, page: int) -> list[dict[str, Any]]:
-        session = requests.Session()
-        session.headers.update(self.session.headers)
+    def _fetch_collection_page(self, handle: str, page: int) -> list[dict[str, Any]]:
         response = get_with_retry(
-            session,
+            self._page_session(),
+            f"{self.shop_url}/collections/{handle}/products.json",
+            params={"limit": 250, "page": page},
+            timeout=DEFAULT_REQUEST_TIMEOUT,
+        )
+        batch = response.json().get("products", [])
+        return batch if isinstance(batch, list) else []
+
+    def _page_session(self) -> requests.Session:
+        if not hasattr(self._page_local, "session"):
+            self._page_local.session = requests.Session()
+            self._page_local.session.headers.update(self.session.headers)
+        return self._page_local.session
+
+    def _fetch_public_page(self, page: int) -> list[dict[str, Any]]:
+        response = get_with_retry(
+            self._page_session(),
             f"{self.shop_url}/products.json",
             params={"limit": 250, "page": page},
             timeout=DEFAULT_REQUEST_TIMEOUT,
@@ -303,6 +326,13 @@ class ShopifyCrawler(BaseCrawler):
     ) -> list[Product]:
         per_page = 250
         first_batch = self._fetch_public_page(1)
+        estimated_pages = max_pages
+        if estimated_pages is None:
+            if limit is not None:
+                estimated_pages = max(1, (limit + per_page - 1) // per_page)
+            elif len(first_batch) >= per_page:
+                estimated_pages = 2
+
         raw_items, _pages = fetch_pages_in_waves(
             self._fetch_public_page,
             per_page=per_page,
@@ -311,6 +341,7 @@ class ShopifyCrawler(BaseCrawler):
             max_workers=max_workers,
             limit=limit,
             progress_callback=progress_callback,
+            estimated_pages=estimated_pages,
         )
         return [self._map_public_product(item) for item in raw_items]
 
@@ -319,6 +350,7 @@ class ShopifyCrawler(BaseCrawler):
         limit: int | None = None,
         max_pages: int | None = None,
         status: str = "active",
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         products: list[Product] = []
         url: str | None = (
@@ -326,6 +358,7 @@ class ShopifyCrawler(BaseCrawler):
             f"?limit=250&status={status}"
         )
         page_count = 0
+        per_page = 250
 
         headers = {"X-Shopify-Access-Token": self.access_token or ""}
 
@@ -340,12 +373,21 @@ class ShopifyCrawler(BaseCrawler):
             for item in batch:
                 products.append(self._map_admin_product(item))
                 if limit and len(products) >= limit:
+                    if progress_callback:
+                        progress_callback(page_count + 1, page_count + 1, len(products))
                     return products
 
-            url = self._next_link(response.headers.get("Link"))
             page_count += 1
+            if progress_callback:
+                estimated = max_pages or (page_count + 1 if len(batch) >= per_page else page_count)
+                progress_callback(page_count, estimated, len(products))
+
+            url = self._next_link(response.headers.get("Link"))
             if url:
                 time.sleep(self.request_delay)
+
+        if progress_callback and products:
+            progress_callback(page_count, page_count, len(products))
 
         return products
 

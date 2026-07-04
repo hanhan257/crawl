@@ -76,6 +76,8 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/product-category/{category_slug}/"
     if platform == "shopify":
         return f"{base}/collections/{category_slug}"
+    if platform == "shopbase":
+        return f"{base}/collections/{category_slug}"
     if platform == "generic-web":
         from crawlers.generic_html import GenericHtmlCatalog
 
@@ -256,6 +258,8 @@ def probe_shop_stats(
         return _probe_woocommerce(target, credentials, base_url, url_category)
     if target.platform == "shopify":
         return _probe_shopify(target, credentials, base_url, url_category)
+    if target.platform == "shopbase":
+        return _probe_shopbase(target, base_url, url_category)
     if target.platform == "redbubble":
         return _probe_redbubble(target, credentials, base_url, url_category)
 
@@ -394,6 +398,87 @@ def _probe_woocommerce(
         base_url=crawler.site_url,
         message=_stats_message(total, len(categories)),
         total_products=total,
+        categories=categories,
+        url_category_slug=url_category,
+    )
+
+
+def _probe_shopbase(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from concurrent.futures import ThreadPoolExecutor
+
+    from crawlers.shopbase import ShopBaseCrawler
+
+    crawler = ShopBaseCrawler(base_url)
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="shopbase",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link /products/...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    if target.crawl_type == "category" and target.handle:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            total_future = executor.submit(
+                crawler.count_sitemap_products,
+                collection_handle=target.handle,
+            )
+            categories_future = executor.submit(crawler.probe_categories)
+            total = total_future.result()
+            categories_raw, _ = categories_future.result()
+        categories = [
+            ShopCategoryInfo(
+                slug=str(item.get("slug") or ""),
+                name=str(item.get("name") or item.get("slug") or ""),
+                count=item.get("count"),
+            )
+            for item in categories_raw
+            if item.get("slug")
+        ]
+        message = _stats_message(total, 1) if total else f"Collection **{target.handle}**"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopbase",
+            crawl_type="category",
+            base_url=base_url,
+            message=message,
+            total_products=total,
+            categories=categories,
+            url_category_slug=url_category or target.handle,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        total_future = executor.submit(crawler.count_sitemap_products)
+        categories_future = executor.submit(crawler.probe_categories)
+        total = total_future.result()
+        categories_raw, _ = categories_future.result()
+
+    categories = [
+        ShopCategoryInfo(
+            slug=str(item.get("slug") or ""),
+            name=str(item.get("name") or item.get("slug") or ""),
+            count=item.get("count"),
+        )
+        for item in categories_raw
+        if item.get("slug")
+    ]
+
+    return ShopProbeResult(
+        ok=True,
+        platform="shopbase",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=_stats_message(total, len(categories)) + " · ShopBase",
+        total_products=total or None,
         categories=categories,
         url_category_slug=url_category,
     )

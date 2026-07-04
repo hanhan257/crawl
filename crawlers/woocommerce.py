@@ -30,7 +30,7 @@ class WooCommerceCrawler(BaseCrawler):
         site_url: str,
         consumer_key: str = "",
         consumer_secret: str = "",
-        request_delay: float = 0.15,
+        request_delay: float = 0.0,
         verify_ssl: bool = True,
         use_public_api: bool = False,
     ):
@@ -44,6 +44,8 @@ class WooCommerceCrawler(BaseCrawler):
         self.session = requests.Session()
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self.session.verify = verify_ssl
+        self._api_total_pages: int | None = None
+        self._parallel_fetch = False
 
     def crawl(
         self,
@@ -192,6 +194,18 @@ class WooCommerceCrawler(BaseCrawler):
         session.verify = self.session.verify
         return session
 
+    @staticmethod
+    def _total_pages_from_headers(response: requests.Response) -> int | None:
+        for key in ("X-WP-TotalPages", "x-wp-totalpages"):
+            raw = response.headers.get(key)
+            if not raw:
+                continue
+            try:
+                return max(1, int(raw))
+            except (TypeError, ValueError):
+                continue
+        return None
+
     def _fetch_store_page(self, page: int, params_base: dict[str, Any]) -> list[dict[str, Any]]:
         session = self._worker_session()
         params = {**params_base, "page": page}
@@ -201,10 +215,12 @@ class WooCommerceCrawler(BaseCrawler):
             params=params,
             timeout=DEFAULT_REQUEST_TIMEOUT,
         )
+        if page == 1:
+            self._api_total_pages = self._total_pages_from_headers(response)
         batch = response.json()
         if not isinstance(batch, list):
             return []
-        if self.request_delay and page > 1:
+        if self.request_delay and page > 1 and not self._parallel_fetch:
             time.sleep(self.request_delay / max(1, min(32, 4)))
         return batch
 
@@ -218,10 +234,12 @@ class WooCommerceCrawler(BaseCrawler):
             auth=(self.consumer_key, self.consumer_secret),
             timeout=DEFAULT_REQUEST_TIMEOUT,
         )
+        if page == 1:
+            self._api_total_pages = self._total_pages_from_headers(response)
         batch = response.json()
         if not isinstance(batch, list):
             return []
-        if self.request_delay and page > 1:
+        if self.request_delay and page > 1 and not self._parallel_fetch:
             time.sleep(self.request_delay / max(1, min(32, 4)))
         return batch
 
@@ -237,6 +255,7 @@ class WooCommerceCrawler(BaseCrawler):
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         per_page = min(per_page, 100)
+        self._parallel_fetch = max_workers > 1
         params_base: dict[str, Any] = {"per_page": per_page}
         if category_id:
             params_base["category"] = category_id
@@ -247,15 +266,16 @@ class WooCommerceCrawler(BaseCrawler):
         if search:
             categories = [search]
 
+        self._api_total_pages = None
         first_batch = self._fetch_store_page(1, params_base)
-        if progress_callback:
-            est_pages = max_pages
-            if est_pages is None and limit is not None:
-                est_pages = max(1, (limit + per_page - 1) // per_page)
-            elif est_pages is None:
-                est_pages = 1 if len(first_batch) < per_page else 2
-            matched = min(len(first_batch), limit) if limit else len(first_batch)
-            progress_callback(1, est_pages or 1, matched)
+        estimated_pages = self._api_total_pages
+        if estimated_pages is None:
+            if max_pages:
+                estimated_pages = max_pages
+            elif limit is not None:
+                estimated_pages = max(1, (limit + per_page - 1) // per_page)
+            elif len(first_batch) >= per_page:
+                estimated_pages = 2
 
         raw_items, _pages = fetch_pages_in_waves(
             lambda page: self._fetch_store_page(page, params_base),
@@ -265,6 +285,7 @@ class WooCommerceCrawler(BaseCrawler):
             max_workers=max_workers,
             limit=limit,
             progress_callback=progress_callback,
+            estimated_pages=estimated_pages,
         )
 
         products: list[Product] = []
@@ -285,6 +306,7 @@ class WooCommerceCrawler(BaseCrawler):
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         per_page = min(per_page, 100)
+        self._parallel_fetch = max_workers > 1
         params_base: dict[str, Any] = {
             "per_page": per_page,
             "status": status,
@@ -294,15 +316,16 @@ class WooCommerceCrawler(BaseCrawler):
         if search:
             params_base["search"] = search
 
+        self._api_total_pages = None
         first_batch = self._fetch_rest_page(1, params_base)
-        if progress_callback:
-            est_pages = max_pages
-            if est_pages is None and limit is not None:
-                est_pages = max(1, (limit + per_page - 1) // per_page)
-            elif est_pages is None:
-                est_pages = 1 if len(first_batch) < per_page else 2
-            matched = min(len(first_batch), limit) if limit else len(first_batch)
-            progress_callback(1, est_pages or 1, matched)
+        estimated_pages = self._api_total_pages
+        if estimated_pages is None:
+            if max_pages:
+                estimated_pages = max_pages
+            elif limit is not None:
+                estimated_pages = max(1, (limit + per_page - 1) // per_page)
+            elif len(first_batch) >= per_page:
+                estimated_pages = 2
 
         raw_items, _pages = fetch_pages_in_waves(
             lambda page: self._fetch_rest_page(page, params_base),
@@ -312,11 +335,12 @@ class WooCommerceCrawler(BaseCrawler):
             max_workers=max_workers,
             limit=limit,
             progress_callback=progress_callback,
+            estimated_pages=estimated_pages,
         )
 
         products: list[Product] = []
         for item in raw_items:
-            product = self._map_product(item, fetch_variations=True)
+            product = self._map_product(item, fetch_variations=False)
             if category_slug:
                 product.categories = [category_slug]
             elif search:

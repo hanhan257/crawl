@@ -199,7 +199,8 @@ class GenericHtmlCatalog:
                 products.append(product)
                 processed += 1
                 if progress_callback and (
-                    processed == estimated_total or processed % 5 == 0
+                    processed == estimated_total
+                    or processed % max(1, min(10, max(estimated_total, 1) // 20)) == 0
                 ):
                     progress_callback(
                         processed,
@@ -227,6 +228,7 @@ class GenericHtmlCatalog:
             listing_url,
             max_pages=max_pages,
             max_workers=max_workers,
+            progress_callback=progress_callback,
         )
         return self._crawl_product_urls(
             product_urls,
@@ -252,6 +254,7 @@ class GenericHtmlCatalog:
             listing_url,
             max_pages=max_pages,
             max_workers=max_workers,
+            progress_callback=progress_callback,
         )
         return self._crawl_product_urls(
             product_urls,
@@ -492,6 +495,7 @@ class GenericHtmlCatalog:
         *,
         max_pages: int | None = None,
         max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
     ) -> list[str]:
         try:
             first_html = self._get_text(self._listing_page_url(listing_url, 1))
@@ -512,10 +516,14 @@ class GenericHtmlCatalog:
             if max_pages:
                 total_pages = min(total_pages, max_pages)
             if total_pages <= 1:
+                if progress_callback:
+                    progress_callback(1, 1, len(batch1))
                 return batch1
 
             workers = max(1, min(max_workers, HTML_LISTING_WORKERS))
             page_links: dict[int, list[str]] = {1: batch1}
+            if progress_callback:
+                progress_callback(1, total_pages, len(batch1))
             pages_to_fetch = list(range(2, total_pages + 1))
 
             if workers <= 1:
@@ -524,6 +532,9 @@ class GenericHtmlCatalog:
                     if not links:
                         break
                     page_links[page] = links
+                    if progress_callback:
+                        loaded = sum(len(chunk) for chunk in page_links.values())
+                        progress_callback(page, total_pages, loaded)
                     if self.request_delay:
                         time.sleep(self.request_delay)
             else:
@@ -535,6 +546,13 @@ class GenericHtmlCatalog:
                 ) as executor:
                     for page, links in executor.map(fetch_page, pages_to_fetch):
                         page_links[page] = links
+                        if progress_callback:
+                            loaded = sum(len(chunk) for chunk in page_links.values())
+                            progress_callback(
+                                len(page_links),
+                                total_pages,
+                                loaded,
+                            )
 
             urls: list[str] = []
             seen: set[str] = set()
@@ -551,6 +569,8 @@ class GenericHtmlCatalog:
             if link not in seen:
                 seen.add(link)
                 urls.append(link)
+        if progress_callback:
+            progress_callback(1, 1, len(urls))
 
         page = 2
         total_pages = page
@@ -564,6 +584,8 @@ class GenericHtmlCatalog:
                 if link not in seen:
                     seen.add(link)
                     urls.append(link)
+            if progress_callback:
+                progress_callback(page, max(total_pages, page), len(urls))
             if len(links) < per_page:
                 break
             total_pages = page + 1
@@ -622,6 +644,7 @@ class GenericHtmlCatalog:
         progress_callback: CrawlProgressCallback | None,
     ) -> list[Product]:
         total = len(urls)
+        step = max(1, min(10, total // 20))
         if not urls:
             return []
 
@@ -631,7 +654,9 @@ class GenericHtmlCatalog:
                 product = self._fetch_product(url)
                 if product:
                     products.append(product)
-                if progress_callback and (index + 1 == total or (index + 1) % 5 == 0):
+                if progress_callback and (
+                    index + 1 == total or (index + 1) % step == 0
+                ):
                     progress_callback(index + 1, total, len(products))
             return products
 
@@ -655,7 +680,9 @@ class GenericHtmlCatalog:
                     with lock:
                         products.append(product)
                         matched = len(products)
-                if progress_callback and (processed == total or processed % 5 == 0):
+                if progress_callback and (
+                    processed == total or processed % step == 0
+                ):
                     progress_callback(processed, total, matched)
 
         return products
