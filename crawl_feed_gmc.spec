@@ -16,7 +16,6 @@ datas = [
     (str(root / "models"), "models"),
     (str(root / "crawlers"), "crawlers"),
     (str(root / "exporters"), "exporters"),
-    (str(root / "ui"), "ui"),
     (str(root / "config.example.json"), "."),
 ]
 
@@ -25,11 +24,6 @@ hiddenimports += collect_submodules("ui")
 hiddenimports += collect_submodules("models")
 hiddenimports += collect_submodules("crawlers")
 hiddenimports += collect_submodules("exporters")
-<<<<<<< HEAD
-hiddenimports += collect_submodules("ui")
-=======
-hiddenimports += collect_submodules("crawlers")
->>>>>>> 0134b1eddeeffed85950a4c980a5d3659f20ba3d
 
 for package in ("streamlit", "pandas", "altair", "pyarrow", "PIL", "click"):
     try:

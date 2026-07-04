@@ -22,13 +22,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from app_brand import APP_NAME, APP_PAGE_ICON, APP_TAGLINE, APP_VERSION
-<<<<<<< HEAD
-from exporters.export import default_output_path, export_products
-from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows, is_supplier_vendor
-=======
 from exporters.export import export_download_name, export_products
-from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows
->>>>>>> 0134b1eddeeffed85950a4c980a5d3659f20ba3d
+from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows, is_supplier_vendor
 from exporters.image_urls import IMAGE_EXPORT_MODES
 from models.export_fields import PRESET_LABELS, EXPORT_FIELD_LABELS, ExportFields
 from models.export_rules import ExportRules, apply_export_rules, apply_rules_to_products
@@ -2110,35 +2105,6 @@ def export_current_products(
             progress_bar.progress(value)
         status_text.caption(message)
 
-<<<<<<< HEAD
-    exported = export_products(
-        products,
-        str(output_path),
-        fmt=export_format,
-        rules=rules,
-        fields=fields,
-        progress=on_progress,
-        proxy_url=st.session_state.proxy_url.strip() or None,
-        image_mode=st.session_state.get("image_export_mode", "comma"),
-        max_images_per_product=int(st.session_state.get("max_images_per_product", 0)) or None,
-        max_workers=max_workers,
-        gmc_currency=st.session_state.get("gmc_currency", "USD"),
-        gmc_condition=st.session_state.get("gmc_condition", "new"),
-        gmc_google_category=category_id_from_option(
-            st.session_state.get("gmc_google_category", GMC_DEFAULT_GOOGLE_CATEGORY)
-        ),
-        gmc_defaults={
-            "gender": st.session_state.get("gmc_default_gender", GMC_DEFAULT_GENDER),
-            "age group": st.session_state.get("gmc_default_age_group", GMC_AGE_GROUP_DEFAULT),
-            "gtin": st.session_state.get("gmc_gtin_default", ""),
-            "brand": _resolve_shop_brand_default(),
-        },
-        gmc_variant_mode=st.session_state.get("gmc_variant_mode", "all_variations"),
-    )
-
-    st.session_state.output_bytes = exported.read_bytes()
-    st.session_state.output_name = Path(exported).name
-=======
     try:
         exported = export_products(
             products,
@@ -2160,6 +2126,7 @@ def export_current_products(
                 "gender": st.session_state.get("gmc_default_gender", GMC_DEFAULT_GENDER),
                 "age group": st.session_state.get("gmc_default_age_group", GMC_AGE_GROUP_DEFAULT),
                 "gtin": st.session_state.get("gmc_gtin_default", ""),
+                "brand": _resolve_shop_brand_default(),
             },
             gmc_variant_mode=st.session_state.get("gmc_variant_mode", "all_variations"),
         )
@@ -2167,7 +2134,6 @@ def export_current_products(
         st.session_state.output_name = download_name
     finally:
         cleanup_export_artifacts(output_path)
->>>>>>> 0134b1eddeeffed85950a4c980a5d3659f20ba3d
 
     row_count: int | None = None
     if export_format == "gmc-feed-csv":
