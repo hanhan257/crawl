@@ -428,6 +428,82 @@ footer { visibility: hidden; }
     padding-bottom: 0.25rem;
     font-size: 0.85rem;
 }
+
+/* ── GMC bulk feed — 1 hàng gọn ── */
+.gmc-bulk-wrap {
+    margin: -0.15rem 0 0.15rem;
+}
+.gmc-bulk-wrap .stCaption {
+    margin-bottom: 0.35rem !important;
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+}
+.gmc-bulk-wrap [data-testid="stHorizontalBlock"] {
+    gap: 0.35rem !important;
+    align-items: flex-end !important;
+}
+.gmc-bulk-wrap [data-testid="column"] {
+    min-width: 0;
+}
+.gmc-bulk-wrap label p,
+.gmc-bulk-wrap [data-testid="stWidgetLabel"] p {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: var(--rose-dark) !important;
+    margin-bottom: 0.15rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.gmc-bulk-wrap [data-testid="stTextInput"] input,
+.gmc-bulk-wrap [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    min-height: 2rem !important;
+    font-size: 0.82rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+.gmc-bulk-wrap [data-testid="stCheckbox"] {
+    padding-bottom: 0.45rem;
+}
+.gmc-bulk-wrap [data-testid="stCheckbox"] label p {
+    font-size: 0.72rem !important;
+    white-space: nowrap;
+}
+@media (max-width: 1100px) {
+    .gmc-bulk-wrap [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+    }
+    .gmc-bulk-wrap [data-testid="column"] {
+        flex: 1 1 22% !important;
+        min-width: 6.5rem !important;
+    }
+}
+
+/* ── GMC title bulk ── */
+.gmc-title-bulk-wrap {
+    margin: 0.45rem 0 0.25rem;
+    padding: 0.45rem 0 0.15rem;
+    border-top: 1px dashed var(--pink-200);
+}
+.gmc-title-bulk-wrap .stCaption {
+    margin-bottom: 0.3rem !important;
+    font-size: 0.76rem !important;
+}
+.gmc-title-bulk-wrap [data-testid="stHorizontalBlock"] {
+    gap: 0.35rem !important;
+    align-items: flex-end !important;
+}
+.gmc-title-bulk-wrap label p,
+.gmc-title-bulk-wrap [data-testid="stWidgetLabel"] p {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: var(--rose-dark) !important;
+}
+.gmc-title-bulk-wrap [data-testid="stTextInput"] input {
+    min-height: 2rem !important;
+    font-size: 0.82rem !important;
+}
+
 .crawl-action-center {
     margin-top: 0.85rem;
     padding-top: 0.85rem;

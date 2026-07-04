@@ -52,6 +52,12 @@ GMC_CATEGORY_SUGGESTIONS: tuple[GmcCategorySuggestion, ...] = (
         ("jewelry", "jewellery", "necklace", "ring", "bracelet", "earring", "pendant", "trang sức", "trang suc"),
     ),
     GmcCategorySuggestion(
+        "178",
+        "Mắt kính",
+        "Sunglasses",
+        ("sunglasses", "sunglass", "eyewear", "mắt kính", "mat kinh", "kính râm", "kinh ram", "shades"),
+    ),
+    GmcCategorySuggestion(
         "5181",
         "Túi / Vali",
         "Luggage & Bags",
@@ -106,6 +112,10 @@ GMC_CATEGORY_SUGGESTIONS: tuple[GmcCategorySuggestion, ...] = (
 
 def category_dropdown_label(category: GmcCategorySuggestion) -> str:
     return f"{category.id} — {category.label_vi} ({category.label_en})"
+
+
+def category_options_hint() -> str:
+    return " · ".join(f"{c.id} {c.label_vi}" for c in GMC_CATEGORY_SUGGESTIONS)
 
 
 GMC_CATEGORY_DROPDOWN_OPTIONS: list[str] = [""] + [

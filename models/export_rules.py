@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 from models.product import Product
 
+GMC_TITLE_MAX_LENGTH = 150
+
 
 @dataclass
 class ExportRules:
@@ -14,6 +16,9 @@ class ExportRules:
     round_to_99: bool = False
     title_remove: str = ""
     title_remove_ignore_case: bool = True
+    title_find: str = ""
+    title_replace: str = ""
+    title_replace_ignore_case: bool = True
     title_prefix: str = ""
     title_suffix: str = ""
     category_override: str = ""
@@ -133,6 +138,14 @@ def apply_export_rules(product: Product, rules: ExportRules | None) -> Product:
             rules.title_remove_ignore_case,
         )
 
+    if rules.title_find.strip():
+        updated.title = _apply_find_replace(
+            updated.title or "",
+            rules.title_find.strip(),
+            rules.title_replace,
+            rules.title_replace_ignore_case,
+        )
+
     if rules.title_prefix or rules.title_suffix:
         updated.title = f"{rules.title_prefix}{updated.title}{rules.title_suffix}".strip()
 
@@ -168,6 +181,26 @@ def apply_export_rules(product: Product, rules: ExportRules | None) -> Product:
                 except (TypeError, ValueError):
                     pass
 
+    return updated
+
+
+def apply_gmc_title_rules(
+    product: Product,
+    rules: ExportRules | None,
+    *,
+    shop_brand: str = "",
+    prepend_brand: bool = False,
+) -> Product:
+    """Áp dụng quy tắc title cho feed GMC (tối đa 150 ký tự)."""
+    updated = apply_export_rules(product, rules)
+    if prepend_brand:
+        brand = (shop_brand or updated.vendor or "").strip()
+        title = (updated.title or "").strip()
+        if brand and title and not title.lower().startswith(brand.lower()):
+            updated.title = f"{brand} - {title}"
+    title = (updated.title or "").strip()
+    if len(title) > GMC_TITLE_MAX_LENGTH:
+        updated.title = title[:GMC_TITLE_MAX_LENGTH].rstrip()
     return updated
 
 

@@ -26,7 +26,7 @@ from exporters.export import export_download_name, export_products
 from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows, is_supplier_vendor
 from exporters.image_urls import IMAGE_EXPORT_MODES
 from models.export_fields import PRESET_LABELS, EXPORT_FIELD_LABELS, ExportFields
-from models.export_rules import ExportRules, apply_export_rules, apply_rules_to_products
+from models.export_rules import ExportRules, apply_export_rules, apply_gmc_title_rules, apply_rules_to_products
 from models.product import Product
 from utils.credentials import CrawlCredentials
 from utils.crawl_preflight import check_shop_reachable
@@ -62,11 +62,11 @@ from utils.gmc_feed_editor import (
 from utils.gmc_taxonomy import (
     GMC_AGE_GROUP_DEFAULT,
     GMC_AGE_GROUP_OPTIONS,
-    GMC_CATEGORY_DROPDOWN_OPTIONS,
     GMC_DEFAULT_GENDER,
-    GMC_DEFAULT_GOOGLE_CATEGORY,
+    GMC_DEFAULT_GOOGLE_CATEGORY_ID,
     GMC_GENDER_OPTIONS,
     category_id_from_option,
+    category_options_hint,
 )
 from utils.export_selection import (
     EXPORT_ORDER_LABELS,
@@ -128,7 +128,6 @@ FORMAT_NOTES = {
 }
 
 GMC_CONDITION_OPTIONS = ["", "new", "refurbished", "used"]
-GMC_BULK_CATEGORY_OPTIONS = [""] + list(GMC_CATEGORY_DROPDOWN_OPTIONS)
 
 GENERAL_EXPORT_FORMATS = ["woocommerce-csv", "shopify-csv", "web-feed-csv"]
 SHOP_EXPORT_FORMATS = GENERAL_EXPORT_FORMATS + ["gmc-feed-csv"]
@@ -148,8 +147,12 @@ RULE_DEFAULTS = {
     "round_to_99": False,
     "title_remove": "",
     "title_remove_ignore_case": True,
+    "title_find": "",
+    "title_replace": "",
+    "title_replace_ignore_case": True,
     "title_prefix": "",
     "title_suffix": "",
+    "gmc_title_prepend_brand": False,
     "category_override": "",
     "category_add": "",
     "tags_add": "",
@@ -211,7 +214,7 @@ def init_session() -> None:
         "crawl_category_pill": "Tất cả",
         "gmc_currency": "USD",
         "gmc_condition": "new",
-        "gmc_google_category": GMC_DEFAULT_GOOGLE_CATEGORY,
+        "gmc_google_category": GMC_DEFAULT_GOOGLE_CATEGORY_ID,
         "gmc_default_gender": GMC_DEFAULT_GENDER,
         "gmc_default_age_group": GMC_AGE_GROUP_DEFAULT,
         "gmc_gtin_default": "",
@@ -251,7 +254,7 @@ def init_session() -> None:
 
     if not st.session_state.get("_gmc_feed_defaults_v1"):
         if not str(st.session_state.get("gmc_google_category") or "").strip():
-            st.session_state.gmc_google_category = GMC_DEFAULT_GOOGLE_CATEGORY
+            st.session_state.gmc_google_category = GMC_DEFAULT_GOOGLE_CATEGORY_ID
         if not str(st.session_state.get("gmc_default_gender") or "").strip():
             st.session_state.gmc_default_gender = GMC_DEFAULT_GENDER
         if not str(st.session_state.get("gmc_default_age_group") or "").strip():
@@ -811,7 +814,7 @@ def _gmc_preview_kwargs() -> dict:
         "gmc_currency": st.session_state.get("gmc_currency", "USD"),
         "gmc_condition": st.session_state.get("gmc_condition", "new"),
         "gmc_google_category": category_id_from_option(
-            st.session_state.get("gmc_google_category", GMC_DEFAULT_GOOGLE_CATEGORY)
+            st.session_state.get("gmc_google_category", GMC_DEFAULT_GOOGLE_CATEGORY_ID)
         ),
         "gmc_variant_mode": st.session_state.get("gmc_variant_mode", "all_variations"),
         "gmc_defaults": {
@@ -835,12 +838,11 @@ def _gmc_data_editor_column_config(hr: dict[str, str]) -> dict:
         "vendor": st.column_config.TextColumn(column_header_label("vendor", hr)),
         "sku": st.column_config.TextColumn(column_header_label("sku", hr)),
         "gtin": st.column_config.TextColumn(column_header_label("gtin", hr)),
-        "google_product_category": st.column_config.SelectboxColumn(
+        "google_product_category": st.column_config.TextColumn(
             column_header_label("google_product_category", hr),
-            options=GMC_CATEGORY_DROPDOWN_OPTIONS,
             help=(
-                "Gợi ý tự động theo title/tags/description. "
-                "Tra thêm mã taxonomy tại productcategory.net"
+                "Nhập mã taxonomy Google (vd. 178, 212, 188) hoặc chọn từ gợi ý. "
+                f"Gợi ý: {category_options_hint()}"
             ),
         ),
         "gmc_size": st.column_config.TextColumn(column_header_label("gmc_size", hr)),
@@ -898,56 +900,145 @@ def _build_current_gmc_feed_rows() -> list[dict[str, str]]:
 
 def _render_gmc_feed_bulk_fields() -> None:
     st.markdown(
-        "**Chỉnh hàng loạt feed** — brand, size, color, condition, "
-        "google product category, gender, age group"
+        '<div class="gmc-bulk-wrap">',
+        unsafe_allow_html=True,
     )
     st.caption(
-        "Điền trường cần đổi rồi bấm **Áp dụng hàng loạt feed** — ghi vào **tất cả dòng feed**. "
-        "Để trống / **— giữ nguyên —** = không đổi cột đó. "
-        "**Chỉ ô trống** = chỉ điền giá trị còn thiếu."
+        "**Chỉnh hàng loạt feed** — điền cột cần đổi · để trống = giữ nguyên · "
+        "Category: nhập mã (178, 212…)"
     )
-    brand_col, size_col, color_col = st.columns(3)
-    with brand_col:
-        st.text_input("Brand (hàng loạt)", key="gmc_bulk_brand")
-    with size_col:
-        st.text_input("Size (hàng loạt)", key="gmc_bulk_size")
-    with color_col:
-        st.text_input("Color (hàng loạt)", key="gmc_bulk_color")
-
-    cond_col, cat_col, empty_col = st.columns([2, 3, 1])
-    with cond_col:
+    c1, c2, c3, c4, c5, c6, c7, c8 = st.columns(
+        [1.1, 0.75, 0.9, 1, 1.35, 0.95, 1.05, 0.65],
+        gap="small",
+    )
+    with c1:
+        st.text_input("Brand", key="gmc_bulk_brand", label_visibility="visible")
+    with c2:
+        st.text_input("Size", key="gmc_bulk_size")
+    with c3:
+        st.text_input("Color", key="gmc_bulk_color")
+    with c4:
         st.selectbox(
-            "Condition (hàng loạt)",
+            "Condition",
             options=GMC_CONDITION_OPTIONS,
             format_func=_gmc_bulk_option_label,
             key="gmc_bulk_condition",
         )
-    with cat_col:
-        st.selectbox(
-            "Google product category (hàng loạt)",
-            options=GMC_BULK_CATEGORY_OPTIONS,
-            format_func=_gmc_bulk_option_label,
+    with c5:
+        st.text_input(
+            "Category",
             key="gmc_bulk_google_category",
+            placeholder="178…",
+            help=f"Mã Google taxonomy · {category_options_hint()}",
         )
-    with empty_col:
-        st.write("")
-        st.checkbox("Chỉ ô trống", key="gmc_bulk_only_empty")
-
-    gender_col, age_col, _ = st.columns([2, 2, 1])
-    with gender_col:
+    with c6:
         st.selectbox(
-            "Gender (hàng loạt)",
+            "Gender",
             options=GMC_GENDER_OPTIONS,
             format_func=_gmc_bulk_option_label,
             key="gmc_bulk_gender",
         )
-    with age_col:
+    with c7:
         st.selectbox(
-            "Age group (hàng loạt)",
+            "Age group",
             options=GMC_AGE_GROUP_OPTIONS,
             format_func=_gmc_bulk_option_label,
             key="gmc_bulk_age_group",
         )
+    with c8:
+        st.checkbox("Chỉ trống", key="gmc_bulk_only_empty", help="Chỉ điền ô còn thiếu")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _gmc_title_rules_active(rules: ExportRules) -> bool:
+    return bool(
+        rules.title_remove
+        or rules.title_find
+        or rules.title_prefix
+        or rules.title_suffix
+        or st.session_state.get("gmc_title_prepend_brand")
+    )
+
+
+def _render_gmc_title_bulk_fields() -> None:
+    st.markdown(
+        '<div class="gmc-title-bulk-wrap">',
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "**Title feed GMC** — xóa / tìm-thay / tiền tố-hậu tố · title xuất file tối đa **150** ký tự"
+    )
+    r1c1, r1c2 = st.columns([2.4, 1], gap="small")
+    with r1c1:
+        st.text_input(
+            "Xóa chữ",
+            placeholder="SupplierName, FREE SHIPPING",
+            help="Nhiều cụm cách nhau dấu phẩy",
+            key="title_remove",
+        )
+    with r1c2:
+        st.checkbox(
+            "Không phân biệt hoa/thường",
+            key="title_remove_ignore_case",
+        )
+    r2c1, r2c2, r2c3, r2c4 = st.columns([1.1, 1.1, 1.2, 1.2], gap="small")
+    with r2c1:
+        st.text_input("Tìm", placeholder="925 Silver", key="title_find")
+    with r2c2:
+        st.text_input("Thay bằng", placeholder="Sterling Silver", key="title_replace")
+    with r2c3:
+        st.text_input("Tiền tố", placeholder="MyBrand - ", key="title_prefix")
+    with r2c4:
+        st.text_input("Hậu tố", placeholder=" | Free Ship", key="title_suffix")
+    st.checkbox(
+        "Thêm brand shop vào đầu title nếu chưa có",
+        key="gmc_title_prepend_brand",
+        help=f"Dùng brand shop: **{_resolve_shop_brand_default() or '(chưa đặt)'}**",
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _apply_gmc_title_bulk_from_session() -> None:
+    products_raw = st.session_state.products_raw
+    edited_df = st.session_state.edited_df
+    if products_raw is None:
+        st.warning("Chưa có sản phẩm — crawl hoặc import CSV trước.")
+        return
+
+    if edited_df is not None:
+        st.session_state.products_raw = merge_edited_rows(
+            products_raw,
+            edited_df.to_dict("records"),
+            export_format="gmc-feed-csv",
+        )
+
+    rules = build_export_rules(section="title")
+    if not _gmc_title_rules_active(rules):
+        st.warning(
+            "Nhập ít nhất một quy tắc title (xóa, tìm/thay, tiền tố, hậu tố hoặc tick thêm brand)."
+        )
+        return
+
+    shop_brand = _resolve_shop_brand_default()
+    prepend = bool(st.session_state.get("gmc_title_prepend_brand"))
+    applied = [
+        apply_gmc_title_rules(
+            product,
+            rules,
+            shop_brand=shop_brand,
+            prepend_brand=prepend,
+        )
+        for product in st.session_state.products_raw
+    ]
+    st.session_state.products_raw = applied
+    apply_edit_filter(applied)
+    st.session_state.output_bytes = None
+    st.session_state.output_name = None
+    st.session_state.last_error = None
+    st.session_state.last_info = (
+        f"Đã áp dụng quy tắc **title GMC** cho **{len(applied)}** sản phẩm — "
+        "xem tab **File feed xuất** hoặc cột Title bảng bên dưới."
+    )
 
 
 def _apply_gmc_feed_bulk_from_session() -> None:
@@ -1092,13 +1183,13 @@ def render_gmc_feed_settings(*, include_variant_mode: bool = True) -> None:
             key="gmc_condition",
         )
     with gmc_col3:
-        st.selectbox(
+        st.text_input(
             "Google product category mặc định",
-            options=GMC_CATEGORY_DROPDOWN_OPTIONS,
             key="gmc_google_category",
+            placeholder="212",
             help=(
-                "Mã taxonomy Google — áp dụng khi SP không khớp gợi ý tự động. "
-                "Tra cứu thêm tại productcategory.net"
+                "Mã taxonomy khi SP không khớp gợi ý tự động — nhập số (vd. 178, 212). "
+                f"Gợi ý: {category_options_hint()}"
             ),
         )
     gmc_def1, gmc_def2 = st.columns(2)
@@ -1126,14 +1217,26 @@ def render_gmc_feed_settings(*, include_variant_mode: bool = True) -> None:
 def render_gmc_bulk_feed_block() -> None:
     with st.container(border=True):
         _render_gmc_feed_bulk_fields()
-        if st.button(
-            "Áp dụng hàng loạt feed",
-            type="primary",
-            use_container_width=True,
-            key="gmc_feed_bulk_apply",
-        ):
-            _apply_gmc_feed_bulk_from_session()
-            st.rerun()
+        _render_gmc_title_bulk_fields()
+        feed_col, title_col = st.columns(2, gap="small")
+        with feed_col:
+            if st.button(
+                "Áp dụng hàng loạt feed",
+                type="primary",
+                use_container_width=True,
+                key="gmc_feed_bulk_apply",
+            ):
+                _apply_gmc_feed_bulk_from_session()
+                st.rerun()
+        with title_col:
+            if st.button(
+                "Áp dụng title GMC",
+                type="secondary",
+                use_container_width=True,
+                key="gmc_title_bulk_apply",
+            ):
+                _apply_gmc_title_bulk_from_session()
+                st.rerun()
 
 
 def render_export_format_selector() -> str | None:
@@ -1213,6 +1316,9 @@ def build_export_rules(section: str | None = None) -> ExportRules:
         round_to_99=bool(st.session_state.round_to_99),
         title_remove=str(st.session_state.title_remove or "").strip(),
         title_remove_ignore_case=bool(st.session_state.title_remove_ignore_case),
+        title_find=str(st.session_state.title_find or "").strip(),
+        title_replace=str(st.session_state.title_replace or ""),
+        title_replace_ignore_case=bool(st.session_state.title_replace_ignore_case),
         title_prefix=str(st.session_state.title_prefix or "").strip(),
         title_suffix=str(st.session_state.title_suffix or "").strip(),
         category_override=str(st.session_state.category_override or "").strip(),
@@ -1242,6 +1348,9 @@ def build_export_rules(section: str | None = None) -> ExportRules:
         return ExportRules(
             title_remove=full.title_remove,
             title_remove_ignore_case=full.title_remove_ignore_case,
+            title_find=full.title_find,
+            title_replace=full.title_replace,
+            title_replace_ignore_case=full.title_replace_ignore_case,
             title_prefix=full.title_prefix,
             title_suffix=full.title_suffix,
         )
@@ -1426,12 +1535,30 @@ def _render_bulk_title_section() -> None:
         "Xóa title không phân biệt hoa/thường",
         key="title_remove_ignore_case",
     )
+    find_col, replace_col = st.columns(2)
+    with find_col:
+        st.text_input(
+            "Tìm trong title",
+            placeholder="925 Silver",
+            help="Thay thế trên toàn bộ title (sau bước xóa chữ)",
+            key="title_find",
+        )
+    with replace_col:
+        st.text_input(
+            "Thay bằng",
+            placeholder="Sterling Silver",
+            key="title_replace",
+        )
+    st.checkbox(
+        "Tìm/thay title không phân biệt hoa/thường",
+        key="title_replace_ignore_case",
+    )
     prefix_col, suffix_col = st.columns(2)
     with prefix_col:
         st.text_input(
             "Tiền tố title (thêm đầu)",
             placeholder="VEEXOVAR - ",
-            help="Thêm sau bước xóa chữ",
+            help="Thêm sau bước tìm & thay",
             key="title_prefix",
         )
     with suffix_col:
@@ -1671,7 +1798,7 @@ def render_customization_panel() -> ExportRules:
             """
 **Giá** — Nhân (×), cộng ($), làm tròn .99. Preset nhanh phía trên.
 
-**Title** — Xóa từ/cụm, thêm tiền tố/hậu tố. Nhiều cụm cách nhau dấu phẩy.
+**Title** — Xóa từ/cụm, tìm & thay, thêm tiền tố/hậu tố. Nhiều cụm cách nhau dấu phẩy.
 
 **Category, tags & shop** — Điền giá trị mới → **thay thế hoàn toàn** giá trị cũ.
 
@@ -2120,7 +2247,7 @@ def export_current_products(
             gmc_currency=st.session_state.get("gmc_currency", "USD"),
             gmc_condition=st.session_state.get("gmc_condition", "new"),
             gmc_google_category=category_id_from_option(
-                st.session_state.get("gmc_google_category", GMC_DEFAULT_GOOGLE_CATEGORY)
+                st.session_state.get("gmc_google_category", GMC_DEFAULT_GOOGLE_CATEGORY_ID)
             ),
             gmc_defaults={
                 "gender": st.session_state.get("gmc_default_gender", GMC_DEFAULT_GENDER),
@@ -3032,7 +3159,7 @@ def _render_main_workflow(
         required_text = _required_fields_caption(export_format)
         if is_gmc:
             st.caption(
-                "**Chỉnh hàng loạt feed** phía trên → **Áp dụng hàng loạt feed**. "
+                "**Chỉnh hàng loạt feed** / **Title GMC** phía trên → **Áp dụng**. "
                 "Chọn số lượng → **Áp dụng lọc**. "
                 f"Bắt buộc: **{required_text}**. "
                 "Tab **File feed xuất** = xem trước file GMC cuối (16 cột)."

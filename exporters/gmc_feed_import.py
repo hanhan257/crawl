@@ -9,7 +9,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from exporters.image_urls import collect_product_image_urls
 from models.export_fields import ExportFields
-from models.export_rules import ExportRules, apply_export_rules
+from models.export_rules import ExportRules, GMC_TITLE_MAX_LENGTH, apply_export_rules
 from models.product import Product
 from utils.gmc_taxonomy import normalize_age_group_for_export as _normalize_age_group
 from utils.price_format import format_export_price
@@ -338,7 +338,7 @@ def _variant_link(product: Product, variant: dict[str, Any] | None) -> str:
 def _variant_title(product: Product, variant: dict[str, Any] | None) -> str:
     base = _plain_gmc_text(product.title)
     if not variant:
-        return base
+        return _plain_gmc_text(base, limit=GMC_TITLE_MAX_LENGTH)
     part = _plain_gmc_text(variant.get("title"))
     if not part or part.lower() in {"default title", "default"}:
         options = [
@@ -347,10 +347,10 @@ def _variant_title(product: Product, variant: dict[str, Any] | None) -> str:
         ]
         part = " / ".join(option for option in options if option)
     if not part:
-        return base
+        return _plain_gmc_text(base, limit=GMC_TITLE_MAX_LENGTH)
     if part.lower() in base.lower():
-        return base
-    return f"{base} - {part}"
+        return _plain_gmc_text(base, limit=GMC_TITLE_MAX_LENGTH)
+    return _plain_gmc_text(f"{base} - {part}", limit=GMC_TITLE_MAX_LENGTH)
 
 
 def _variant_price(product: Product, variant: dict[str, Any] | None) -> float | None:

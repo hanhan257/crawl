@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from exporters.gmc_feed_import import expand_gmc_variants, product_to_gmc_row
+from models.export_rules import GMC_TITLE_MAX_LENGTH
 from models.product import Product
 from utils.gmc_taxonomy import (
     GMC_AGE_GROUP_DEFAULT,
@@ -64,7 +65,7 @@ def build_gmc_feed_edit_rows(
                 {
                     "feed_key": f"{row_id}:{variant_id}",
                     "id": gmc_row["id"],
-                    "title": (gmc_row["title"] or "")[:80],
+                    "title": (gmc_row["title"] or "")[:GMC_TITLE_MAX_LENGTH],
                     "brand": gmc_row["brand"],
                     "size": gmc_row["size"],
                     "color": gmc_row["color"],

@@ -13,18 +13,23 @@ Build thanh app Windows (.exe)
 1. Double-click `build.bat`
 2. Doi build xong (5–15 phut lan dau)
 3. Chay: `dist\Crawl Feed GMC\Crawl Feed GMC.exe`
-4. File xuat CSV nam trong thu muc `output` cung cap exe
+4. File CSV tai qua nut Download trong app (Lich su file feed)
 
 Luong chinh (GMC)
 -----------------
 Bước 1 Crawl link (Shopify / Woo / Web thuan / Redbubble)
-Bước 2 Cau hinh feed GMC
-Bước 3–7 Tuy chinh, xem truoc, xuat file CSV GMC
+Bước 2 Chon file feed GMC
+Bước 4 Truong feed GMC (16 cot)
+Bước 6 Chinh hang loat feed (brand, size, color, category 178…)
+       + Title GMC (xoa / tim-thay / tien to / them brand)
+       + Bang sua tung dong, tab File feed xuat
+Bước cuoi Xuat file — tai qua nut Download (khong luu vao output/)
 
 Ghi chu
 -------
 - Giai nen day du thu muc truoc khi chay (khong chay truc tiep trong WinRAR/zip)
 - Dong cua so console = tat app
 - Port mac dinh: 8501
+- Luong crawl Silverbene (Web thuan): khuyen nghi 16–32 luong
 - Cau hinh: config.json (xem config.example.json)
 - Deploy len VPS (Docker): xem DEPLOY_VPS.md
