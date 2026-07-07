@@ -16,6 +16,7 @@ from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 import requests
 
 from models.product import Product
+from utils.description_html import extract_generic_description_from_html
 from utils.http_session import create_http_session
 
 CrawlProgressCallback = Callable[[int, int, int], None]
@@ -866,71 +867,9 @@ class GenericHtmlCatalog:
             return 2
         return 3
 
-    @staticmethod
-    def _normalize_description_html(fragment: str) -> str:
-        text = fragment.strip()
-        text = re.sub(r"[\r\n]+", "", text)
-        text = re.sub(r">\s+<", "><", text)
-        return text
-
-    @staticmethod
-    def _text_bullets_to_html(text: str) -> str:
-        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-        if not lines:
-            return text.strip()
-        if len(lines) == 1 and "<" in lines[0]:
-            return lines[0]
-        items = "".join(f"<li>{html.escape(ln)}</li>" for ln in lines)
-        return f"<ul>{items}</ul>"
-
-    @staticmethod
-    def _meta_content(tag_html: str) -> str:
-        match = re.search(r'content="([^"]*)"', tag_html, re.I | re.S)
-        if not match:
-            return ""
-        return html.unescape(match.group(1)).strip()
-
     @classmethod
     def _extract_description(cls, html_text: str) -> str | None:
-        # Magento / Silverbene: <div class="value" itemprop="description"><ul>…
-        for pattern in (
-            r'<div[^>]*class="[^"]*\bvalue\b[^"]*"[^>]*itemprop="description"[^>]*>(.*?)</div>',
-            r'itemprop="description"[^>]*>\s*(<ul>.*?</ul>)',
-            r'class="[^"]*product attribute overview[^"]*"[^>]*>.*?'
-            r'<div[^>]*class="[^"]*\bvalue\b[^"]*"[^>]*>(.*?)</div>',
-        ):
-            match = re.search(pattern, html_text, re.I | re.S)
-            if match:
-                inner = cls._normalize_description_html(match.group(1))
-                if inner and "consent-description" not in inner.lower():
-                    return inner
-
-        for tag in re.findall(r"<meta[^>]+itemprop=[\"']description[\"'][^>]*>", html_text, re.I):
-            text = cls._meta_content(tag)
-            if text:
-                return cls._text_bullets_to_html(text)
-
-        for tag in re.findall(r'<meta[^>]+name=["\']description["\'][^>]*>', html_text, re.I):
-            text = cls._meta_content(tag)
-            if text and "main stone:" in text.lower():
-                return cls._text_bullets_to_html(text)
-
-        for script in re.findall(
-            r'<script type="application/ld\+json">(.*?)</script>',
-            html_text,
-            re.S,
-        ):
-            try:
-                data = json.loads(script)
-            except json.JSONDecodeError:
-                continue
-            items = data if isinstance(data, list) else [data]
-            for item in items:
-                if isinstance(item, dict) and item.get("@type") == "Product":
-                    desc = str(item.get("description") or "").strip()
-                    if desc:
-                        return cls._text_bullets_to_html(desc)
-        return None
+        return extract_generic_description_from_html(html_text)
 
     @staticmethod
     def _extract_categories(html: str) -> list[str]:

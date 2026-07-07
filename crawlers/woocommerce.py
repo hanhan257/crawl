@@ -10,6 +10,10 @@ import requests
 from crawlers.base import BaseCrawler
 from models.product import Product
 from utils.crawl_parallel import fetch_pages_in_waves
+from utils.description_html import (
+    extract_woo_description_from_html,
+    woo_description_from_item,
+)
 from utils.http_retry import DEFAULT_REQUEST_TIMEOUT, get_with_retry
 
 CrawlProgressCallback = Callable[[int, int, int], None]
@@ -363,7 +367,7 @@ class WooCommerceCrawler(BaseCrawler):
             source=self.source,
             id=str(item.get("id", "")),
             title=item.get("name") or "",
-            description=self._strip_html(item.get("description") or item.get("short_description")),
+            description=self._resolve_description(item, item.get("permalink")),
             price=self._safe_float(prices.get("price") or prices.get("regular_price")),
             currency=prices.get("currency_code"),
             url=item.get("permalink"),
@@ -467,7 +471,7 @@ class WooCommerceCrawler(BaseCrawler):
             source=self.source,
             id=str(item.get("id", "")),
             title=item.get("name") or "",
-            description=self._strip_html(item.get("description") or item.get("short_description")),
+            description=self._resolve_description(item, permalink),
             price=price,
             currency=None,
             url=permalink,
@@ -481,6 +485,22 @@ class WooCommerceCrawler(BaseCrawler):
             variants=variants,
         )
 
+    def _resolve_description(self, item: dict[str, Any], page_url: str | None) -> str | None:
+        description = woo_description_from_item(item)
+        if description or not page_url:
+            return description
+        try:
+            response = get_with_retry(
+                self.session,
+                page_url,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+            if response.status_code != 200:
+                return None
+            return extract_woo_description_from_html(response.text)
+        except requests.RequestException:
+            return None
+
     @staticmethod
     def _safe_float(value: Any) -> float | None:
         if value is None or value == "":
@@ -492,12 +512,3 @@ class WooCommerceCrawler(BaseCrawler):
             return float(raw)
         except (TypeError, ValueError):
             return None
-
-    @staticmethod
-    def _strip_html(value: str | None) -> str | None:
-        if not value:
-            return None
-        import re
-
-        text = re.sub(r"<[^>]+>", " ", value)
-        return " ".join(text.split()) or None

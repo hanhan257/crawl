@@ -17,6 +17,11 @@ import requests
 
 from crawlers.base import BaseCrawler
 from models.product import Product
+from utils.description_html import (
+    description_from_json_ld,
+    extract_generic_description_from_html,
+    shopbase_description_from_item,
+)
 from utils.http_session import create_http_session
 
 CrawlProgressCallback = Callable[[int, int, int], None]
@@ -618,6 +623,19 @@ class ShopBaseCrawler(BaseCrawler):
     ) -> Product | None:
         return self._map_detail_product(data, default_category=default_category)
 
+    def _resolve_shopbase_description(self, data: dict[str, Any], handle: str) -> str | None:
+        description = shopbase_description_from_item(data)
+        if description:
+            return description
+        url = f"{self.site_url}/products/{handle}"
+        try:
+            resp = self.session.get(url, timeout=30)
+            if resp.status_code == 200:
+                return extract_generic_description_from_html(resp.text)
+        except requests.RequestException:
+            pass
+        return None
+
     def _map_detail_product(
         self,
         data: dict[str, Any],
@@ -629,9 +647,7 @@ class ShopBaseCrawler(BaseCrawler):
         if not handle or not title:
             return None
 
-        description = data.get("description")
-        if description is not None:
-            description = str(description).strip() or None
+        description = self._resolve_shopbase_description(data, handle)
 
         price = self._parse_price(data.get("price") or data.get("min_price"))
         if price is None and data.get("variants"):
@@ -796,9 +812,9 @@ class ShopBaseCrawler(BaseCrawler):
         status = self._availability_from_schema(availability, page_html)
 
         images = self._collect_images_ld(ld_product, page_html)
-        description = ld_product.get("description")
-        if description is not None:
-            description = html_lib.unescape(str(description).strip()) or None
+        description = description_from_json_ld(ld_product.get("description"))
+        if not description:
+            description = extract_generic_description_from_html(page_html)
 
         sku = str(ld_product.get("sku") or handle).strip()
         categories = [default_category] if default_category else []

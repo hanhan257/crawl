@@ -13,6 +13,10 @@ import requests
 from crawlers.base import BaseCrawler
 from models.product import Product
 from utils.crawl_parallel import fetch_pages_in_waves
+from utils.description_html import (
+    extract_shopify_description_from_html,
+    shopify_description_from_item,
+)
 from utils.http_retry import DEFAULT_REQUEST_TIMEOUT, get_with_retry
 
 CrawlProgressCallback = Callable[[int, int, int], None]
@@ -459,7 +463,7 @@ class ShopifyCrawler(BaseCrawler):
             source=self.source,
             id=str(item.get("id", "")),
             title=item.get("title") or "",
-            description=self._strip_html(item.get("body_html")),
+            description=self._resolve_description(item, urljoin(self.shop_url, f"/products/{item.get('handle')}")),
             price=self._safe_float(first_variant.get("price")),
             currency=None,
             url=urljoin(self.shop_url, f"/products/{item.get('handle')}"),
@@ -492,6 +496,22 @@ class ShopifyCrawler(BaseCrawler):
         product.status = item.get("status")
         return product
 
+    def _resolve_description(self, item: dict[str, Any], page_url: str | None) -> str | None:
+        description = shopify_description_from_item(item)
+        if description or not page_url:
+            return description
+        try:
+            response = get_with_retry(
+                self.session,
+                page_url,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+            if response.status_code != 200:
+                return None
+            return extract_shopify_description_from_html(response.text)
+        except requests.RequestException:
+            return None
+
     @staticmethod
     def _safe_float(value: Any) -> float | None:
         if value is None or value == "":
@@ -500,18 +520,3 @@ class ShopifyCrawler(BaseCrawler):
             return float(value)
         except (TypeError, ValueError):
             return None
-
-    @staticmethod
-    def _strip_html(value: Any) -> str | None:
-        if value is None:
-            return None
-        if isinstance(value, list):
-            value = " ".join(str(part) for part in value if part is not None)
-        if not isinstance(value, str):
-            value = str(value)
-        if not value.strip():
-            return None
-        import re
-
-        text = re.sub(r"<[^>]+>", " ", value)
-        return " ".join(text.split()) or None

@@ -15,6 +15,7 @@ import requests
 from crawlers.base import BaseCrawler
 from crawlers.generic_html import HTML_MAX_WORKERS, HTML_REQUEST_DELAY
 from models.product import Product
+from utils.description_html import resolve_product_description
 from utils.http_session import create_http_session
 
 CrawlProgressCallback = Callable[[int, int, int], None]
@@ -585,9 +586,7 @@ class GenericWebCrawler(BaseCrawler):
 
         category = str(data.get("category") or "").strip()
         tags = self._normalize_tags(data.get("tag") or data.get("tags"))
-        description = data.get("description")
-        if description is not None:
-            description = str(description).strip() or None
+        description = resolve_product_description(data=data, page_html=html)
 
         variants = self._map_variants_from_payload(data)
         status = self._resolve_stock_status(data, html)

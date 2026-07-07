@@ -82,6 +82,11 @@ from utils.feed_history import (
     register_feed_export,
     total_feed_history_bytes,
 )
+from utils.output_cleanup import (
+    cleanup_legacy_output,
+    legacy_output_summary,
+    scan_legacy_output,
+)
 from utils.product_editor import (
     EDIT_COLUMNS,
     GMC_EDIT_COLUMNS,
@@ -2301,11 +2306,40 @@ def render_feed_history_panel(*, in_sidebar: bool = False) -> None:
     title = "Lịch sử file feed"
     ui = st
 
-    with ui.expander(title, expanded=bool(entries)):
+    legacy_scan = scan_legacy_output()
+
+    with ui.expander(title, expanded=bool(entries) or legacy_scan.has_legacy):
+        if legacy_scan.has_legacy:
+            ui.warning(
+                f"File output cũ (bản app trước): {legacy_output_summary(legacy_scan)}. "
+                "Giữ nguyên **Lịch sử file feed**."
+            )
+            if ui.button(
+                "Dọn file output cũ",
+                type="secondary",
+                use_container_width=True,
+                key="legacy_output_cleanup",
+            ):
+                result = cleanup_legacy_output()
+                msg = (
+                    f"Đã dọn **{result.removed_files}** file, "
+                    f"**{result.removed_dirs}** thư mục "
+                    f"(~{format_file_size(result.freed_bytes)})."
+                )
+                if result.errors:
+                    msg += f" **{result.errors}** mục không xóa được."
+                st.session_state.last_info = msg
+                st.rerun()
+            if entries:
+                ui.divider()
+
         if not entries:
             ui.caption(
-                "Chưa có file. Bấm **Xuất file** ở bước cuối — file lưu tại đây để tải lại hoặc xóa."
+                "Chưa có file trong lịch sử. Bấm **Xuất file** ở bước cuối — "
+                "file lưu tại đây để tải lại hoặc xóa."
             )
+            if not legacy_scan.has_legacy:
+                return
             return
 
         total_size = total_feed_history_bytes()
