@@ -106,8 +106,8 @@ def export_products(
     prog = ExportProgress(progress, len(products))
 
     prog.step("prepare", 0.0)
-    # GMC: giữ đủ dữ liệu SP — chỉ làm trống ô theo trường xuất khi ghi từng dòng.
-    filtered = products if fmt == "gmc-feed-csv" else fields.apply_to_products(products)
+    # Template Woo/Shopify/GMC: giữ biến thể dù preset không tick "variants".
+    filtered = fields.filter_products_for_export(products, fmt)
     prog.step("prepare", 1.0)
 
     if fmt == "shopify-csv":

@@ -161,7 +161,10 @@ def _attribute_columns(variants: list[dict[str, Any]]) -> dict[str, str]:
     result: dict[str, str] = {}
     for index, attr in enumerate(attrs[:2], start=1):
         result[f"Attribute {index} name"] = str(attr.get("name") or "")
-        result[f"Attribute {index} value(s)"] = str(attr.get("value") or "")
+        value = attr.get("value")
+        if not value and attr.get("options"):
+            value = ", ".join(str(v) for v in attr.get("options") or [])
+        result[f"Attribute {index} value(s)"] = str(value or "")
         result[f"Attribute {index} visible"] = "1"
         result[f"Attribute {index} global"] = "0"
     return result
@@ -217,6 +220,77 @@ def product_to_woocommerce_row(
     return row
 
 
+def _priced_variants(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        v
+        for v in variants
+        if v.get("price") not in (None, "") or v.get("regular_price") not in (None, "")
+    ]
+
+
+def _attribute_defs(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [v for v in variants if v.get("name") and not v.get("price")]
+
+
+def product_to_woocommerce_rows(
+    product: Product,
+    local_images: list[str] | None = None,
+    rules: ExportRules | None = None,
+    image_mode: str = "comma",
+    max_images: int = 5,
+) -> list[dict[str, str]]:
+    priced = _priced_variants(product.variants)
+    attr_defs = _attribute_defs(product.variants)
+    if not priced or (len(priced) == 1 and not attr_defs):
+        return [
+            product_to_woocommerce_row(
+                product,
+                local_images=local_images,
+                rules=rules,
+                image_mode=image_mode,
+                max_images=max_images,
+            )
+        ]
+
+    parent_sku = _slug_sku(product.title, product.id, product.sku)
+    parent = product_to_woocommerce_row(
+        product,
+        local_images=local_images,
+        rules=rules,
+        image_mode=image_mode,
+        max_images=max_images,
+    )
+    parent["Type"] = "variable"
+    parent["SKU"] = parent_sku
+    parent["Regular price"] = ""
+    parent["Sale price"] = ""
+    parent.update(_attribute_columns(product.variants))
+
+    rows = [parent]
+    for variant in priced:
+        row = {column: "" for column in woocommerce_columns_for_mode(image_mode, max_images)}
+        row["Type"] = "variation"
+        row["SKU"] = str(
+            variant.get("sku")
+            or f"{parent_sku}-{_slug_sku('', str(variant.get('id') or ''), None)}"
+        )
+        row["Parent"] = parent_sku
+        row["Published"] = parent.get("Published", "1")
+        row["Tax status"] = "taxable"
+        row["In stock?"] = parent.get("In stock?", "1")
+        row["Stock"] = parent.get("Stock", "100")
+        row["Regular price"] = format_export_price(
+            variant.get("price") or variant.get("regular_price")
+        )
+        for index, attr in enumerate(attr_defs[:2], start=1):
+            option_value = str(variant.get(f"option{index}") or "").strip()
+            if option_value:
+                row[f"Attribute {index} name"] = str(attr.get("name") or "")
+                row[f"Attribute {index} value(s)"] = option_value
+        rows.append(row)
+    return rows
+
+
 def _prepare_woocommerce_row(
     index: int,
     product: Product,
@@ -239,14 +313,14 @@ def _prepare_woocommerce_row(
     elif fields.includes("images") and product.image_urls:
         stat = "url_only"
 
-    row = product_to_woocommerce_row(
+    rows = product_to_woocommerce_rows(
         product,
         local_images=local_images,
         rules=rules,
         image_mode=image_mode,
         max_images=image_column_count,
     )
-    return index, row, stat
+    return index, rows, stat
 
 
 def export_woocommerce_import(
@@ -277,7 +351,7 @@ def export_woocommerce_import(
     php_fix = Path(__file__).resolve().parent / "wordpress_image_fix.php"
 
     total = len(products)
-    rows: list[dict[str, str] | None] = [None] * total
+    product_rows: list[list[dict[str, str]] | None] = [None] * total
     stats = {"downloaded": 0, "url_only": 0}
     workers = max(1, min(max_workers, total, 32))
     use_parallel = workers > 1 and total > 1
@@ -303,8 +377,8 @@ def export_woocommerce_import(
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = [_submit(executor, index, product) for index, product in enumerate(products)]
             for future in as_completed(futures):
-                index, row, stat = future.result()
-                rows[index] = row
+                index, row_group, stat = future.result()
+                product_rows[index] = row_group
                 if stat == "downloaded":
                     stats["downloaded"] += 1
                 elif stat == "url_only":
@@ -315,7 +389,7 @@ def export_woocommerce_import(
                         progress.product(completed - 1, total)
     else:
         for index, product in enumerate(products):
-            _, row, stat = _prepare_woocommerce_row(
+            _, row_group, stat = _prepare_woocommerce_row(
                 index,
                 product,
                 download_images=download_images,
@@ -326,11 +400,18 @@ def export_woocommerce_import(
                 image_mode=image_mode,
                 image_column_count=image_column_count,
             )
-            rows[index] = row
+            product_rows[index] = row_group
             if stat == "downloaded":
                 stats["downloaded"] += 1
             elif stat == "url_only":
                 stats["url_only"] += 1
+            if progress:
+                progress.product(index, total)
+
+    rows: list[dict[str, str]] = []
+    for group in product_rows:
+        if group:
+            rows.extend(group)
             if progress:
                 progress.product(index, total)
 

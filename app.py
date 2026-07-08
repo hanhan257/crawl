@@ -24,6 +24,7 @@ import streamlit.components.v1 as components
 from app_brand import APP_NAME, APP_PAGE_ICON, APP_TAGLINE, APP_VERSION
 from exporters.export import export_download_name, export_products
 from exporters.gmc_feed_import import GMC_FEED_COLUMNS, GMC_VARIANT_MODES, count_gmc_export_rows, is_supplier_vendor
+from exporters.shopify_import import count_shopify_export_rows
 from exporters.image_urls import IMAGE_EXPORT_MODES
 from models.export_fields import PRESET_LABELS, EXPORT_FIELD_LABELS, ExportFields
 from models.export_rules import ExportRules, apply_export_rules, apply_gmc_title_rules, apply_rules_to_products
@@ -107,6 +108,12 @@ from ui.crawl_step1_layout import (
 from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from utils.url_preview import describe_url
+from utils.variant_expander import (
+    build_variant_config,
+    count_variants_per_product,
+    expand_products_with_variants,
+    preview_variant_lines,
+)
 
 
 st.set_page_config(
@@ -204,6 +211,12 @@ def init_session() -> None:
         "import_source_name": "",
         "import_selected_category": "Tất cả",
         "csv_import_sig": "",
+        "variant_option_names": "Size, Color",
+        "variant_attribute_lines": (
+            "S,M=1,L=2,XL=3,2XL=4,3XL=5,4XL=6,5XL=7\n"
+            "Black"
+        ),
+        "variant_base_price": 0.0,
         "crawl_limit": 0,
         "crawl_pages": 0,
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
@@ -690,7 +703,135 @@ def render_category_pills(products: list[Product]) -> None:
         width="content",
     )
     if picked and picked != selected:
-        apply_import_category(picked)
+        apply_import_category(picked        )
+
+
+def _parse_variant_base_price_input() -> float | None:
+    raw = st.session_state.get("variant_base_price")
+    if raw in (None, "", 0, 0.0):
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _variant_preview_sample_price() -> float:
+    override = _parse_variant_base_price_input()
+    if override is not None:
+        return override
+    products = st.session_state.products_raw or []
+    for product in products:
+        if product.price is not None and float(product.price) > 0:
+            return float(product.price)
+    return 36.99
+
+
+def _sync_imported_products_with_expanded(expanded: list[Product]) -> None:
+    """Cập nhật imported_products_all khi áp biến thể — tránh mất khi đổi category."""
+    all_products = st.session_state.imported_products_all
+    if not all_products:
+        return
+    by_id = {str(product.id): product for product in expanded}
+    st.session_state.imported_products_all = [
+        deepcopy(by_id[str(product.id)]) if str(product.id) in by_id else product
+        for product in all_products
+    ]
+
+
+def apply_variant_expansion_from_session() -> None:
+    if st.session_state.products_raw is None:
+        st.session_state.last_error = "Chưa có sản phẩm — import CSV hoặc crawl trước."
+        return
+    try:
+        config = build_variant_config(
+            str(st.session_state.get("variant_option_names") or ""),
+            str(st.session_state.get("variant_attribute_lines") or ""),
+            base_price_override=_parse_variant_base_price_input(),
+        )
+    except ValueError as exc:
+        st.session_state.last_error = str(exc)
+        return
+
+    source = get_working_products()
+    expanded = expand_products_with_variants(source, config)
+    per_product = count_variants_per_product(config)
+    st.session_state.products_raw = deepcopy(expanded)
+    _sync_imported_products_with_expanded(expanded)
+    apply_edit_filter(expanded, skip_merge=True)
+    st.session_state.output_bytes = None
+    st.session_state.output_name = None
+    st.session_state.last_error = None
+    st.session_state.last_info = (
+        f"Đã sinh biến thể **{per_product}** biến thể/SP cho **{len(expanded)}** sản phẩm "
+        f"(tổng **{len(expanded) * per_product:,}** dòng feed khi xuất GMC/Woo).".replace(
+            ",", "."
+        )
+    )
+
+
+def render_variant_expansion_panel() -> None:
+    if st.session_state.products_raw is None:
+        return
+
+    with st.expander("Biến thể · Size / Color… (SP đơn → có biến thể)", expanded=False):
+        st.caption(
+            "Sinh biến thể cho feed **WooCommerce** (variable + variation) hoặc **GMC** "
+            "(All Variations). **Giá sản phẩm** để trống = lấy giá từ sheet/CSV."
+        )
+        opt_col, price_col = st.columns([2, 1])
+        with opt_col:
+            st.text_input(
+                "Danh sách Option",
+                placeholder="Size, Color",
+                help="Tên các thuộc tính, cách nhau dấu phẩy.",
+                key="variant_option_names",
+            )
+        with price_col:
+            st.number_input(
+                "Giá sản phẩm (tuỳ chọn)",
+                min_value=0.0,
+                step=0.01,
+                format="%.2f",
+                help="Để **0** = dùng giá từng dòng trong sheet.",
+                key="variant_base_price",
+            )
+        st.text_area(
+            "Danh sách Attribute mỗi Option",
+            help=(
+                "Mỗi dòng = 1 option. Giá cộng thêm: M=1 nghĩa là +$1 so với giá gốc. "
+                "Ví dụ dòng 1: S,M=1,L=2 · dòng 2: Black"
+            ),
+            height=110,
+            key="variant_attribute_lines",
+        )
+
+        try:
+            preview_config = build_variant_config(
+                str(st.session_state.get("variant_option_names") or ""),
+                str(st.session_state.get("variant_attribute_lines") or ""),
+                base_price_override=_parse_variant_base_price_input(),
+            )
+            preview_lines = preview_variant_lines(
+                preview_config,
+                base_price=_variant_preview_sample_price(),
+                limit=8,
+            )
+            per = count_variants_per_product(preview_config)
+            st.caption(f"Mỗi SP → **{per}** biến thể · xem trước (giá mẫu):")
+            st.code("\n".join(preview_lines), language=None)
+        except ValueError as exc:
+            st.warning(str(exc))
+
+        if st.button(
+            "Áp dụng biến thể",
+            type="primary",
+            use_container_width=True,
+            key="variant_expansion_apply",
+        ):
+            apply_variant_expansion_from_session()
+            st.rerun()
 
 
 def render_import_panel() -> None:
@@ -3168,6 +3309,10 @@ def _render_main_workflow(
         with st.container(border=True):
             render_customization_panel()
 
+    if st.session_state.products_raw is not None:
+        with st.container(border=True):
+            render_variant_expansion_panel()
+
     with st.container(border=True):
         export_fields = render_export_fields_panel()
 
@@ -3340,12 +3485,19 @@ def _render_main_workflow(
             feed_count = (
                 count_gmc_export_rows(export_products, gmc_kw.get("gmc_variant_mode", "all_variations"))
                 if is_gmc
+                else count_shopify_export_rows(export_products)
+                if export_format == "shopify-csv"
                 else len(export_products)
             )
             if is_gmc:
                 st.caption(
                     f"File GMC cuối — **{feed_count}** dòng · **{len(GMC_FEED_COLUMNS)}** cột "
                     f"(trùng file tải về) · age group mặc định **{GMC_AGE_GROUP_DEFAULT}** nếu để trống."
+                )
+            elif export_format == "shopify-csv":
+                st.caption(
+                    f"File Shopify cuối — **{feed_count}** dòng biến thể "
+                    f"(mỗi Size/Color = 1 dòng · trùng file tải về)."
                 )
             render_export_file_preview_block(
                 export_products,

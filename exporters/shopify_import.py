@@ -74,20 +74,85 @@ def _join_tags(tags: list[str]) -> str:
 
 
 def _is_priced_variant(variant: dict[str, Any]) -> bool:
+    if variant.get("name") and not variant.get("price"):
+        return False
     return any(key in variant for key in ("price", "sku", "id", "title"))
 
 
+def _attribute_defs(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [v for v in variants if v.get("name") and not v.get("price")]
+
+
 def _variant_options(variants: list[dict[str, Any]]) -> tuple[str, str, str, str, str, str]:
-    if not variants or _is_priced_variant(variants[0]):
+    attrs = _attribute_defs(variants)
+    if not attrs:
         return ("", "", "", "", "", "")
 
-    names = [str(v.get("name") or "") for v in variants[:3]]
-    values = [str(v.get("value") or "") for v in variants[:3]]
+    names = [str(v.get("name") or "") for v in attrs[:3]]
+    values = [str(v.get("value") or "") for v in attrs[:3]]
     while len(names) < 3:
         names.append("")
     while len(values) < 3:
         values.append("")
     return (names[0], values[0], names[1], values[1], names[2], values[2])
+
+
+def _shopify_option_names(
+    attr_defs: list[dict[str, Any]],
+    variant: dict[str, Any] | None,
+) -> list[str]:
+    if attr_defs:
+        return [str(item.get("name") or "") for item in attr_defs[:3]]
+    if variant:
+        names = variant.get("_shopify_option_names") or []
+        if names:
+            return [str(name) for name in names[:3]]
+    return []
+
+
+def _shopify_option_fields(
+    variant: dict[str, Any],
+    attr_defs: list[dict[str, Any]],
+    fallback: tuple[str, str, str, str, str, str],
+) -> dict[str, str]:
+    names = _shopify_option_names(attr_defs, variant)
+    while len(names) < 3:
+        names.append("")
+
+    values = [
+        str(variant.get("option1") or "").strip(),
+        str(variant.get("option2") or "").strip(),
+        str(variant.get("option3") or "").strip(),
+    ]
+    if any(values):
+        return {
+            "Option1 Name": names[0],
+            "Option1 Value": values[0],
+            "Option2 Name": names[1],
+            "Option2 Value": values[1],
+            "Option3 Name": names[2],
+            "Option3 Value": values[2],
+        }
+
+    title = str(variant.get("title") or "").strip()
+    if title and title.lower() not in {"default title", "default"}:
+        return {
+            "Option1 Name": "Title",
+            "Option1 Value": title,
+            "Option2 Name": "",
+            "Option2 Value": "",
+            "Option3 Name": "",
+            "Option3 Value": "",
+        }
+
+    return {
+        "Option1 Name": fallback[0],
+        "Option1 Value": fallback[1],
+        "Option2 Name": fallback[2],
+        "Option2 Value": fallback[3],
+        "Option3 Name": fallback[4],
+        "Option3 Value": fallback[5],
+    }
 
 
 def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) -> list[dict[str, str]]:
@@ -96,9 +161,8 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
     tags = _join_tags(product.tags)
     category = ", ".join(product.categories) if product.categories else ""
     priced_variants = [v for v in product.variants if _is_priced_variant(v)]
-    option1_name, option1_value, option2_name, option2_value, option3_name, option3_value = (
-        _variant_options(product.variants)
-    )
+    attr_defs = _attribute_defs(product.variants)
+    fallback_options = _variant_options(product.variants)
 
     rows: list[dict[str, str]] = []
 
@@ -128,12 +192,7 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
             else:
                 row["Handle"] = handle
 
-            if variant.get("title"):
-                row["Option1 Name"] = "Title"
-                row["Option1 Value"] = str(variant.get("title"))
-            else:
-                row["Option1 Name"] = option1_name
-                row["Option1 Value"] = option1_value or "Default Title"
+            row.update(_shopify_option_fields(variant, attr_defs, fallback_options))
             row["Variant SKU"] = str(variant.get("sku") or product.sku or "")
             row["Variant Inventory Tracker"] = ""
             row["Variant Inventory Qty"] = "100" if variant.get("available", True) else "0"
@@ -156,12 +215,19 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
                 "Type": product.product_type or "",
                 "Tags": tags,
                 "Published": "TRUE",
-                "Option1 Name": option1_name,
-                "Option1 Value": option1_value or "Default Title",
-                "Option2 Name": option2_name,
-                "Option2 Value": option2_value,
-                "Option3 Name": option3_name,
-                "Option3 Value": option3_value,
+                "Gift Card": "FALSE",
+                "SEO Title": product.title,
+                "Status": "active",
+            }
+        )
+        row.update(
+            {
+                "Option1 Name": fallback_options[0],
+                "Option1 Value": fallback_options[1] or "Default Title",
+                "Option2 Name": fallback_options[2],
+                "Option2 Value": fallback_options[3],
+                "Option3 Name": fallback_options[4],
+                "Option3 Value": fallback_options[5],
                 "Variant SKU": product.sku or "",
                 "Variant Inventory Tracker": "",
                 "Variant Inventory Qty": "100",
@@ -195,6 +261,15 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
 
 def _blank_shopify_row() -> dict[str, str]:
     return {column: "" for column in SHOPIFY_COLUMNS}
+
+
+def count_shopify_export_rows(products: list[Product]) -> int:
+    total = 0
+    for product in products:
+        total += len(
+            [row for row in product_to_shopify_rows(product) if row.get("Variant Price")]
+        )
+    return total
 
 
 def export_shopify_import(

@@ -40,6 +40,11 @@ PRESET_LABELS: dict[str, str] = {
     "custom": "Tùy chọn từng trường",
 }
 
+# Woo / Shopify / GMC dùng biến thể trong template file — không xóa khi preset thiếu "variants".
+STRUCTURED_IMPORT_FORMATS = frozenset(
+    {"woocommerce-csv", "shopify-csv", "gmc-feed-csv"}
+)
+
 
 @dataclass
 class ExportFields:
@@ -91,6 +96,25 @@ class ExportFields:
 
     def apply_to_products(self, products: list[Product]) -> list[Product]:
         return [self.apply_to_product(p) for p in products]
+
+    def apply_to_products_preserving_variants(
+        self, products: list[Product]
+    ) -> list[Product]:
+        """Giữ biến thể khi lọc trường xuất cho template Woo/Shopify/GMC."""
+        filtered: list[Product] = []
+        for product in products:
+            variants = deepcopy(product.variants)
+            updated = self.apply_to_product(product)
+            updated.variants = variants
+            filtered.append(updated)
+        return filtered
+
+    def filter_products_for_export(
+        self, products: list[Product], fmt: str
+    ) -> list[Product]:
+        if fmt in STRUCTURED_IMPORT_FORMATS:
+            return self.apply_to_products_preserving_variants(products)
+        return self.apply_to_products(products)
 
     def raw_csv_columns(self) -> list[str]:
         mapping = {

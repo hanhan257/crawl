@@ -17,7 +17,7 @@ from exporters.gmc_feed_import import (
 )
 from exporters.shopify_import import SHOPIFY_COLUMNS, product_to_shopify_rows
 from exporters.web_feed_import import WEB_FEED_COLUMNS, product_to_web_feed_row
-from exporters.woocommerce_import import WOOCOMMERCE_COLUMNS, product_to_woocommerce_row
+from exporters.woocommerce_import import WOOCOMMERCE_COLUMNS, product_to_woocommerce_rows
 from models.export_fields import ExportFields
 from models.export_rules import ExportRules, apply_export_rules
 from models.product import Product
@@ -89,14 +89,19 @@ def _woo_export_rows(
     image_column_count = resolve_image_column_count(products, image_mode, max_images_per_product)
     preview_cols = _woo_preview_columns(products, image_mode, max_images_per_product)
 
-    for product in fields.apply_to_products(products)[:limit]:
-        row = product_to_woocommerce_row(
+    preview_products = fields.filter_products_for_export(products, "woocommerce-csv")
+    for product in preview_products:
+        if len(rows) >= limit:
+            break
+        for row in product_to_woocommerce_rows(
             apply_export_rules(product, rules),
             rules=rules,
             image_mode=image_mode,
             max_images=image_column_count,
-        )
-        rows.append({col: _truncate(row.get(col, ""), 120) for col in preview_cols})
+        ):
+            rows.append({col: _truncate(row.get(col, ""), 120) for col in preview_cols})
+            if len(rows) >= limit:
+                break
     return rows
 
 
@@ -107,12 +112,18 @@ def _shopify_export_rows(
     limit: int,
 ) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for product in fields.apply_to_products(products)[:limit]:
+    preview_products = fields.filter_products_for_export(products, "shopify-csv")
+    for product in preview_products:
+        if len(rows) >= limit:
+            break
         shopify_rows = product_to_shopify_rows(apply_export_rules(product, rules), rules=rules)
-        if not shopify_rows:
-            continue
-        main_row = shopify_rows[0]
-        rows.append({col: _truncate(main_row.get(col, ""), 120) for col in SHOPIFY_PREVIEW_COLUMNS})
+        for row in shopify_rows:
+            if row.get("Title") or row.get("Variant Price"):
+                rows.append(
+                    {col: _truncate(row.get(col, ""), 120) for col in SHOPIFY_PREVIEW_COLUMNS}
+                )
+            if len(rows) >= limit:
+                break
     return rows
 
 
@@ -173,7 +184,8 @@ def _gmc_export_rows(
     rows: list[dict[str, str]] = []
     gmc_defaults = gmc_defaults or {}
     count = 0
-    for product in fields.apply_to_products(products):
+    preview_products = fields.filter_products_for_export(products, "gmc-feed-csv")
+    for product in preview_products:
         if count >= limit:
             break
         for variant in expand_gmc_variants(product, gmc_variant_mode):
