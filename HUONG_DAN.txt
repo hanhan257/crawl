@@ -31,6 +31,7 @@ Ghi chu
 - Dong cua so console = tat app
 - Port mac dinh: 8501
 - Luong crawl Silverbene (Web thuan): khuyen nghi 16–32 luong
+- ShopBase (vd. nebsport.com): trang chu hoac /collections/... — API catalog
 - Sidebar **Lich su file feed** → **Don file output cu** (xoa CSV/thu muc cu, giu lich su feed)
 - Cau hinh: config.json (xem config.example.json)
 - Deploy len VPS (Docker): xem DEPLOY_VPS.md

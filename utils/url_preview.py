@@ -4,6 +4,7 @@ from utils.detector import DetectedTarget, UnsupportedUrlError, resolve_url
 
 PLATFORM_LABELS = {
     "shopify": "Shopify",
+    "shopbase": "ShopBase",
     "woocommerce": "WooCommerce",
     "redbubble": "Redbubble",
     "generic-web": "Web thuần",
@@ -22,6 +23,9 @@ CRAWL_HINTS = {
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
     ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",
     ("shopify", "product"): "Link sản phẩm → lấy 1 SP",
+    ("shopbase", "shop"): "Link trang chủ ShopBase (vd. nebsport.com) → crawl API catalog (~10k SP)",
+    ("shopbase", "category"): "Link /collections/... → crawl collection (Football, Baseball…)",
+    ("shopbase", "product"): "Link /products/... → lấy 1 SP + mô tả HTML",
     ("woocommerce", "shop"): "Link /shop → lấy toàn bộ sản phẩm",
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm (Store API)",

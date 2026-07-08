@@ -34,7 +34,8 @@ CATALOG_LIST_API = "/api/catalog/next/products.json"
 CATALOG_DETAIL_API = "/api/catalog/next/product.json"
 CATALOG_COLLECTIONS_API = "/api/catalog/next/collections.json"
 CATALOG_PAGE_SIZE = 50
-CATALOG_LIST_MAX_WORKERS = 16
+CATALOG_LIST_MAX_WORKERS = 32
+DETAIL_FETCH_MAX_WORKERS = 32
 
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 PRODUCT_PATH = re.compile(r"/products/([^/?#]+)", re.I)
@@ -114,22 +115,18 @@ class ShopBaseCrawler(BaseCrawler):
                 max_workers=max_workers,
             )
         meta = self._collection_meta(handle)
-        if meta is not None:
-            try:
-                product_count = int(meta.get("product_count") or 0)
-            except (TypeError, ValueError):
-                product_count = 0
-            if product_count <= 0:
-                return []
+        default_category = (
+            str(meta.get("title") or handle).replace("-", " ").title()
+            if meta
+            else handle.replace("-", " ").title()
+        )
         return self._crawl_catalog(
             limit=limit,
             max_pages=max_pages,
             collection_handle=handle,
             progress_callback=progress_callback,
             max_workers=max_workers,
-            default_category=str(meta.get("title") or handle).replace("-", " ").title()
-            if meta
-            else handle.replace("-", " ").title(),
+            default_category=default_category,
         )
 
     def crawl_product(self, handle: str) -> Product | None:
@@ -165,6 +162,49 @@ class ShopBaseCrawler(BaseCrawler):
             return len(self._list_catalog_handles(collection_handle=collection_handle))
         return len(self._discover_product_urls(max_sitemaps=max_sitemaps))
 
+    def _list_collections_from_api(
+        self,
+        *,
+        include_counts: bool = False,
+    ) -> list[dict[str, Any]]:
+        if not self._catalog_api_available():
+            return []
+
+        categories: list[dict[str, Any]] = []
+        page = 1
+        while page <= 40:
+            try:
+                resp = self._catalog_session.get(
+                    f"{self.site_url}{CATALOG_COLLECTIONS_API}",
+                    params={"limit": 50, "page": page},
+                    timeout=20,
+                )
+                if resp.status_code != 200:
+                    break
+                items = (resp.json().get("result") or {}).get("items") or []
+                if not items:
+                    break
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    handle = str(item.get("handle") or "").strip()
+                    if not handle:
+                        continue
+                    title = str(item.get("title") or "").strip() or handle.replace("-", " ").title()
+                    count: int | None = None
+                    if include_counts:
+                        try:
+                            count = int(item.get("product_count") or 0)
+                        except (TypeError, ValueError):
+                            count = 0
+                        if count <= 0:
+                            count = self._catalog_reported_count(handle) or None
+                    categories.append({"slug": handle, "name": title, "count": count})
+                page += 1
+            except (requests.RequestException, ValueError):
+                break
+        return categories
+
     def probe_categories(
         self,
         sample_size: int = 50,
@@ -173,45 +213,47 @@ class ShopBaseCrawler(BaseCrawler):
         include_counts: bool = False,
     ) -> tuple[list[dict[str, Any]], str]:
         del sample_size, max_workers
-        categories: list[dict[str, Any]] = []
-        catalog_ok = self._catalog_api_available() if include_counts else False
-        for loc in self._parse_sitemap_locs(f"{self.site_url}/sitemap_collections_1.xml"):
-            match = COLLECTION_PATH.search(urlparse(loc).path or "")
-            if not match:
-                continue
-            handle = match.group(1)
-            count = (
-                self._catalog_reported_count(handle)
-                if catalog_ok
-                else None
-            )
-            categories.append(
-                {
-                    "slug": handle,
-                    "name": handle.replace("-", " ").title(),
-                    "count": count,
-                }
-            )
+        categories = self._list_collections_from_api(include_counts=include_counts)
+        catalog_ok = self._catalog_api_available()
 
         if not categories:
-            for loc in self._parse_sitemap_locs(f"{self.site_url}/sitemap.xml"):
-                if "sitemap_collections" not in loc.lower():
+            for loc in self._parse_sitemap_locs(f"{self.site_url}/sitemap_collections_1.xml"):
+                match = COLLECTION_PATH.search(urlparse(loc).path or "")
+                if not match:
                     continue
-                for col_loc in self._parse_sitemap_locs(loc):
-                    match = COLLECTION_PATH.search(urlparse(col_loc).path or "")
-                    if match:
-                        handle = match.group(1)
-                        categories.append(
-                            {
-                                "slug": handle,
-                                "name": handle.replace("-", " ").title(),
-                                "count": self._catalog_reported_count(handle)
-                                if catalog_ok
-                                else None,
-                            }
-                        )
+                handle = match.group(1)
+                count = (
+                    self._catalog_reported_count(handle)
+                    if include_counts and catalog_ok
+                    else None
+                )
+                categories.append(
+                    {
+                        "slug": handle,
+                        "name": handle.replace("-", " ").title(),
+                        "count": count,
+                    }
+                )
 
-        categories.sort(key=lambda item: item["name"].lower())
+            if not categories:
+                for loc in self._parse_sitemap_locs(f"{self.site_url}/sitemap.xml"):
+                    if "sitemap_collections" not in loc.lower():
+                        continue
+                    for col_loc in self._parse_sitemap_locs(loc):
+                        match = COLLECTION_PATH.search(urlparse(col_loc).path or "")
+                        if match:
+                            handle = match.group(1)
+                            categories.append(
+                                {
+                                    "slug": handle,
+                                    "name": handle.replace("-", " ").title(),
+                                    "count": self._catalog_reported_count(handle)
+                                    if include_counts and catalog_ok
+                                    else None,
+                                }
+                            )
+
+        categories.sort(key=lambda item: str(item.get("name") or "").lower())
         note = (
             f"Danh mục ShopBase ({len(categories)} collection) — "
             "crawl qua API catalog (~50 SP/trang)."
@@ -518,6 +560,7 @@ class ShopBaseCrawler(BaseCrawler):
                 product = self._map_catalog_item(
                     item,
                     default_category=default_category,
+                    skip_page_fallback=True,
                 )
                 if product:
                     products.append(product)
@@ -526,6 +569,11 @@ class ShopBaseCrawler(BaseCrawler):
                     processed == total or processed % 50 == 0
                 ):
                     progress_callback(processed, map_total, len(products))
+            self._enrich_descriptions_parallel(
+                products,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
             if progress_callback and total:
                 progress_callback(total, total, len(products))
             return products
@@ -620,12 +668,95 @@ class ShopBaseCrawler(BaseCrawler):
         data: dict[str, Any],
         *,
         default_category: str = "",
+        skip_page_fallback: bool = False,
     ) -> Product | None:
-        return self._map_detail_product(data, default_category=default_category)
+        return self._map_detail_product(
+            data,
+            default_category=default_category,
+            skip_page_fallback=skip_page_fallback,
+        )
 
-    def _resolve_shopbase_description(self, data: dict[str, Any], handle: str) -> str | None:
+    def _enrich_descriptions_parallel(
+        self,
+        products: list[Product],
+        *,
+        max_workers: int = 8,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> None:
+        """Lấy mô tả qua detail API song song — tránh mở từng trang HTML (rất chậm)."""
+        pending = [p for p in products if not (p.description or "").strip()]
+        if not pending:
+            return
+
+        total = len(pending)
+        workers = min(max(1, max_workers), DETAIL_FETCH_MAX_WORKERS, total)
+        local = threading.local()
+        done = 0
+        lock = threading.Lock()
+
+        def session_for_thread() -> requests.Session:
+            if not hasattr(local, "session"):
+                local.session = create_http_session(None)
+                local.session.headers.update(self._catalog_session.headers)
+            return local.session
+
+        def fetch_description(product: Product) -> tuple[Product, str | None]:
+            handle = str(product.url or "").rstrip("/").split("/")[-1]
+            if not handle:
+                handle = str(product.id or "")
+            for attempt in range(3):
+                try:
+                    resp = session_for_thread().get(
+                        f"{self.site_url}{CATALOG_DETAIL_API}",
+                        params={"handle": handle},
+                        timeout=25,
+                    )
+                    if resp.status_code != 200:
+                        continue
+                    data = resp.json().get("result")
+                    if isinstance(data, dict):
+                        desc = shopbase_description_from_item(data)
+                        if desc:
+                            return product, desc
+                except (requests.RequestException, ValueError):
+                    pass
+                if attempt < 2:
+                    time.sleep(0.25 * (attempt + 1))
+            return product, None
+
+        if workers <= 1:
+            for index, product in enumerate(pending):
+                _, desc = fetch_description(product)
+                if desc:
+                    product.description = desc
+                if progress_callback and (
+                    index + 1 == total or (index + 1) % 25 == 0
+                ):
+                    progress_callback(index + 1, total, len(products))
+            return
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(fetch_description, p) for p in pending]
+            for future in as_completed(futures):
+                product, desc = future.result()
+                if desc:
+                    product.description = desc
+                with lock:
+                    done += 1
+                    if progress_callback and (
+                        done == total or done % 25 == 0
+                    ):
+                        progress_callback(done, total, len(products))
+
+    def _resolve_shopbase_description(
+        self,
+        data: dict[str, Any],
+        handle: str,
+        *,
+        skip_page_fallback: bool = False,
+    ) -> str | None:
         description = shopbase_description_from_item(data)
-        if description:
+        if description or skip_page_fallback:
             return description
         url = f"{self.site_url}/products/{handle}"
         try:
@@ -641,13 +772,18 @@ class ShopBaseCrawler(BaseCrawler):
         data: dict[str, Any],
         *,
         default_category: str = "",
+        skip_page_fallback: bool = False,
     ) -> Product | None:
         handle = str(data.get("handle") or "").strip()
         title = html_lib.unescape(str(data.get("title") or "").strip())
         if not handle or not title:
             return None
 
-        description = self._resolve_shopbase_description(data, handle)
+        description = self._resolve_shopbase_description(
+            data,
+            handle,
+            skip_page_fallback=skip_page_fallback,
+        )
 
         price = self._parse_price(data.get("price") or data.get("min_price"))
         if price is None and data.get("variants"):

@@ -44,7 +44,10 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
                 {
                     "min_value": 1,
                     "max_value": 32,
-                    "help": "Khuyến nghị **16–32**. Quá cao dễ thiếu SP / lỗi ảnh (Silverbene chặn request).",
+                    "help": (
+                        "ShopBase (nebsport…): **24–32** luồng. "
+                        "Web thuần HTML (Silverbene): **16–32** — quá cao dễ thiếu SP / lỗi ảnh."
+                    ),
                 },
             )
         )

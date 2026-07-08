@@ -2082,7 +2082,14 @@ def run_crawl_only(
                     if crawl_platform == "generic-web":
                         label = f"Đang xử lý {current}/{total} · {matched} SP"
                     elif crawl_platform == "shopbase":
-                        label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                        if total >= 300:
+                            label = (
+                                f"Mô tả {current}/{total} · {matched} SP · {workers} luồng"
+                            )
+                        else:
+                            label = (
+                                f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                            )
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     progress_bar.progress(ratio, text=label)
@@ -2091,6 +2098,17 @@ def run_crawl_only(
                         est_min = max(1, int(total * 1.4 / 60 / max(workers, 1)))
                         progress_text.caption(
                             f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
+                        )
+                    elif crawl_platform == "shopbase" and expected_total and expected_total >= 500:
+                        est_min = max(
+                            2,
+                            int(expected_total / max(workers, 1) / 60) + 2,
+                        )
+                        progress_text.caption(
+                            f"ShopBase — ~**{est_min} phút** cho **{expected_total:,}** SP "
+                            f"(danh sách + mô tả song song · {workers} luồng).".replace(
+                                ",", "."
+                            )
                         )
                     elif expected_total:
                         progress_text.caption(
@@ -2972,7 +2990,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
                 "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
                 "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
                 "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com)\n"
-                "ShopBase: wc.luminaaura.us (sitemap + JSON-LD)"
+                "ShopBase: nebsport.com, wc.luminaaura.us (API catalog + mô tả HTML)"
             ),
             key="crawl_url",
             on_change=_on_crawl_url_change,
