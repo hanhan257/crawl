@@ -64,6 +64,9 @@ def detect_url(url: str) -> DetectedTarget:
     if host.endswith(".myshopify.com"):
         return _detect_shopify(normalized, host, path)
 
+    if host.endswith("trendsi.com"):
+        return _detect_trendsi(normalized, path, parsed)
+
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}",
         platform="unknown",
@@ -72,6 +75,9 @@ def detect_url(url: str) -> DetectedTarget:
 
 def probe_platform(url: str, session: requests.Session | None = None) -> str | None:
     parsed = urlparse(normalize_url(url))
+    host = (parsed.netloc or "").lower().removeprefix("www.")
+    if host.endswith("trendsi.com"):
+        return "trendsi"
     base = f"{parsed.scheme}://{parsed.netloc}"
     normalized = normalize_url(url)
 
@@ -253,6 +259,17 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
             base_url=f"{parsed.scheme}://{parsed.netloc}",
         )
 
+    if platform == "trendsi":
+        trendsi_target = _detect_trendsi(normalized, path, parsed)
+        if trendsi_target.crawl_type != "unknown":
+            return trendsi_target
+        return DetectedTarget(
+            platform="trendsi",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
     if target is not None:
         if target.platform == "redbubble" and (
             target.crawl_type == "unknown" or path in ("", "/")
@@ -273,9 +290,71 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
-        "Ví dụ: keeptee.com · wc.luminaaura.us · silverbene.com/earrings.html",
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Trendsi, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
+        "Ví dụ: trendsi.com/brand?... · keeptee.com · nebsport.com",
         platform="unknown",
+    )
+
+
+def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
+    base_url = f"{parsed.scheme}://{parsed.netloc}"
+    query = parse_qs(parsed.query, keep_blank_values=True)
+
+    if path.rstrip("/") == "/products/detail":
+        product_id = (query.get("id") or [None])[0]
+        if product_id:
+            return DetectedTarget(
+                platform="trendsi",
+                crawl_type="product",
+                url=url,
+                base_url=base_url,
+                handle=str(product_id),
+            )
+
+    if path.rstrip("/") == "/brand":
+        brand_id = (query.get("id") or [None])[0]
+        brand_name = (query.get("nameEn") or [""])[0]
+        category_id = (query.get("backendCategoryId") or [None])[0]
+        if brand_id:
+            return DetectedTarget(
+                platform="trendsi",
+                crawl_type="brand",
+                url=url,
+                base_url=base_url,
+                handle=str(brand_id),
+                category_slug=str(category_id) if category_id else None,
+                query=str(brand_name).strip() or None,
+            )
+
+    if path.startswith("/classify/Category/"):
+        parts = [unquote(segment) for segment in path.strip("/").split("/")[2:] if segment]
+        if parts:
+            category_path = "/".join(parts)
+            return DetectedTarget(
+                platform="trendsi",
+                crawl_type="category",
+                url=url,
+                base_url=base_url,
+                handle=category_path,
+                category_slug=category_path,
+                query=" / ".join(parts),
+            )
+
+    if path in ("", "/"):
+        return DetectedTarget(
+            platform="trendsi",
+            crawl_type="shop",
+            url=url,
+            base_url=base_url,
+            message="Trendsi catalog — crawl toàn bộ qua API (không cần đăng nhập).",
+        )
+
+    return DetectedTarget(
+        platform="trendsi",
+        crawl_type="unknown",
+        url=url,
+        base_url=base_url,
+        message="Trendsi: dán link **/brand?...** · **/classify/Category/...** · **/products/detail?id=...**.",
     )
 
 

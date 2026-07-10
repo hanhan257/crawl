@@ -293,6 +293,92 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "trendsi":
+
+        from crawlers.trendsi import TrendsiCrawler
+
+        crawler = TrendsiCrawler(proxy_url=effective_proxy)
+
+        try:
+
+            if target.crawl_type == "product" and target.handle:
+
+                product = crawler.crawl_product(
+
+                    target.handle,
+
+                    brand_name=str(target.query or ""),
+
+                )
+
+                products = [product] if product else []
+
+            elif target.crawl_type == "brand":
+
+                products = crawler.crawl_brand(
+
+                    target.url,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            elif target.crawl_type == "category":
+
+                products = crawler.crawl_category(
+
+                    target.url,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            elif target.crawl_type == "shop":
+
+                products = crawler.crawl(
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            else:
+
+                raise CrawlError(f"Trendsi: chưa hỗ trợ loại link '{target.crawl_type}'")
+
+        except requests.RequestException as exc:
+
+            raise CrawlError(f"Trendsi: lỗi HTTP {exc}") from exc
+
+
+
+        if not products:
+            raise CrawlError(
+                "Trendsi: không crawl được sản phẩm nào. "
+                "Thử **Luồng crawl = 8**, tắt **Proxy**, hoặc crawl lại sau vài phút."
+            )
+
+        return products, target
+
+
+
     if target.platform == "woocommerce":
 
         host = urlparse(target.base_url or target.url).netloc

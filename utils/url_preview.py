@@ -6,6 +6,7 @@ PLATFORM_LABELS = {
     "shopify": "Shopify",
     "shopbase": "ShopBase",
     "woocommerce": "WooCommerce",
+    "trendsi": "Trendsi",
     "redbubble": "Redbubble",
     "generic-web": "Web thuần",
 }
@@ -13,6 +14,7 @@ PLATFORM_LABELS = {
 CRAWL_TYPE_LABELS = {
     "shop": "Crawl toàn bộ shop",
     "category": "Crawl category / collection",
+    "brand": "Crawl brand Trendsi",
     "search": "Crawl kết quả tìm kiếm",
     "product": "Crawl 1 sản phẩm",
     "unknown": "Chưa xác định loại link",
@@ -30,6 +32,10 @@ CRAWL_HINTS = {
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm (Store API)",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
+    ("trendsi", "brand"): "Link /brand?nameEn=...&id=... → crawl white-label brand (vd. CozyNest)",
+    ("trendsi", "category"): "Link /classify/Category/Kids/Dresses → crawl theo danh mục Trendsi",
+    ("trendsi", "shop"): "Trang chủ Trendsi → crawl catalog qua API",
+    ("trendsi", "product"): "Link /products/detail?id=... → lấy 1 SP + biến thể Size/Color",
     ("redbubble", "category"): "Link /shop/... → crawl kết quả tìm kiếm / category",
     ("redbubble", "product"): "Link /i/... → crawl 1 sản phẩm",
     ("redbubble", "unknown"): "Trang chủ — dán link /shop/từ-khóa hoặc /i/.../sản-phẩm",
@@ -83,6 +89,8 @@ def describe_url(url: str) -> dict:
         detail = target.query or ""
     elif target.crawl_type == "product":
         detail = target.handle or ""
+    elif target.crawl_type == "brand":
+        detail = target.query or target.handle or ""
 
     notice = ""
     if not crawl_ready and target.message:

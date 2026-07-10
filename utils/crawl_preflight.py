@@ -72,6 +72,14 @@ def check_shop_reachable(url: str) -> str | None:
             if response.status_code >= 500:
                 return "Redbubble đang lỗi — thử lại sau hoặc bật Proxy."
             return None
+        if target.platform == "trendsi":
+            response = session.get(normalized, timeout=PREFLIGHT_TIMEOUT)
+            if response.status_code == 200:
+                return None
+            return (
+                f"Trendsi trả HTTP {response.status_code}. "
+                "Thử tắt **Proxy** hoặc giảm **Luồng crawl**."
+            )
     except requests.ConnectionError as exc:
         return _connection_error_message(cleaned, exc)
     except requests.Timeout:

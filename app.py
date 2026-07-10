@@ -2231,6 +2231,10 @@ def run_crawl_only(
                             label = (
                                 f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                             )
+                    elif crawl_platform == "trendsi":
+                        label = (
+                            f"Chi tiết {current}/{total} · {matched} SP · {workers} luồng"
+                        )
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     progress_bar.progress(ratio, text=label)
@@ -2335,7 +2339,9 @@ def run_crawl_only(
             f"Lỗi kết nối: {exc}. Thử giảm **Luồng crawl** hoặc bật **Proxy**."
         )
     except Exception as exc:
-        err_text = str(exc)
+        err_text = str(exc).strip()
+        if not err_text:
+            err_text = f"{type(exc).__name__}"
         if "timed out" in err_text.lower() or "timeout" in err_text.lower():
             st.session_state.last_error = (
                 f"Server phản hồi chậm: {err_text}. "
@@ -2343,7 +2349,7 @@ def run_crawl_only(
             )
         else:
             st.session_state.last_error = (
-                f"Lỗi: {exc}. Nếu vẫn lặp lại, tắt app và mở lại **{APP_NAME}**."
+                f"Lỗi: {err_text}. Nếu vẫn lặp lại, tắt app và mở lại **{APP_NAME}**."
             )
     finally:
         st.session_state.crawl_running = False
@@ -2702,7 +2708,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Trendsi · Redbubble · Web thuần**…")
         info = _cached_describe_url(cleaned)
         target = info.get("target") if info.get("ok") else None
         platform = getattr(target, "platform", "") if target else ""

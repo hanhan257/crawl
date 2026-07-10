@@ -78,6 +78,8 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/collections/{category_slug}"
     if platform == "shopbase":
         return f"{base}/collections/{category_slug}"
+    if platform == "trendsi":
+        return base_url
     if platform == "generic-web":
         from crawlers.generic_html import GenericHtmlCatalog
 
@@ -260,6 +262,8 @@ def probe_shop_stats(
         return _probe_shopify(target, credentials, base_url, url_category)
     if target.platform == "shopbase":
         return _probe_shopbase(target, base_url, url_category)
+    if target.platform == "trendsi":
+        return _probe_trendsi(target, base_url, url_category)
     if target.platform == "redbubble":
         return _probe_redbubble(target, credentials, base_url, url_category)
 
@@ -273,6 +277,75 @@ def probe_shop_stats(
         base_url=base_url,
         message=f"Chưa hỗ trợ thống kê shop cho {target.platform}.",
         total_products=None,
+        categories=[],
+        url_category_slug=url_category,
+    )
+
+
+def _probe_trendsi(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from crawlers.trendsi import TrendsiCrawler
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="trendsi",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link /products/detail?id=...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    probe_url = target.url if target.crawl_type in {"brand", "category"} else base_url
+    crawler = TrendsiCrawler()
+    try:
+        response = crawler.session.get(probe_url, timeout=30)
+        response.raise_for_status()
+        html = response.text
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=True,
+            platform="trendsi",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"Trendsi — không đếm được SP ({exc}). Vẫn có thể bấm crawl.",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    total = TrendsiCrawler.parse_listing_item_count(html)
+    stubs = crawler._parse_listing_page(html)
+    if total is None and stubs:
+        total = len(stubs)
+
+    label = target.query or target.category_slug or target.handle or "Trendsi"
+    if target.crawl_type == "brand":
+        msg = f"Brand **{label}**"
+    elif target.crawl_type == "category":
+        msg = f"Category **{label}**"
+    else:
+        msg = "Trendsi catalog"
+
+    if total is not None:
+        msg += f" · ~**{total:,}** SP".replace(",", ".")
+    elif stubs:
+        msg += f" · ~**{len(stubs)}** SP/trang"
+    else:
+        msg += " · bấm **Crawl dữ liệu** để lấy SP"
+
+    return ShopProbeResult(
+        ok=True,
+        platform="trendsi",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=msg,
+        total_products=total,
         categories=[],
         url_category_slug=url_category,
     )
