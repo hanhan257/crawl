@@ -80,6 +80,11 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/collections/{category_slug}"
     if platform == "trendsi":
         return base_url
+    if platform == "magento":
+        slug = category_slug.strip().strip("/")
+        if not slug.endswith(".html"):
+            slug = f"{slug}.html"
+        return f"{base}/{slug}"
     if platform == "generic-web":
         from crawlers.generic_html import GenericHtmlCatalog
 
@@ -264,6 +269,8 @@ def probe_shop_stats(
         return _probe_shopbase(target, base_url, url_category)
     if target.platform == "trendsi":
         return _probe_trendsi(target, base_url, url_category)
+    if target.platform == "magento":
+        return _probe_magento(target, base_url, url_category)
     if target.platform == "redbubble":
         return _probe_redbubble(target, credentials, base_url, url_category)
 
@@ -347,6 +354,78 @@ def _probe_trendsi(
         message=msg,
         total_products=total,
         categories=[],
+        url_category_slug=url_category,
+    )
+
+
+def _probe_magento(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from crawlers.magento_graphql import MagentoGraphqlCrawler
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="magento",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link Magento `.html`",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    crawler = MagentoGraphqlCrawler(base_url)
+    label = target.query or target.category_slug or target.handle or "Magento"
+    total: int | None = None
+    categories: list[ShopCategoryInfo] = []
+
+    try:
+        if target.crawl_type == "category":
+            total = crawler.count_category_products(
+                target.category_slug or target.handle or target.url
+            )
+        else:
+            for child in crawler.list_root_categories():
+                slug = str(child.get("url_path") or "").strip()
+                name = str(child.get("name") or slug).strip()
+                if not slug:
+                    continue
+                categories.append(ShopCategoryInfo(slug=slug, name=name, count=None))
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=True,
+            platform="magento",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"Magento — không đếm được SP ({exc}). Vẫn có thể bấm crawl.",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    if target.crawl_type == "category":
+        msg = f"Category **{label}**"
+    else:
+        msg = "Magento / Jomashop"
+
+    if total is not None:
+        msg += f" · ~**{total:,}** SP".replace(",", ".")
+    elif categories:
+        msg += f" · **{len(categories)}** danh mục gốc"
+    else:
+        msg += " · bấm **Crawl dữ liệu** để lấy SP"
+
+    return ShopProbeResult(
+        ok=True,
+        platform="magento",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=msg,
+        total_products=total,
+        categories=categories,
         url_category_slug=url_category,
     )
 

@@ -13,6 +13,69 @@ def normalize_description_html(fragment: str) -> str:
     return text.strip()
 
 
+def html_to_plain_text(fragment: str) -> str:
+    """Chuyển mô tả HTML → text thuần (giữ xuống dòng hợp lý)."""
+    if not fragment or not str(fragment).strip():
+        return ""
+    text = html.unescape(str(fragment))
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", text)
+    text = re.sub(r"(?i)</\s*p\s*>", "\n", text)
+    text = re.sub(r"(?i)</\s*div\s*>", "\n", text)
+    text = re.sub(r"(?i)</\s*li\s*>", "\n", text)
+    text = re.sub(r"(?i)<\s*li[^>]*>", "• ", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
+
+
+_BLOCK_HTML_RE = re.compile(
+    r"(?i)</?(?:p|div|ul|ol|li|h[1-6]|table|section|article|blockquote)\b"
+)
+
+
+def sparse_html_to_paragraphs(fragment: str) -> str | None:
+    """
+    Magento/Jomashop thường trả text + <br/> (không có <p>).
+    Chế độ HTML → bọc thành các thẻ <p>…</p>.
+    """
+    raw = (fragment or "").strip()
+    if not raw:
+        return None
+
+    # Đã có HTML khối thật → giữ nguyên (chuẩn hóa nhẹ).
+    if _BLOCK_HTML_RE.search(raw):
+        return description_from_api_value(raw)
+
+    # Text thuần hoặc chỉ có <br>/<hr> → tách đoạn rồi bọc <p>.
+    parts = re.split(r"(?i)<br\s*/?>|<hr\s*/?>", raw)
+    paragraphs: list[str] = []
+    for part in parts:
+        cleaned = re.sub(r"<[^>]+>", " ", part)
+        cleaned = html.unescape(cleaned)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if cleaned:
+            paragraphs.append(f"<p>{html.escape(cleaned)}</p>")
+    if paragraphs:
+        return "".join(paragraphs)
+
+    return description_from_api_value(raw)
+
+
+def format_description_output(content: str | None, fmt: str) -> str | None:
+    """Chuẩn hóa mô tả theo lựa chọn user: html | text."""
+    raw = (content or "").strip()
+    if not raw:
+        return None
+    mode = (fmt or "html").strip().lower()
+    if mode == "text":
+        plain = html_to_plain_text(raw)
+        return plain or None
+    # html — bọc đoạn cho mô tả Magento (text + br)
+    return sparse_html_to_paragraphs(raw)
+
+
 def description_from_api_value(value: Any) -> str | None:
     """Giữ HTML từ API Woo/Shopify — không strip thành plain text."""
     if value is None:

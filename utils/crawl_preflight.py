@@ -80,6 +80,15 @@ def check_shop_reachable(url: str) -> str | None:
                 f"Trendsi trả HTTP {response.status_code}. "
                 "Thử tắt **Proxy** hoặc giảm **Luồng crawl**."
             )
+        if target.platform == "magento":
+            from crawlers.magento_graphql import MagentoGraphqlCrawler
+
+            if MagentoGraphqlCrawler.site_supports(base, session=session):
+                return None
+            return (
+                f"Magento **{host}** không mở được GraphQL. "
+                "Thử tắt **Proxy** hoặc kiểm tra lại domain."
+            )
     except requests.ConnectionError as exc:
         return _connection_error_message(cleaned, exc)
     except requests.Timeout:

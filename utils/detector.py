@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
 import requests
 
 from crawlers.generic_web import GenericWebCrawler
+from crawlers.magento_graphql import MagentoGraphqlCrawler
 
 SHOPIFY_PRODUCT = re.compile(r"/products/([^/?#]+)")
 SHOPIFY_COLLECTION = re.compile(r"/collections/([^/?#]+)")
@@ -67,6 +68,9 @@ def detect_url(url: str) -> DetectedTarget:
     if host.endswith("trendsi.com"):
         return _detect_trendsi(normalized, path, parsed)
 
+    if MagentoGraphqlCrawler.is_known_host(host):
+        return _detect_magento(normalized, path, parsed)
+
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}",
         platform="unknown",
@@ -78,6 +82,8 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
     host = (parsed.netloc or "").lower().removeprefix("www.")
     if host.endswith("trendsi.com"):
         return "trendsi"
+    if MagentoGraphqlCrawler.is_known_host(host):
+        return "magento"
     base = f"{parsed.scheme}://{parsed.netloc}"
     normalized = normalize_url(url)
 
@@ -167,6 +173,14 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_magento() -> str | None:
+        try:
+            if MagentoGraphqlCrawler.site_supports(base, session=fresh_session()):
+                return "magento"
+        except Exception:
+            pass
+        return None
+
     def check_html_signals() -> str | None:
         try:
             page = fresh_session().get(normalized, timeout=10)
@@ -185,6 +199,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         check_shopbase,
         check_woo_store,
         check_wp_json,
+        check_magento,
         check_generic,
         check_html_signals,
     )
@@ -205,6 +220,8 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
         if target.crawl_type != "unknown":
             if target.platform == "generic-web":
                 target = _refine_generic_web_target(target, session=session)
+            if target.platform == "magento":
+                target = _refine_magento_target(target, session=session)
             return target
     except UnsupportedUrlError:
         target = None
@@ -270,6 +287,18 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
             base_url=f"{parsed.scheme}://{parsed.netloc}",
         )
 
+    if platform == "magento":
+        magento_target = _detect_magento(normalized, path, parsed)
+        magento_target = _refine_magento_target(magento_target, session=session)
+        if magento_target.crawl_type != "unknown":
+            return magento_target
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
     if target is not None:
         if target.platform == "redbubble" and (
             target.crawl_type == "unknown" or path in ("", "/")
@@ -290,8 +319,9 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Trendsi, Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
-        "Ví dụ: trendsi.com/brand?... · keeptee.com · nebsport.com",
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Trendsi, Magento/Jomashop, "
+        "Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
+        "Ví dụ: jomashop.com/jewelry.html · trendsi.com/brand?... · keeptee.com",
         platform="unknown",
     )
 
@@ -355,6 +385,109 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
         url=url,
         base_url=base_url,
         message="Trendsi: dán link **/brand?...** · **/classify/Category/...** · **/products/detail?id=...**.",
+    )
+
+
+def _detect_magento(url: str, path: str, parsed) -> DetectedTarget:
+    base_url = f"{parsed.scheme}://{parsed.netloc}"
+    url_key = MagentoGraphqlCrawler.path_to_url_key(path)
+
+    if path in ("", "/"):
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="shop",
+            url=url,
+            base_url=base_url,
+            message="Magento/Jomashop — crawl các danh mục gốc qua GraphQL.",
+        )
+
+    if url_key:
+        # Phân loại category/product khi refine (gọi GraphQL).
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=url_key,
+            category_slug=url_key,
+            query=url_key.replace("-", " ").title(),
+        )
+
+    return DetectedTarget(
+        platform="magento",
+        crawl_type="unknown",
+        url=url,
+        base_url=base_url,
+        message="Magento: dán link category/product dạng **/jewelry.html**.",
+    )
+
+
+def _refine_magento_target(
+    target: DetectedTarget,
+    session: requests.Session | None = None,
+) -> DetectedTarget:
+    if target.platform != "magento":
+        return target
+    if target.crawl_type in {"shop", "product"} and target.handle:
+        return target
+    if target.crawl_type == "shop":
+        return target
+
+    url_key = MagentoGraphqlCrawler.path_to_url_key(
+        target.handle or target.category_slug or urlparse(target.url).path
+    )
+    if not url_key:
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="shop",
+            url=target.url,
+            base_url=target.base_url,
+        )
+
+    crawler = MagentoGraphqlCrawler(target.base_url or target.url)
+    if session is not None:
+        crawler.session.headers.update(session.headers)
+        if session.proxies:
+            crawler.session.proxies.update(session.proxies)
+
+    try:
+        crawl_type, resolved_key = crawler.classify_path(url_key)
+    except requests.RequestException:
+        return target
+
+    if crawl_type == "category":
+        category = crawler.fetch_category(resolved_key) or {}
+        name = str(category.get("name") or resolved_key.replace("-", " ").title())
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="category",
+            url=target.url,
+            base_url=target.base_url,
+            handle=resolved_key,
+            category_slug=resolved_key,
+            query=name,
+        )
+
+    if crawl_type == "product":
+        return DetectedTarget(
+            platform="magento",
+            crawl_type="product",
+            url=target.url,
+            base_url=target.base_url,
+            handle=resolved_key,
+            query=resolved_key,
+        )
+
+    return DetectedTarget(
+        platform="magento",
+        crawl_type="unknown",
+        url=target.url,
+        base_url=target.base_url,
+        handle=url_key,
+        message=(
+            f"Magento: không tìm thấy category/product cho `{url_key}`. "
+            "Thử link dạng `/jewelry.html` hoặc `/sku-slug.html`."
+        ),
     )
 
 

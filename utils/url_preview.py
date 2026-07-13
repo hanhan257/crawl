@@ -7,6 +7,7 @@ PLATFORM_LABELS = {
     "shopbase": "ShopBase",
     "woocommerce": "WooCommerce",
     "trendsi": "Trendsi",
+    "magento": "Magento / Jomashop",
     "redbubble": "Redbubble",
     "generic-web": "Web thuần",
 }
@@ -36,6 +37,9 @@ CRAWL_HINTS = {
     ("trendsi", "category"): "Link /classify/Category/Kids/Dresses → crawl theo danh mục Trendsi",
     ("trendsi", "shop"): "Trang chủ Trendsi → crawl catalog qua API",
     ("trendsi", "product"): "Link /products/detail?id=... → lấy 1 SP + biến thể Size/Color",
+    ("magento", "shop"): "Trang chủ Magento/Jomashop → crawl các danh mục gốc qua GraphQL",
+    ("magento", "category"): "Link /jewelry.html → crawl category qua GraphQL (vd. ~9k SP Jewelry)",
+    ("magento", "product"): "Link /sku-slug.html → lấy 1 SP Magento",
     ("redbubble", "category"): "Link /shop/... → crawl kết quả tìm kiếm / category",
     ("redbubble", "product"): "Link /i/... → crawl 1 sản phẩm",
     ("redbubble", "unknown"): "Trang chủ — dán link /shop/từ-khóa hoặc /i/.../sản-phẩm",

@@ -103,6 +103,7 @@ from ui.crawl_step1_layout import (
     close_crawl_step1_wrap,
     open_crawl_step1_wrap,
     render_crawl_action_centered,
+    render_crawl_description_format,
     render_crawl_limits_row,
 )
 from ui.proxy_panel import render_proxy_panel
@@ -220,6 +221,7 @@ def init_session() -> None:
         "crawl_limit": 0,
         "crawl_pages": 0,
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
+        "crawl_description_format": "html",
         "crawl_report_json": None,
         "crawl_report_csv": None,
         "crawl_report_json_bytes": None,
@@ -886,8 +888,20 @@ def _preview_image_bytes(image_url: str, proxy_url: str) -> bytes | None:
             proxy_url,
             st.session_state.image_cache_nonce,
         )
-    referer = "https://silverbene.com/" if "silverbene.com" in lower else None
+    referer = None
+    if "silverbene.com" in lower:
+        referer = "https://silverbene.com/"
+    elif "jomashop.com" in lower:
+        referer = "https://www.jomashop.com/"
     return fetch_image_bytes(image_url, proxy_url or None, referer=referer)
+
+
+def _needs_image_proxy_fetch(image_url: str) -> bool:
+    lower = (image_url or "").lower()
+    return any(
+        host in lower
+        for host in ("redbubble.net", "silverbene.com", "jomashop.com")
+    )
 
 
 def render_product_image(product: Product, proxy_url: str) -> None:
@@ -897,7 +911,7 @@ def render_product_image(product: Product, proxy_url: str) -> None:
 
     image_url = product.image_urls[0]
     try:
-        if "redbubble.net" in image_url.lower() or "silverbene.com" in image_url.lower():
+        if _needs_image_proxy_fetch(image_url):
             image_bytes = _preview_image_bytes(image_url, proxy_url)
             if image_bytes:
                 st.image(image_bytes, use_container_width=True)
@@ -917,7 +931,7 @@ def _render_preview_chip(product: Product, proxy_url: str, *, image_width: int =
     if product.image_urls:
         image_url = product.image_urls[0]
         try:
-            if "redbubble.net" in image_url.lower() or "silverbene.com" in image_url.lower():
+            if _needs_image_proxy_fetch(image_url):
                 image_bytes = _preview_image_bytes(image_url, proxy_url or "")
                 if image_bytes:
                     st.image(image_bytes, width=image_width)
@@ -1741,6 +1755,14 @@ def _render_bulk_meta_section() -> None:
 
 def _render_bulk_description_section() -> None:
     st.radio(
+        "Định dạng mô tả (áp dụng khi bấm Áp dụng)",
+        options=["html", "text"],
+        format_func=lambda key: "HTML" if key == "html" else "Text thuần",
+        horizontal=True,
+        key="description_format",
+        help="HTML giữ thẻ <p>… — Text thuần bỏ hết thẻ HTML (phù hợp feed/GMC).",
+    )
+    st.radio(
         "Chế độ chỉnh description",
         options=["find_replace", "replace_all"],
         format_func=lambda key: {
@@ -1753,21 +1775,15 @@ def _render_bulk_description_section() -> None:
     )
     st.checkbox(
         "Convert tất cả thẻ h1–h6 → thẻ p",
-        help="Ví dụ: <h3 style=\"...\">text</h3> → <p style=\"...\">text</p>.",
+        help="Chỉ dùng khi định dạng = HTML. Ví dụ: <h3>…</h3> → <p>…</p>.",
         key="description_convert_h_to_p",
+        disabled=st.session_state.get("description_format") == "text",
     )
 
     if st.session_state.get("description_action", "find_replace") == "replace_all":
         st.info(
             "Dán **1 mô tả** bên dưới → bấm **Áp dụng** → **tất cả** sản phẩm "
             "dùng chung mô tả này (mô tả cũ bị thay hết)."
-        )
-        st.radio(
-            "Định dạng mô tả",
-            options=["html", "text"],
-            format_func=lambda key: "HTML" if key == "html" else "Text thuần",
-            horizontal=True,
-            key="description_format",
         )
         st.text_area(
             "Mô tả chung cho tất cả SP",
@@ -1846,11 +1862,14 @@ def _render_data_status_banner() -> None:
         img_url = (sample.image_urls or [None])[0]
         if img_url:
             proxy = st.session_state.get("proxy_url", "").strip() or None
-            img_bytes = _cached_product_image(
-                img_url,
-                proxy or "",
-                st.session_state.get("image_cache_nonce", 0),
-            )
+            if _needs_image_proxy_fetch(img_url):
+                img_bytes = _preview_image_bytes(img_url, proxy or "")
+            else:
+                img_bytes = _cached_product_image(
+                    img_url,
+                    proxy or "",
+                    st.session_state.get("image_cache_nonce", 0),
+                )
             if img_bytes:
                 st.image(img_bytes, width=72)
             else:
@@ -1948,7 +1967,7 @@ def render_customization_panel() -> ExportRules:
 
 **Category, tags & shop** — Điền giá trị mới → **thay thế hoàn toàn** giá trị cũ.
 
-**Mô tả** — Tìm & thay trong HTML gốc, hoặc dán 1 mô tả chung cho tất cả SP.
+**Mô tả** — Chọn **HTML** hoặc **Text thuần**, tìm & thay trong mô tả gốc, hoặc dán 1 mô tả chung cho tất cả SP.
             """
         )
 
@@ -2273,6 +2292,9 @@ def run_crawl_only(
             category_slug=category_filter,
             progress_callback=progress_callback,
             max_workers=workers,
+            description_format=str(
+                st.session_state.get("crawl_description_format") or "html"
+            ),
         )
         started_at = datetime.now(timezone.utc)
         if rb_platform:
@@ -2708,7 +2730,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Trendsi · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Trendsi · Magento · Redbubble · Web thuần**…")
         info = _cached_describe_url(cleaned)
         target = info.get("target") if info.get("ok") else None
         platform = getattr(target, "platform", "") if target else ""
@@ -3136,6 +3158,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
                 "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
                 "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
                 "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
+                "Magento/Jomashop: /jewelry.html, /watches-for-men.html, /sku-slug.html\n"
                 "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com)\n"
                 "ShopBase: nebsport.com, wc.luminaaura.us (API catalog + mô tả HTML)"
             ),
@@ -3189,6 +3212,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
         st.markdown("</div>", unsafe_allow_html=True)
 
     render_crawl_limits_row(include_workers=True)
+    render_crawl_description_format()
 
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))

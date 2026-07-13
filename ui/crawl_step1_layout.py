@@ -68,6 +68,21 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+def render_crawl_description_format() -> None:
+    """Chọn định dạng mô tả ngay lúc crawl — mặc định HTML."""
+    st.radio(
+        "Mô tả sản phẩm khi crawl",
+        options=["html", "text"],
+        format_func=lambda key: "HTML (mặc định)" if key == "html" else "Text thuần",
+        horizontal=True,
+        key="crawl_description_format",
+        help=(
+            "**HTML** — giữ thẻ mô tả (`<p>…</p>`). "
+            "**Text thuần** — bỏ hết HTML, chỉ còn chữ."
+        ),
+    )
+
+
 def render_crawl_action_centered(
     *,
     label: str,

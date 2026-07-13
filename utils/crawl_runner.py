@@ -31,7 +31,16 @@ class CrawlError(Exception):
     pass
 
 
+def _apply_crawl_description_format(products: list, description_format: str) -> list:
+    """Áp dụng HTML / text theo lựa chọn lúc crawl."""
+    fmt = (description_format or "html").strip().lower()
+    if not products:
+        return products
+    from utils.description_html import format_description_output
 
+    for product in products:
+        product.description = format_description_output(product.description, fmt)
+    return products
 
 
 def run_auto_crawl(
@@ -51,6 +60,8 @@ def run_auto_crawl(
     progress_callback: CrawlProgressCallback | None = None,
 
     max_workers: int = 1,
+
+    description_format: str = "html",
 
 ) -> tuple[list, DetectedTarget]:
 
@@ -112,7 +123,7 @@ def run_auto_crawl(
 
             raise CrawlError("Redbubble: không crawl được sản phẩm nào từ link này.")
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
 
 
 
@@ -208,7 +219,7 @@ def run_auto_crawl(
 
             raise CrawlError("Shopify: không crawl được sản phẩm nào. Store có thể tắt public API.")
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
 
 
 
@@ -289,7 +300,7 @@ def run_auto_crawl(
                         )
             raise CrawlError("ShopBase: không crawl được sản phẩm nào từ link này.")
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
 
 
 
@@ -375,7 +386,79 @@ def run_auto_crawl(
                 "Thử **Luồng crawl = 8**, tắt **Proxy**, hoặc crawl lại sau vài phút."
             )
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
+
+
+
+    if target.platform == "magento":
+
+        from crawlers.magento_graphql import MagentoGraphqlCrawler
+
+        crawler = MagentoGraphqlCrawler(
+            target.base_url or target.url,
+            proxy_url=effective_proxy,
+            description_format=description_format or "html",
+        )
+
+        try:
+
+            if target.crawl_type == "product" and target.handle:
+
+                product = crawler.crawl_product(target.handle)
+
+                products = [product] if product else []
+
+            elif target.crawl_type == "category":
+
+                products = crawler.crawl_category(
+
+                    target.category_slug or target.handle or target.url,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            elif target.crawl_type == "shop":
+
+                products = crawler.crawl(
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback,
+
+                    max_workers=workers,
+
+                )
+
+            else:
+
+                raise CrawlError(
+                    f"Magento: chưa hỗ trợ loại link '{target.crawl_type}'. "
+                    "Dùng `/jewelry.html` hoặc link sản phẩm `.html`."
+                )
+
+        except requests.RequestException as exc:
+
+            raise CrawlError(f"Magento: lỗi GraphQL/HTTP {exc}") from exc
+
+
+
+        if not products:
+
+            raise CrawlError(
+                "Magento: không crawl được sản phẩm nào. "
+                "Thử category khác hoặc giảm **Luồng crawl** / tắt Proxy."
+            )
+
+        return _apply_crawl_description_format(products, description_format), target
 
 
 
@@ -477,7 +560,7 @@ def run_auto_crawl(
 
             raise CrawlError("WooCommerce: không crawl được sản phẩm nào từ link này.")
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
 
 
 
@@ -599,7 +682,7 @@ def run_auto_crawl(
 
             )
 
-        return products, target
+        return _apply_crawl_description_format(products, description_format), target
 
 
 

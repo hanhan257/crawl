@@ -91,6 +91,8 @@ def convert_h_tags_to_p(html: str) -> str:
 
 
 def _apply_description_rules(updated: Product, rules: ExportRules) -> None:
+    from utils.description_html import format_description_output
+
     fmt = rules.description_format or "html"
     base = updated.description or ""
     changed = False
@@ -114,14 +116,17 @@ def _apply_description_rules(updated: Product, rules: ExportRules) -> None:
             base = _apply_text_removals(base, removals, rules.description_remove_ignore_case)
             changed = True
 
-    if rules.description_convert_h_to_p:
+    if rules.description_convert_h_to_p and fmt != "text":
         converted = convert_h_tags_to_p(base)
         if converted != base:
             base = converted
             changed = True
 
-    if changed:
-        updated.description = base.strip() or None
+    # Luôn áp định dạng HTML / text theo lựa chọn user.
+    formatted = format_description_output(base, fmt)
+    formatted_value = formatted or None
+    if formatted_value != (updated.description or None) or changed:
+        updated.description = formatted_value
 
 
 def apply_export_rules(product: Product, rules: ExportRules | None) -> Product:

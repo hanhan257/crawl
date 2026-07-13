@@ -13,15 +13,19 @@ def fetch_image_bytes(
     if not url or not str(url).strip():
         return None
 
-    session = create_http_session(proxy_url, for_redbubble="redbubble.net" in url.lower())
-    headers: dict[str, str] = {}
+    lower = url.lower()
+    session = create_http_session(proxy_url, for_redbubble="redbubble.net" in lower)
+    headers: dict[str, str] = {
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    }
     if referer:
         headers["Referer"] = referer
-    elif "redbubble.net" in url.lower():
+    elif "redbubble.net" in lower:
         headers["Referer"] = "https://www.redbubble.com/"
-        headers["Accept"] = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
-    elif "silverbene.com" in url.lower():
+    elif "silverbene.com" in lower:
         headers["Referer"] = "https://silverbene.com/"
+    elif "jomashop.com" in lower:
+        headers["Referer"] = "https://www.jomashop.com/"
 
     try:
         response = session.get(url, headers=headers, timeout=25)
@@ -29,6 +33,11 @@ def fetch_image_bytes(
             return None
         content_type = (response.headers.get("content-type") or "").lower()
         if "image" not in content_type and len(response.content) < 500:
+            return None
+        # CDN đôi khi trả HTML/JS lỗi thay vì ảnh.
+        if "javascript" in content_type or "text/html" in content_type:
+            return None
+        if response.content[:20].lstrip().startswith((b"<", b"{", b"function")):
             return None
         return response.content
     except requests.RequestException:

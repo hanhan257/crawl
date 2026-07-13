@@ -11,6 +11,7 @@ from ui.crawl_step1_layout import (
     close_crawl_step1_wrap,
     open_crawl_step1_wrap,
     render_crawl_action_centered,
+    render_crawl_description_format,
     render_crawl_limits_row,
 )
 from ui.proxy_panel import render_proxy_panel
@@ -139,6 +140,7 @@ def render_redbubble_crawl_panel(
         st.markdown("</div>", unsafe_allow_html=True)
 
     render_crawl_limits_row(include_workers=False)
+    render_crawl_description_format()
 
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))
