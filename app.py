@@ -2188,6 +2188,10 @@ def run_crawl_only(
             target = preview["target"]
             if getattr(target, "crawl_type", "") == "search":
                 pass
+            elif target.platform == "trendsi":
+                # Link /classify/... hoặc /brand đã đúng category — không rebuild
+                # (trước đây build_category_crawl_url trả homepage → ra SP quần áo mặc định).
+                pass
             elif target.platform == "generic-web":
                 if getattr(target, "crawl_type", "") == "shop":
                     category_filter = category_slug
@@ -2846,6 +2850,10 @@ def render_url_preview(
             st.session_state.crawl_url_sig = url_sig
             default_cat = probe.get("url_category_slug") or "Tất cả"
             if probe.get("crawl_type") == "search":
+                default_cat = "Tất cả"
+            # Trendsi classify/brand: không có pill danh mục — giữ "Tất cả"
+            # để khỏi rebuild URL về homepage (bug ra SP quần áo mặc định).
+            if platform == "trendsi" and not probe.get("categories"):
                 default_cat = "Tất cả"
             if platform == "redbubble" and probe.get("categories"):
                 first_slug = probe["categories"][0].get("slug")

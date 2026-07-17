@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, unquote, urlparse
 
 import requests
 
@@ -79,7 +79,21 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
     if platform == "shopbase":
         return f"{base}/collections/{category_slug}"
     if platform == "trendsi":
-        return base_url
+        # Không được trả về homepage — sẽ rơi vào crawl catalog mặc định (quần áo).
+        slug = category_slug.strip().strip("/")
+        if not slug:
+            return f"{base}/"
+        lower = slug.lower()
+        if lower.startswith("classify/"):
+            path = "/".join(
+                quote(unquote(part), safe="") for part in slug.split("/") if part
+            )
+            return f"{base}/{path}"
+        parts = [p for p in slug.split("/") if p]
+        encoded = "/".join(quote(unquote(part), safe="") for part in parts)
+        # /classify/Product/Swimwear  vs  /classify/Category/Kids/Dresses
+        kind = "Category" if len(parts) > 1 else "Product"
+        return f"{base}/classify/{kind}/{encoded}"
     if platform == "magento":
         slug = category_slug.strip().strip("/")
         if not slug.endswith(".html"):
