@@ -1,5 +1,5 @@
 #!/bin/bash
-# Cài Docker trên AlmaLinux 9 / RHEL 9 (chạy với sudo)
+# Cài Docker trên AlmaLinux 8/9 / RHEL 8/9 (chạy với sudo)
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
