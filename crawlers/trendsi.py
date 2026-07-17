@@ -6,7 +6,7 @@ import re
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from html import unescape
+from html import escape, unescape
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -380,7 +380,7 @@ class TrendsiCrawler(BaseCrawler):
     ) -> Product:
         product_id = str(item.get("id") or (list_stub or {}).get("id") or "")
         title = str(item.get("title") or (list_stub or {}).get("title") or "").strip()
-        description = str(item.get("description") or item.get("text") or "").strip() or None
+        description = self._build_description(item)
         vendor = brand_name.strip() or str(item.get("brand") or "").strip() or "Trendsi"
         categories = self._parse_back_cates(item.get("backCates"))
         images = self._collect_images(item)
@@ -405,6 +405,100 @@ class TrendsiCrawler(BaseCrawler):
             product_type=categories[-1] if categories else None,
             status=status,
             variants=variants,
+        )
+
+    @classmethod
+    def _build_description(cls, item: dict[str, Any]) -> str | None:
+        """Gộp Size & Fit (HTML table) + Product Details vào đầu description."""
+        base = str(item.get("description") or "").strip()
+        if not base:
+            text = str(item.get("text") or "").strip()
+            base = f"<p>{escape(text)}</p>" if text else ""
+        size_html = cls._size_fit_html(item)
+        parts = [part for part in (size_html, base) if part]
+        return "".join(parts) or None
+
+    @classmethod
+    def _size_fit_html(cls, item: dict[str, Any]) -> str:
+        if item.get("sizeInfoEnable") is False:
+            return ""
+        size_info = item.get("sizeInfo") or []
+        if not isinstance(size_info, list) or not size_info:
+            return ""
+
+        blocks: list[str] = []
+        for block in size_info:
+            if not isinstance(block, dict):
+                continue
+            table = cls._size_info_table_html(block)
+            if table:
+                blocks.append(table)
+        if not blocks:
+            return ""
+
+        fit_type = str(item.get("fitType") or "").strip()
+        fit_note = (
+            f"<p><strong>Fit:</strong> {escape(fit_type)}</p>" if fit_type else ""
+        )
+        heading = "<h3>Size &amp; Fit</h3>"
+        return (
+            f'<div class="trendsi-size-fit">{heading}{fit_note}'
+            f'{"".join(blocks)}</div>'
+        )
+
+    @staticmethod
+    def _size_info_table_html(block: dict[str, Any]) -> str:
+        sizes = [
+            part.strip()
+            for part in str(block.get("sizeTemplate") or "").split(",")
+            if part.strip()
+        ]
+        attrs = block.get("sizeAttrList") or []
+        if not sizes or not isinstance(attrs, list) or not attrs:
+            return ""
+
+        columns: list[tuple[str, list[str]]] = []
+        for attr in attrs:
+            if not isinstance(attr, dict):
+                continue
+            name = str(attr.get("nameEn") or attr.get("name") or "").strip()
+            values = [
+                part.strip()
+                for part in str(attr.get("sizeProps") or "").split(",")
+            ]
+            if not name or not values:
+                continue
+            columns.append((name, values))
+        if not columns:
+            return ""
+
+        unit = str(block.get("unit") or "IN").strip().upper() or "IN"
+        unit_label = "inches" if unit == "IN" else unit.lower()
+        caption = (
+            f"Product Measurements (Measurements by {escape(unit_label)}) "
+            f"&amp; Size Conversion"
+        )
+        header_cells = "".join(
+            f"<th>{escape(name)}</th>" for name, _ in columns
+        )
+        rows: list[str] = []
+        for index, size in enumerate(sizes):
+            cells = [f"<td>{escape(size)}</td>"]
+            for _, values in columns:
+                value = values[index] if index < len(values) else ""
+                cells.append(f"<td>{escape(value)}</td>")
+            rows.append(f"<tr>{''.join(cells)}</tr>")
+
+        disclaimer = (
+            f"<p><em>*This data was obtained from manually measuring the product, "
+            f"it may be off by 0.4 ~ 1.2 {escape(unit_label)}.</em></p>"
+        )
+        return (
+            f"<p><strong>{caption}</strong> - Unit: {escape(unit)}</p>"
+            f"<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">"
+            f"<thead><tr><th>Size</th>{header_cells}</tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+            f"{disclaimer}"
         )
 
     @staticmethod
