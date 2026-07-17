@@ -356,7 +356,8 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
                 query=str(brand_name).strip() or None,
             )
 
-    if path.startswith("/classify/Category/"):
+    # /classify/Category/Kids/Dresses  hoặc  /classify/Product/Jewelry & Beauty
+    if path.startswith("/classify/Category/") or path.startswith("/classify/Product/"):
         parts = [unquote(segment) for segment in path.strip("/").split("/")[2:] if segment]
         if parts:
             category_path = "/".join(parts)
@@ -384,7 +385,10 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
         crawl_type="unknown",
         url=url,
         base_url=base_url,
-        message="Trendsi: dán link **/brand?...** · **/classify/Category/...** · **/products/detail?id=...**.",
+        message=(
+            "Trendsi: dán link **/brand?...** · **/classify/Category/...** · "
+            "**/classify/Product/...** · **/products/detail?id=...**."
+        ),
     )
 
 

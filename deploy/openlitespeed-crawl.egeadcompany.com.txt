@@ -1,0 +1,45 @@
+# OpenLiteSpeed reverse proxy → Streamlit :8501
+# Dùng trên VPS WPTangToc / OpenLiteSpeed (KHÔNG dùng Nginx).
+#
+# Cách 1 — WebAdmin OLS (khuyến nghị):
+#   1. Thêm domain crawl.egeadcompany.com trong WPTangToc (như web thường)
+#   2. Cài SSL Let's Encrypt trong WPTangToc cho domain đó
+#   3. OLS WebAdmin → Virtual Hosts → crawl.egeadcompany.com
+#      - External App → Add (type: Proxy)
+#          Name: crawl-streamlit
+#          Address: http://127.0.0.1:8501
+#          Max Connections: 200
+#          Initial Request Timeout: 3600
+#          Retry Timeout: 0
+#      - Context → Add (type: Proxy)
+#          URI: /
+#          External App: [Proxy] crawl-streamlit
+#          Accessible: Yes
+#      - WebSocket Proxy → Add
+#          URI: /
+#          Address: 127.0.0.1:8501
+#   4. Graceful Restart OLS
+#
+# Cách 2 — File (tham khảo). Đường dẫn vhconf tùy WPTangToc, thường dạng:
+#   /usr/local/lsws/conf/vhosts/crawl.egeadcompany.com/vhconf.conf
+#
+# Thêm các khối sau (điều chỉnh cho khớp cấu trúc file hiện có):
+
+extprocessor crawl-streamlit {
+  type                    proxy
+  address                 http://127.0.0.1:8501
+  maxConns                200
+  initTimeout             3600
+  retryTimeout            0
+  respBuffer              0
+}
+
+context / {
+  type                    proxy
+  handler                 crawl-streamlit
+  addDefaultCharset       off
+}
+
+websocket / {
+  address                 127.0.0.1:8501
+}

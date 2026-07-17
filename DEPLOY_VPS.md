@@ -1,6 +1,45 @@
 # Deploy lên VPS (Docker)
 
-App chạy **Streamlit** trên port **8501**. Ubuntu **22.04 / 24.04** đều được.
+App chạy **Streamlit** trên port **8501**.
+
+| OS | Script |
+|----|--------|
+| Ubuntu 22.04 / 24.04 | `deploy/install-vps.sh` · `deploy/install-native.sh` |
+| **AlmaLinux 9** / RHEL 9 | `deploy/install-vps-almalinux.sh` · `deploy/install-native-almalinux.sh` |
+| **WPTangToc + OpenLiteSpeed** | Xem `deploy/WPTANGTOC_OLS.md` (không dùng Nginx) |
+
+## Domain mẫu: crawl.egeadcompany.com (AlmaLinux 9)
+
+**DNS:** bản ghi `A` của `crawl.egeadcompany.com` → IP VPS (vd. `64.225.56.106`).
+
+```bash
+ssh root@64.225.56.106
+
+# 1) Clone + Docker
+git clone https://github.com/hanhan257/crawl.git
+cd crawl
+sudo bash deploy/install-vps-almalinux.sh
+cp config.example.json config.json
+nano config.json   # proxy nếu cần
+
+docker compose up -d --build
+
+# 2) Nginx + HTTPS
+sudo dnf -y install nginx certbot python3-certbot-nginx
+sudo cp deploy/nginx-crawl.egeadcompany.com.conf /etc/nginx/conf.d/
+sudo nginx -t && sudo systemctl enable --now nginx
+sudo certbot --nginx -d crawl.egeadcompany.com
+```
+
+Mở: **https://crawl.egeadcompany.com**
+
+Cập nhật code sau này:
+
+```bash
+cd ~/crawl
+git pull
+docker compose up -d --build
+```
 
 ## VPS 1 vCPU / 1 GB RAM (gói Basic)
 
@@ -9,7 +48,7 @@ App chạy **Streamlit** trên port **8501**. Ubuntu **22.04 / 24.04** đều đ
 | Việc | Gợi ý |
 |------|--------|
 | **Swap** | Bắt buộc: `sudo bash deploy/setup-swap.sh` (thêm 2 GB swap) |
-| **Cách cài** | Ưu tiên **không Docker** → `sudo bash deploy/install-native.sh` (nhẹ hơn ~300 MB RAM) |
+| **Cách cài** | Ưu tiên **không Docker** → `sudo bash deploy/install-native.sh` (Ubuntu) hoặc `install-native-almalinux.sh` |
 | **Giới hạn SP** | Test **10–50 SP**; tránh crawl hàng nghìn SP một lúc |
 | **Docker** | Vẫn dùng được nếu đã bật swap, nhưng dễ chậm khi crawl nặng |
 | **Nâng cấp** | Nếu crawl Redbubble nhiều → nên lên **2 GB RAM** |
@@ -46,11 +85,19 @@ Khuyến nghị dùng **Docker** (cách dưới đây).
 
 ## 2. Cài Docker (một lần)
 
+**Ubuntu:**
+
 ```bash
 sudo bash deploy/install-vps.sh
 ```
 
-Hoặc cài Docker thủ công theo [docs.docker.com](https://docs.docker.com/engine/install/ubuntu/).
+**AlmaLinux 9:**
+
+```bash
+sudo bash deploy/install-vps-almalinux.sh
+```
+
+Hoặc cài Docker thủ công theo [docs.docker.com](https://docs.docker.com/engine/install/).
 
 ## 3. Clone code & cấu hình
 
@@ -80,6 +127,17 @@ docker compose up -d
 ```
 
 ## 5. Domain + HTTPS (khuyến nghị)
+
+### AlmaLinux + crawl.egeadcompany.com
+
+```bash
+sudo dnf -y install nginx certbot python3-certbot-nginx
+sudo cp deploy/nginx-crawl.egeadcompany.com.conf /etc/nginx/conf.d/
+sudo nginx -t && sudo systemctl enable --now nginx
+sudo certbot --nginx -d crawl.egeadcompany.com
+```
+
+### Ubuntu (domain tùy chỉnh)
 
 ```bash
 sudo apt install -y nginx certbot python3-certbot-nginx
@@ -124,7 +182,8 @@ Thêm vào `docker-compose.yml` phần `environment` nếu cần.
 
 | Triệu chứng | Cách xử lý |
 |-------------|------------|
-| Không vào được `:8501` | `sudo ufw allow 8501/tcp` hoặc dùng Nginx port 443 |
+| Không vào được `:8501` | AlmaLinux: `firewall-cmd --add-port=8501/tcp --permanent && firewall-cmd --reload` |
 | Container thoát ngay | `docker compose logs crawl` |
 | Redbubble crawl lỗi | Kiểm tra proxy trong `config.json` |
 | Crawl lâu bị ngắt | Tăng `proxy_read_timeout` trong Nginx |
+| Certbot lỗi DNS | Kiểm tra `A crawl.egeadcompany.com` → đúng IP VPS |

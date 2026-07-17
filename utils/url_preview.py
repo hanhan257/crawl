@@ -34,7 +34,10 @@ CRAWL_HINTS = {
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm (Store API)",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
     ("trendsi", "brand"): "Link /brand?nameEn=...&id=... → crawl white-label brand (vd. CozyNest)",
-    ("trendsi", "category"): "Link /classify/Category/Kids/Dresses → crawl theo danh mục Trendsi",
+    ("trendsi", "category"): (
+        "Link /classify/Category/... hoặc /classify/Product/... "
+        "(vd. Jewelry & Beauty) → crawl đúng danh mục Trendsi"
+    ),
     ("trendsi", "shop"): "Trang chủ Trendsi → crawl catalog qua API",
     ("trendsi", "product"): "Link /products/detail?id=... → lấy 1 SP + biến thể Size/Color",
     ("magento", "shop"): "Trang chủ Magento/Jomashop → crawl các danh mục gốc qua GraphQL",
