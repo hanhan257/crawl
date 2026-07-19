@@ -550,7 +550,13 @@ def inject_pastel_pink_theme() -> None:
     st.markdown(PASTEL_PINK_CSS, unsafe_allow_html=True)
 
 
-def render_app_hero(*, gmc_mode: bool = False, redbubble_mode: bool = False) -> None:
+def render_app_hero(
+    *,
+    gmc_mode: bool = False,
+    redbubble_mode: bool = False,
+    trendsi_mode: bool = False,
+    **_unused,
+) -> None:
     if gmc_mode:
         subtitle = (
             "<strong>Quy trình GMC:</strong> "
@@ -566,6 +572,15 @@ def render_app_hero(*, gmc_mode: bool = False, redbubble_mode: bool = False) -> 
             "<strong>Xuất feed web / Woo / Shopify</strong>"
         )
         badge = "Redbubble"
+    elif trendsi_mode:
+        subtitle = (
+            "<strong>Quy trình Trendsi:</strong> Bước 1 Crawl brand / category / SP → "
+            "<strong>Bước 2 chọn file xuất</strong> → "
+            "Đổi giá / title → Xem trước → "
+            "<strong>Xuất web thuần / WooCommerce / WordPress</strong> "
+            "(Size &amp; Fit HTML trong description)"
+        )
+        badge = "Trendsi"
     else:
         subtitle = (
             "<strong>Quy trình:</strong> Bước 1 Crawl / Import → "

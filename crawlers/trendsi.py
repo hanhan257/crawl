@@ -516,16 +516,34 @@ class TrendsiCrawler(BaseCrawler):
 
     @staticmethod
     def _collect_images(item: dict[str, Any]) -> list[str]:
+        # originImages (.jpg) và headImages (.webp) cùng nội dung — chỉ lấy 1 nguồn.
+        preferred = item.get("originImages") or item.get("headImages") or []
         images: list[str] = []
-        for key in ("originImages", "headImages"):
-            for url in item.get(key) or []:
-                normalized = TrendsiCrawler._normalize_image_url(str(url))
-                if normalized and normalized not in images:
-                    images.append(normalized)
-        main_image = TrendsiCrawler._normalize_image_url(str(item.get("mainImage") or ""))
-        if main_image and main_image not in images:
-            images.insert(0, main_image)
+        seen_keys: set[str] = set()
+
+        def add(url: object) -> None:
+            normalized = TrendsiCrawler._normalize_image_url(str(url or ""))
+            if not normalized:
+                return
+            key = TrendsiCrawler._image_dedupe_key(normalized)
+            if key in seen_keys:
+                return
+            seen_keys.add(key)
+            images.append(normalized)
+
+        for url in preferred:
+            add(url)
+        add(item.get("mainImage"))
         return images
+
+    @staticmethod
+    def _image_dedupe_key(url: str) -> str:
+        """Khử trùng .jpg/.webp cùng path (originImages vs headImages)."""
+        cleaned = url.strip().split("?", 1)[0].lower()
+        for suffix in (".webp", ".jpeg", ".jpg", ".png", ".gif"):
+            if cleaned.endswith(suffix):
+                return cleaned[: -len(suffix)]
+        return cleaned
 
     @staticmethod
     def _normalize_image_url(url: str) -> str:
