@@ -89,8 +89,9 @@ def render_crawl_include_product_url() -> None:
         "Lấy cột link sản phẩm",
         key="crawl_include_product_url",
         help=(
-            "Bật để giữ **URL sản phẩm nguồn** (vd. `shop.myshopify.com/products/...`) "
-            "trong bảng sửa và file xuất (cột Link / Product URL / External URL)."
+            "Bật (mặc định) để giữ **URL sản phẩm nguồn** "
+            "(vd. `https://gullprint.com/product/...`) trong bảng sửa và file xuất. "
+            "Tắt nếu không cần cột link."
         ),
     )
 

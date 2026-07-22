@@ -73,7 +73,16 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
     if category_slug in {"", "Tất cả"}:
         return f"{base}/"
     if platform == "woocommerce":
-        return f"{base}/product-category/{category_slug}/"
+        slug = category_slug.strip().strip("/")
+        # GullPrint dùng /home-living/mug/ — ưu tiên path trực tiếp.
+        if "/" in slug or slug in {
+            "apparel",
+            "home-living",
+            "holidays",
+            "trending",
+        }:
+            return f"{base}/{slug}/"
+        return f"{base}/product-category/{slug}/"
     if platform == "shopify":
         return f"{base}/collections/{category_slug}"
     if platform == "shopbase":
@@ -287,6 +296,8 @@ def probe_shop_stats(
         return _probe_magento(target, base_url, url_category)
     if target.platform == "redbubble":
         return _probe_redbubble(target, credentials, base_url, url_category)
+    if target.platform == "fineartamerica":
+        return _probe_fineartamerica(target, base_url, url_category)
 
     if target.platform == "generic-web":
         return _probe_generic_web(target, base_url, url_category, max_workers=max_workers)
@@ -440,6 +451,60 @@ def _probe_magento(
         message=msg,
         total_products=total,
         categories=categories,
+        url_category_slug=url_category,
+    )
+
+
+def _probe_fineartamerica(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from crawlers.fineartamerica import FineArtAmericaCrawler
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="fineartamerica",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** artwork · /featured/...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    crawler = FineArtAmericaCrawler(site_url=base_url)
+    total = None
+    note = ""
+    if target.crawl_type == "shop":
+        total = crawler.count_popular_products()
+        note = "sitemap popular (không phải toàn marketplace)"
+    elif target.crawl_type == "sitemap":
+        note = "crawl theo sitemap đã dán"
+    else:
+        note = "listing artist/collection/art/shop"
+
+    if total is not None:
+        message = (
+            f"**~{total:,}** URL/file sitemap · {note} "
+            f"(trang chủ mặc định lấy tối đa **3.000** SP)"
+        ).replace(",", ".")
+    else:
+        message = (
+            f"Fine Art America · {note}. "
+            "Nếu không đếm được: hay bị **429** — bật **Proxy**, luồng **4–8**. "
+            "Trang chủ mặc định ~**3.000** SP."
+        )
+
+    return ShopProbeResult(
+        ok=True,
+        platform="fineartamerica",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=message,
+        total_products=total,
+        categories=[],
         url_category_slug=url_category,
     )
 
@@ -846,7 +911,36 @@ def _woo_product_count(crawler) -> int | None:
                 return int(total)
     except (requests.RequestException, ValueError, TypeError):
         pass
-    return None
+
+    # Store API khóa (GullPrint…) — đếm từ /shop/ hoặc sitemap.
+    html_total = _woo_count_from_shop_html(crawler)
+    if html_total is not None:
+        return html_total
+    try:
+        urls = crawler._discover_product_urls_sitemap(max_sitemaps=None)
+        return len(urls) or None
+    except Exception:
+        return None
+
+
+def _woo_count_from_shop_html(crawler) -> int | None:
+    import re
+
+    try:
+        response = crawler.session.get(f"{crawler.site_url}/shop/", timeout=30)
+        if response.status_code != 200:
+            return None
+        match = re.search(
+            r"of\s+([\d,]+)\s+results|([\d,]+)\s+results?",
+            response.text,
+            re.I,
+        )
+        if not match:
+            return None
+        raw = match.group(1) or match.group(2)
+        return int(str(raw).replace(",", ""))
+    except (requests.RequestException, ValueError, TypeError):
+        return None
 
 
 def _shopify_list_collections(crawler) -> list[ShopCategoryInfo]:
@@ -901,12 +995,83 @@ def _shopify_product_count(crawler) -> int | None:
             params={"limit": 250, "page": 1},
             timeout=30,
         )
-        if response.status_code != 200:
-            return None
-        batch = response.json().get("products", [])
-        if len(batch) < 250:
-            return len(batch)
-        return 250
+        if response.status_code == 200:
+            batch = response.json().get("products", [])
+            if len(batch) < 250:
+                return len(batch)
+            # Đủ 1 trang 250 → đếm sitemap (chính xác hơn “250+”).
+            sitemap_total = _shopify_sitemap_product_count(crawler.shop_url, crawler.session)
+            return sitemap_total if sitemap_total is not None else 250
+
+        # /products.json 429 → đếm sitemap (nhanh, đủ), không cap giả 10k qua GraphQL.
+        sitemap_total = _shopify_sitemap_product_count(crawler.shop_url, crawler.session)
+        if sitemap_total is not None:
+            return sitemap_total
+        if hasattr(crawler, "_graphql_available") and crawler._graphql_available():
+            return _shopify_graphql_product_count(crawler)
     except (requests.RequestException, ValueError, TypeError):
         pass
     return None
+
+
+def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> int | None:
+    """Đếm URL /products/... trong sitemap_products_*.xml."""
+    from xml.etree import ElementTree as ET
+
+    try:
+        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=30)
+        if index.status_code != 200:
+            return None
+
+        ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+        root = ET.fromstring(index.content)
+        smaps = [
+            (el.text or "").strip()
+            for el in root.findall(".//sm:loc", ns)
+            if el.text and "sitemap_products" in el.text.lower()
+        ]
+        if not smaps:
+            return None
+        total = 0
+        for smap_url in smaps:
+            resp = session.get(smap_url, timeout=40)
+            if resp.status_code != 200:
+                continue
+            sm_root = ET.fromstring(resp.content)
+            total += sum(
+                1
+                for el in sm_root.findall(".//sm:loc", ns)
+                if el.text and "/products/" in el.text
+            )
+        return total or None
+    except (requests.RequestException, ET.ParseError, ValueError):
+        return None
+
+
+def _shopify_graphql_product_count(crawler, max_pages: int = 80) -> int | None:
+    """Đếm SP qua Storefront GraphQL (fallback nếu sitemap lỗi)."""
+    query = """
+    query($cursor: String) {
+      products(first: 250, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        edges { node { handle } }
+      }
+    }
+    """
+    cursor = None
+    total = 0
+    try:
+        for _ in range(max_pages):
+            payload = crawler._graphql_request(query, {"cursor": cursor})
+            connection = (payload.get("data") or {}).get("products") or {}
+            edges = connection.get("edges") or []
+            total += len(edges)
+            page_info = connection.get("pageInfo") or {}
+            if not page_info.get("hasNextPage"):
+                return total
+            cursor = page_info.get("endCursor")
+            if not cursor:
+                return total
+        return total
+    except (requests.RequestException, ValueError, TypeError, AttributeError):
+        return total or None

@@ -10,6 +10,17 @@ DEFAULT_READ_TIMEOUT = 90
 DEFAULT_REQUEST_TIMEOUT = (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
 
 
+def _retry_sleep_seconds(response: requests.Response | None, attempt: int, backoff: float) -> float:
+    if response is not None:
+        retry_after = response.headers.get("Retry-After")
+        if retry_after:
+            try:
+                return min(max(float(retry_after), 1.0), 90.0)
+            except (TypeError, ValueError):
+                pass
+    return min(backoff * (attempt + 1), 12)
+
+
 def get_with_retry(
     session: requests.Session,
     url: str,
@@ -24,7 +35,7 @@ def get_with_retry(
         try:
             response = session.get(url, timeout=timeout, **kwargs)
             if response.status_code in {429, 502, 503, 504} and attempt + 1 < max_retries:
-                time.sleep(min(backoff * (attempt + 1), 12))
+                time.sleep(_retry_sleep_seconds(response, attempt, backoff))
                 continue
             response.raise_for_status()
             return response
@@ -38,7 +49,7 @@ def get_with_retry(
             last_exc = exc
             status = exc.response.status_code if exc.response is not None else None
             if status in {429, 502, 503, 504} and attempt + 1 < max_retries:
-                time.sleep(min(backoff * (attempt + 1), 12))
+                time.sleep(_retry_sleep_seconds(exc.response, attempt, backoff))
                 continue
             raise
     if last_exc is not None:

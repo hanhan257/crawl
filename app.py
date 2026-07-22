@@ -40,6 +40,7 @@ from utils.csv_import import (
     parse_csv_to_products,
     slug_from_category,
 )
+from utils.title_filter import dataframe_to_csv_bytes, filter_products_by_titles
 from utils.detector import UnsupportedUrlError, normalize_url, resolve_url
 from utils.export_preview import (
     all_export_columns,
@@ -154,8 +155,9 @@ DEFAULT_EXPORT_WORKERS = min(32, max(16, (os.cpu_count() or 4) * 2))
 DEFAULT_CRAWL_WORKERS = DEFAULT_EXPORT_WORKERS
 
 WORKFLOW_MODES = {
-    "crawl": "Crawl từ link (Shopify / Woo / ShopBase / web)",
+    "crawl": "Crawl từ link (Shopify / Woo / ShopBase / FAA / web)",
     "import": "Import CSV có sẵn → xuất file",
+    "filter-title": "Lọc SP theo file title",
     "crawl-gmc": "Crawl → file feed GMC",
     "redbubble": "Crawl Redbubble → xuất file",
     "trendsi": "Crawl Trendsi → xuất file",
@@ -219,6 +221,9 @@ def init_session() -> None:
         "import_source_name": "",
         "import_selected_category": "Tất cả",
         "csv_import_sig": "",
+        "title_filter_result_bytes": None,
+        "title_filter_result_name": "",
+        "title_filter_stats": None,
         "variant_option_names": "Size, Color",
         "variant_attribute_lines": (
             "S,M=1,L=2,XL=3,2XL=4,3XL=5,4XL=6,5XL=7\n"
@@ -229,7 +234,7 @@ def init_session() -> None:
         "crawl_pages": 0,
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
         "crawl_description_format": "html",
-        "crawl_include_product_url": False,
+        "crawl_include_product_url": True,
         "crawl_report_json": None,
         "crawl_report_csv": None,
         "crawl_report_json_bytes": None,
@@ -453,8 +458,8 @@ def _cached_product_image(url: str, proxy_url: str, cache_nonce: int) -> bytes |
 
 
 @st.cache_data(show_spinner=False, ttl=900)
-def _cached_describe_url(url: str) -> dict:
-    return describe_url(url)
+def _cached_describe_url(url: str, proxy_url: str = "") -> dict:
+    return describe_url(url, proxy_url=proxy_url or None)
 
 
 @st.cache_data(show_spinner=False, ttl=600)
@@ -556,6 +561,9 @@ def load_products_into_session(products: list[Product], export_name: str, info: 
                 product.gmc_condition = default_condition
         _apply_shop_brand_defaults(products)
     st.session_state.products_raw = deepcopy(products)
+    # SP đã có URL nguồn → bật cột link (tránh tưởng là không crawl được link).
+    if any(str(product.url or "").strip() for product in products):
+        st.session_state.crawl_include_product_url = True
     apply_edit_filter(products)
     st.session_state.export_name = export_name
     st.session_state.output_bytes = None
@@ -896,6 +904,131 @@ def render_import_panel() -> None:
 | Mô tả | description, descriptio, body |
 | Vendor | vendor, brand |
             """
+        )
+
+
+def render_title_filter_panel() -> None:
+    st.markdown("### Bước 1 · Lọc sản phẩm theo file title")
+    st.caption(
+        "Upload **file title** (danh sách tên SP cần giữ) + **file sản phẩm**. "
+        "App tạo file mới chỉ gồm SP có title nằm trong file title. "
+        "Giới hạn upload **300 MB**/file (cần restart app sau khi đổi config)."
+    )
+
+    col_title, col_products = st.columns(2)
+    with col_title:
+        title_file = st.file_uploader(
+            "1. File title",
+            type=["csv", "txt", "tsv", "xlsx"],
+            key="title_filter_titles_uploader",
+            help="CSV có cột title/name, hoặc TXT mỗi dòng 1 title.",
+        )
+    with col_products:
+        product_file = st.file_uploader(
+            "2. File sản phẩm",
+            type=["csv", "tsv", "xlsx"],
+            key="title_filter_products_uploader",
+            help="CSV sản phẩm đầy đủ (title, price, images…).",
+        )
+
+    match_mode = st.radio(
+        "Kiểu khớp title",
+        options=["exact", "contains"],
+        format_func=lambda key: (
+            "Khớp đúng (không phân biệt hoa thường)"
+            if key == "exact"
+            else "Title SP chứa title trong file (hoặc ngược lại)"
+        ),
+        horizontal=True,
+        key="title_filter_match_mode",
+    )
+
+    run_clicked = st.button(
+        "Lọc & tạo file",
+        type="primary",
+        use_container_width=True,
+        key="title_filter_run_btn",
+        disabled=not (title_file and product_file),
+    )
+
+    if run_clicked and title_file and product_file:
+        try:
+            with st.spinner("Đang lọc sản phẩm theo title..."):
+                result = filter_products_by_titles(
+                    product_file.getvalue(),
+                    title_file.getvalue(),
+                    product_filename=product_file.name,
+                    title_filename=title_file.name,
+                    match_mode=match_mode,
+                )
+            out_bytes = dataframe_to_csv_bytes(result.matched_df)
+            stem = Path(product_file.name).stem
+            out_name = f"{stem}_filtered_by_title.csv"
+            st.session_state.title_filter_result_bytes = out_bytes
+            st.session_state.title_filter_result_name = out_name
+            st.session_state.title_filter_stats = {
+                "title_count": result.title_count,
+                "product_count": result.product_count,
+                "matched_count": result.matched_count,
+                "missing_count": len(result.missing_titles),
+                "missing_titles": result.missing_titles[:50],
+                "product_title_column": result.product_title_column,
+                "title_column": result.title_column,
+            }
+            st.session_state.last_error = None
+            st.session_state.last_info = (
+                f"Lọc xong: **{result.matched_count}** / **{result.product_count}** SP "
+                f"khớp **{result.title_count}** title "
+                f"(cột SP `{result.product_title_column}`, cột title `{result.title_column}`)."
+            )
+
+            # Đưa SP khớp vào session để xuất Woo/Shopify nếu cần.
+            if result.matched_count > 0:
+                products, _ = parse_csv_to_products(out_bytes)
+                if products:
+                    st.session_state.imported_products_all = deepcopy(products)
+                    st.session_state.import_source_name = Path(out_name).stem
+                    st.session_state.import_selected_category = "Tất cả"
+                    load_products_into_session(
+                        products,
+                        Path(out_name).stem,
+                        st.session_state.last_info,
+                    )
+        except Exception as exc:
+            st.session_state.last_error = f"Lỗi lọc title: {exc}"
+            st.session_state.title_filter_result_bytes = None
+            st.session_state.title_filter_stats = None
+
+    stats = st.session_state.get("title_filter_stats")
+    out_bytes = st.session_state.get("title_filter_result_bytes")
+    out_name = st.session_state.get("title_filter_result_name") or "filtered_by_title.csv"
+    if stats:
+        st.success(
+            f"**{stats['matched_count']}** SP khớp · "
+            f"file title **{stats['title_count']}** · "
+            f"file SP **{stats['product_count']}** · "
+            f"thiếu **{stats['missing_count']}** title"
+        )
+        if out_bytes:
+            st.download_button(
+                f"Tải file đã lọc ({out_name})",
+                data=out_bytes,
+                file_name=out_name,
+                mime="text/csv",
+                type="primary",
+                use_container_width=True,
+                key="title_filter_download_btn",
+            )
+        missing = stats.get("missing_titles") or []
+        if missing:
+            with st.expander(f"Title trong file title nhưng không thấy trong file SP ({stats['missing_count']})"):
+                st.code("\n".join(missing), language=None)
+                if stats["missing_count"] > len(missing):
+                    st.caption(f"… và {stats['missing_count'] - len(missing)} title khác.")
+    elif not title_file or not product_file:
+        st.caption(
+            "Ví dụ: file title có cột `title` (hoặc mỗi dòng 1 tên) · "
+            "file sản phẩm CSV crawl/export trước đó."
         )
 
 
@@ -2190,7 +2323,23 @@ def run_crawl_only(
 
     try:
         crawl_url = url.strip()
-        preflight_error = check_shop_reachable(crawl_url)
+        try:
+            early_target = resolve_url(crawl_url)
+        except UnsupportedUrlError:
+            early_target = None
+        if (
+            live_area is not None
+            and early_target is not None
+            and getattr(early_target, "platform", "") == "fineartamerica"
+        ):
+            live_area.info(
+                "Fine Art America: đang tải sitemap popular… "
+                "(mặc định tối đa ~3.000 artwork — đặt Giới hạn SP nếu cần khác)"
+            )
+        preflight_error = check_shop_reachable(
+            crawl_url,
+            proxy_url=st.session_state.get("proxy_url") or None,
+        )
         if preflight_error:
             st.session_state.last_error = preflight_error
             return
@@ -2219,6 +2368,13 @@ def run_crawl_only(
             elif target.platform == "trendsi":
                 # Link /classify/... hoặc /brand đã đúng category — không rebuild
                 # (trước đây build_category_crawl_url trả homepage → ra SP quần áo mặc định).
+                pass
+            elif target.platform == "woocommerce" and target.crawl_type in {
+                "shop",
+                "product",
+                "category",
+            }:
+                # Giữ nguyên link user dán (homepage /shop /product /home-living/mug…).
                 pass
             elif target.platform == "generic-web":
                 if getattr(target, "crawl_type", "") == "shop":
@@ -2286,6 +2442,10 @@ def run_crawl_only(
                         label = (
                             f"Chi tiết {current}/{total} · {matched} SP · {workers} luồng"
                         )
+                    elif crawl_platform == "fineartamerica":
+                        label = (
+                            f"Artwork {current}/{total} · {matched} SP · {workers} luồng"
+                        )
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     progress_bar.progress(ratio, text=label)
@@ -2315,6 +2475,19 @@ def run_crawl_only(
                     else:
                         progress_text.caption(f"Đã lấy **{matched}** SP · {workers} luồng song song.")
 
+        def _commit_products(products_list, *, export_slug: str = "products") -> None:
+            st.session_state.products_raw = deepcopy(products_list)
+            _apply_shop_brand_defaults(st.session_state.products_raw, crawl_url)
+            apply_edit_filter(st.session_state.products_raw)
+            st.session_state.export_name = export_slug or "products"
+
+        def partial_callback(partial_products) -> None:
+            if not partial_products:
+                return
+            # Checkpoint giữa chừng — lỗi/dừng vẫn còn data để xuất file.
+            st.session_state.products_raw = deepcopy(partial_products)
+            st.session_state.crawl_matched_count = len(partial_products)
+
         crawl_kwargs = dict(
             url=crawl_url,
             credentials=creds,
@@ -2327,6 +2500,7 @@ def run_crawl_only(
             description_format=str(
                 st.session_state.get("crawl_description_format") or "html"
             ),
+            partial_callback=partial_callback,
         )
         started_at = datetime.now(timezone.utc)
         if rb_platform:
@@ -2344,12 +2518,10 @@ def run_crawl_only(
             progress_bar.empty()
         if progress_text is not None:
             progress_text.empty()
-        st.session_state.products_raw = deepcopy(products)
-        _apply_shop_brand_defaults(st.session_state.products_raw, crawl_url)
-        apply_edit_filter(st.session_state.products_raw)
-        st.session_state.export_name = (
+        export_slug = (
             target.category_slug or target.handle or target.query or "products"
         )
+        _commit_products(products, export_slug=export_slug)
         report = save_crawl_report(
             products,
             target,
@@ -2367,28 +2539,59 @@ def run_crawl_only(
         variant_mode = st.session_state.get("gmc_variant_mode", "all_variations")
         feed_rows = count_gmc_export_rows(products, variant_mode)
         report_note = "Báo cáo crawl — tải JSON / CSV link SP bên dưới."
+        missing_note = ""
+        if expected_total and len(products) < int(expected_total):
+            missing_note = (
+                f" · Thiếu ~**{int(expected_total) - len(products)}** so với dự kiến "
+                "— **vẫn xuất/tải file được** ở Bước 2."
+            )
         if is_gmc_workflow() or st.session_state.get("export_format") == "gmc-feed-csv":
             st.session_state.last_info = (
                 f"Crawl xong **{len(products)}** SP → **{feed_rows}** dòng feed GMC "
                 f"({GMC_VARIANT_MODES.get(variant_mode, variant_mode)}) · "
                 f"{preview.get('message', '')} · {report.summary()} · {report_note}"
+                f"{missing_note}"
             )
         else:
             st.session_state.last_info = (
                 f"Crawl xong **{len(products)}** sản phẩm · {preview.get('message', '')} · "
-                f"{report.summary()} · {report_note}"
+                f"{report.summary()} · {report_note}{missing_note}"
             )
         st.session_state.imported_products_all = None
     except UnsupportedUrlError as exc:
         st.session_state.last_error = str(exc)
     except CrawlError as exc:
-        st.session_state.last_error = str(exc)
+        partial = list(getattr(exc, "partial_products", None) or [])
+        if not partial and st.session_state.get("products_raw"):
+            partial = list(st.session_state.products_raw)
+        if partial:
+            _apply_shop_brand_defaults(partial, crawl_url)
+            apply_edit_filter(partial)
+            st.session_state.products_raw = deepcopy(partial)
+            st.session_state.export_name = st.session_state.get("export_name") or "products"
+            st.session_state.last_info = (
+                f"Crawl dừng sớm — vẫn giữ **{len(partial)}** SP. "
+                "Chọn format ở **Bước 2** rồi xuất/tải file bình thường."
+            )
+            st.session_state.last_error = str(exc)
+        else:
+            st.session_state.last_error = str(exc)
     except requests.exceptions.Timeout as exc:
+        partial = list(st.session_state.get("products_raw") or [])
+        if partial:
+            st.session_state.last_info = (
+                f"Timeout — vẫn giữ **{len(partial)}** SP đã crawl để xuất file (Bước 2)."
+            )
         st.session_state.last_error = (
             f"Server phản hồi chậm (timeout): {exc}. "
             "Thử **Luồng crawl = 4–8**, giảm **Giới hạn SP**, hoặc crawl lại sau vài phút."
         )
     except requests.exceptions.ConnectionError as exc:
+        partial = list(st.session_state.get("products_raw") or [])
+        if partial:
+            st.session_state.last_info = (
+                f"Mất kết nối — vẫn giữ **{len(partial)}** SP đã crawl để xuất file (Bước 2)."
+            )
         st.session_state.last_error = (
             f"Lỗi kết nối: {exc}. Thử giảm **Luồng crawl** hoặc bật **Proxy**."
         )
@@ -2396,6 +2599,11 @@ def run_crawl_only(
         err_text = str(exc).strip()
         if not err_text:
             err_text = f"{type(exc).__name__}"
+        partial = list(st.session_state.get("products_raw") or [])
+        if partial:
+            st.session_state.last_info = (
+                f"Crawl lỗi — vẫn giữ **{len(partial)}** SP đã crawl để xuất file (Bước 2)."
+            )
         if "timed out" in err_text.lower() or "timeout" in err_text.lower():
             st.session_state.last_error = (
                 f"Server phản hồi chậm: {err_text}. "
@@ -2763,7 +2971,10 @@ def render_url_preview(
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
         status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Trendsi · Magento · Redbubble · Web thuần**…")
-        info = _cached_describe_url(cleaned)
+        info = _cached_describe_url(
+            cleaned,
+            st.session_state.get("proxy_url", "") or "",
+        )
         target = info.get("target") if info.get("ok") else None
         platform = getattr(target, "platform", "") if target else ""
 
@@ -3338,6 +3549,9 @@ def main() -> None:
                 run_crawl=run_crawl_only,
                 update_crawl_ui=_update_crawl_live_ui,
             )
+    elif workflow_mode == "filter-title":
+        with st.container(border=True):
+            render_title_filter_panel()
     elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
             url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
@@ -3354,6 +3568,12 @@ def main() -> None:
             export_format = render_redbubble_export_selector()
         elif trendsi_mode:
             export_format = render_trendsi_export_selector()
+        elif workflow_mode == "filter-title":
+            st.markdown("### Bước 2 · Xuất file (tuỳ chọn)")
+            st.caption(
+                "Sau khi lọc, SP khớp đã vào bảng bên dưới — chọn định dạng nếu muốn xuất Woo/Shopify/feed."
+            )
+            export_format = render_export_format_selector()
         else:
             export_format = render_export_format_selector()
 

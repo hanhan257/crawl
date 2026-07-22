@@ -75,7 +75,7 @@ def _row_for_csv(product: Product, columns: list[str] | None = None) -> dict[str
         value = data.get(key)
         if isinstance(value, list):
             if key == "image_urls":
-                row[key] = " | ".join(str(v) for v in value)
+                row[key] = ", ".join(str(v) for v in value)
             else:
                 row[key] = ", ".join(str(v) for v in value)
         elif isinstance(value, dict):

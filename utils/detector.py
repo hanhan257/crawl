@@ -13,7 +13,16 @@ from crawlers.magento_graphql import MagentoGraphqlCrawler
 SHOPIFY_PRODUCT = re.compile(r"/products/([^/?#]+)")
 SHOPIFY_COLLECTION = re.compile(r"/collections/([^/?#]+)")
 WOOCOMMERCE_PRODUCT = re.compile(r"/product/([^/?#]+)")
-WOOCOMMERCE_CATEGORY = re.compile(r"/product-category/([^/?#]+)")
+WOOCOMMERCE_CATEGORY = re.compile(
+    r"/product-category/(.+?)(?:/page/\d+)?/?$",
+    re.I,
+)
+# GullPrint / Flatsome đôi khi dùng /home-living/mug/ thay vì /product-category/...
+WOOCOMMERCE_CUSTOM_CATEGORY = re.compile(
+    r"^/(?!product/|shop/?$|cart/?$|checkout/?$|my-account|wp-|blog|about|contact|page/)"
+    r"([a-z0-9\-]+(?:/[a-z0-9\-]+)*)/?$",
+    re.I,
+)
 REDBUBBLE_PRODUCT = re.compile(r"/i/[^/]+/[^/]+/\d+")
 REDBUBBLE_SHOP = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_PRODUCT = re.compile(r"/product/([^/?#]+)")
@@ -62,6 +71,11 @@ def detect_url(url: str) -> DetectedTarget:
     if host in {"redbubble.com"} or host.endswith(".redbubble.com"):
         return _detect_redbubble(normalized, path)
 
+    if host in {"fineartamerica.com", "pixels.com"} or host.endswith(
+        ".fineartamerica.com"
+    ):
+        return _detect_fineartamerica(normalized, path)
+
     if host.endswith(".myshopify.com"):
         return _detect_shopify(normalized, host, path)
 
@@ -97,13 +111,36 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return s
 
     def check_shopify() -> str | None:
+        session = fresh_session()
+        # meta.json có myshopify_domain → Shopify thật (kể cả khi /products.json bị 429).
         try:
-            shopify_resp = fresh_session().get(
+            meta_resp = session.get(f"{base}/meta.json", timeout=10)
+            if meta_resp.status_code == 200:
+                meta = meta_resp.json()
+                if isinstance(meta, dict) and meta.get("myshopify_domain"):
+                    return "shopify"
+        except (requests.RequestException, ValueError):
+            pass
+        try:
+            shopify_resp = session.get(
                 f"{base}/products.json", params={"limit": 1}, timeout=10
             )
             if shopify_resp.status_code == 200:
                 data = shopify_resp.json()
                 if isinstance(data, dict) and isinstance(data.get("products"), list):
+                    return "shopify"
+        except (requests.RequestException, ValueError):
+            pass
+        # cart.js thường vẫn 200 khi homepage/meta/products.json bị 429 (vd. printyourwear).
+        try:
+            cart_resp = session.get(f"{base}/cart.js", timeout=10)
+            if cart_resp.status_code == 200:
+                data = cart_resp.json()
+                if (
+                    isinstance(data, dict)
+                    and "token" in data
+                    and isinstance(data.get("items"), list)
+                ):
                     return "shopify"
         except (requests.RequestException, ValueError):
             pass
@@ -139,6 +176,15 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
     def check_shopbase() -> str | None:
         try:
             session = fresh_session()
+            # Shopify thật (kể cả rate-limit products.json) → không phải ShopBase.
+            try:
+                meta_resp = session.get(f"{base}/meta.json", timeout=8)
+                if meta_resp.status_code == 200:
+                    meta = meta_resp.json()
+                    if isinstance(meta, dict) and meta.get("myshopify_domain"):
+                        return None
+            except (requests.RequestException, ValueError):
+                pass
             products_json = session.get(
                 f"{base}/products.json",
                 params={"limit": 1},
@@ -146,6 +192,8 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             )
             if products_json.status_code == 200:
                 return None
+            # Chỉ nhận ShopBase khi có catalog API thật — không dùng sitemap_products
+            # (Shopify cũng dùng tên sitemap_products_*.xml → dễ nhận nhầm).
             catalog = session.get(
                 f"{base}/api/catalog/next/products.json",
                 params={"limit": 1, "page": 1},
@@ -155,9 +203,6 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                 payload = catalog.json()
                 if isinstance(payload.get("result"), dict):
                     return "shopbase"
-            sitemap = session.get(f"{base}/sitemap.xml", timeout=8)
-            if sitemap.status_code == 200 and "sitemap_products" in sitemap.text.lower():
-                return "shopbase"
             page = session.get(base, timeout=8)
             if page.status_code == 200 and "shopbase" in page.text.lower():
                 return "shopbase"
@@ -320,8 +365,8 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
         "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Trendsi, Magento/Jomashop, "
-        "Redbubble, Web thuần (Next.js / HTML / sitemap).\n"
-        "Ví dụ: jomashop.com/jewelry.html · trendsi.com/brand?... · keeptee.com",
+        "Redbubble, Fine Art America, Web thuần (Next.js / HTML / sitemap).\n"
+        "Ví dụ: jomashop.com/jewelry.html · fineartamerica.com · keeptee.com",
         platform="unknown",
     )
 
@@ -495,6 +540,63 @@ def _refine_magento_target(
     )
 
 
+def _detect_fineartamerica(url: str, path: str) -> DetectedTarget:
+    parsed = urlparse(url)
+    host = (parsed.netloc or "").lower()
+    base_url = (
+        "https://pixels.com"
+        if "pixels.com" in host
+        else "https://fineartamerica.com"
+    )
+    path_lower = (path or "").lower()
+
+    if "/featured/" in path_lower and path_lower.rstrip("/").endswith(".html"):
+        return DetectedTarget(
+            platform="fineartamerica",
+            crawl_type="product",
+            url=url,
+            base_url=base_url,
+        )
+
+    if "sitemap" in path_lower:
+        return DetectedTarget(
+            platform="fineartamerica",
+            crawl_type="sitemap",
+            url=url,
+            base_url=base_url,
+            message="Crawl theo sitemap Fine Art America",
+        )
+
+    if path in ("", "/"):
+        return DetectedTarget(
+            platform="fineartamerica",
+            crawl_type="shop",
+            url=url,
+            base_url=base_url,
+            message="Trang chủ → sitemap popular products (không phải toàn bộ marketplace)",
+        )
+
+    # artist / art / shop / collections
+    if any(
+        part in path_lower
+        for part in ("/profiles/", "/art/", "/shop/", "/collections/", "/subjects/")
+    ):
+        return DetectedTarget(
+            platform="fineartamerica",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            category_slug=path.strip("/").split("/")[-1] or None,
+        )
+
+    return DetectedTarget(
+        platform="fineartamerica",
+        crawl_type="category",
+        url=url,
+        base_url=base_url,
+    )
+
+
 def _detect_redbubble(url: str, path: str) -> DetectedTarget:
     if REDBUBBLE_PRODUCT.search(path):
         return DetectedTarget(
@@ -565,6 +667,19 @@ def _extract_shopify_search_query(url: str) -> str | None:
 
 def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
     base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+    path_lower = (path or "").lower()
+
+    # sitemap_products_1.xml?... hoặc /sitemap.xml → crawl theo sitemap
+    if "sitemap" in path_lower and (
+        "product" in path_lower or path_lower.rstrip("/").endswith("sitemap.xml")
+    ):
+        return DetectedTarget(
+            platform="shopify",
+            crawl_type="sitemap",
+            url=url,
+            base_url=base_url,
+            message="Crawl theo sitemap sản phẩm",
+        )
 
     product_match = SHOPIFY_PRODUCT.search(path)
     if product_match and product_match.group(1) != "json":
@@ -651,7 +766,7 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
             crawl_type="category",
             url=url,
             base_url=base_url,
-            category_slug=category_match.group(1),
+            category_slug=category_match.group(1).strip("/"),
         )
 
     if path.rstrip("/") in ("/shop", "/products"):
@@ -660,6 +775,17 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
             crawl_type="shop",
             url=url,
             base_url=base_url,
+        )
+
+    custom = WOOCOMMERCE_CUSTOM_CATEGORY.match(path.rstrip("/") + "/")
+    if custom:
+        return DetectedTarget(
+            platform="woocommerce",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            category_slug=custom.group(1).strip("/"),
+            handle=custom.group(1).strip("/"),
         )
 
     return DetectedTarget(

@@ -13,6 +13,7 @@ import requests
 
 
 CrawlProgressCallback = Callable[[int, int, int], None]
+PartialProductsCallback = Callable[[list], None]
 
 
 
@@ -27,8 +28,11 @@ from utils.http_session import normalize_proxy_url
 
 
 class CrawlError(Exception):
+    """Lỗi crawl — có thể kèm SP đã lấy được để UI vẫn cho xuất file."""
 
-    pass
+    def __init__(self, message: str, partial_products: list | None = None):
+        super().__init__(message)
+        self.partial_products = list(partial_products or [])
 
 
 def _apply_crawl_description_format(products: list, description_format: str) -> list:
@@ -63,6 +67,8 @@ def run_auto_crawl(
 
     description_format: str = "html",
 
+    partial_callback: PartialProductsCallback | None = None,
+
 ) -> tuple[list, DetectedTarget]:
 
     from crawlers.generic_web import GenericWebCrawler
@@ -92,6 +98,72 @@ def run_auto_crawl(
     workers = max(1, min(int(max_workers or 1), 32))
 
 
+
+    if target.platform == "fineartamerica":
+        from crawlers.fineartamerica import FineArtAmericaCrawler
+
+        crawler = FineArtAmericaCrawler(
+            site_url=target.base_url or target.url,
+            proxy_url=raw_proxy,
+        )
+        if partial_callback is not None:
+            crawler.partial_callback = partial_callback
+
+        def _faa_partial() -> list:
+            return list(getattr(crawler, "last_products", None) or [])
+
+        try:
+            if target.crawl_type == "product":
+                products = crawler.crawl_product(target.url)
+            elif target.crawl_type == "sitemap":
+                products = crawler.crawl_sitemap(
+                    target.url,
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
+            elif target.crawl_type == "shop":
+                products = crawler.crawl(
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
+            elif target.crawl_type == "category":
+                products = crawler.crawl_listing(
+                    target.url,
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
+            else:
+                raise CrawlError(
+                    f"Fine Art America: chưa hỗ trợ loại link '{target.crawl_type}'"
+                )
+        except CrawlError:
+            raise
+        except Exception as exc:
+            partial = _faa_partial()
+            if partial:
+                raise CrawlError(
+                    f"Fine Art America: dừng sớm ({exc}). Vẫn giữ {len(partial)} SP.",
+                    partial_products=partial,
+                ) from exc
+            raise CrawlError(f"Fine Art America: {exc}") from exc
+
+        if not products:
+            partial = _faa_partial()
+            if partial:
+                products = partial
+            else:
+                raise CrawlError(
+                    "Fine Art America: không lấy được SP. "
+                    "Site hay chặn IP (429) — bật **Proxy**, luồng **4–8**, "
+                    "hoặc dán link artist/collection cụ thể."
+                )
+        return _apply_crawl_description_format(products, description_format), target
 
     if target.platform == "redbubble":
 
@@ -141,9 +213,14 @@ def run_auto_crawl(
 
             use_public_api=not token,
 
+            proxy_url=raw_proxy,
+
         )
+        if partial_callback is not None:
+            crawler.partial_callback = partial_callback
 
-
+        def _shopify_partial() -> list:
+            return list(getattr(crawler, "last_products", None) or [])
 
         try:
 
@@ -181,6 +258,22 @@ def run_auto_crawl(
 
                 )
 
+            elif target.crawl_type == "sitemap":
+
+                products = crawler.crawl_sitemap(
+
+                    sitemap_url=target.url,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    max_workers=workers,
+
+                    progress_callback=progress_callback,
+
+                )
+
             elif target.crawl_type == "search" and target.query:
 
                 products = crawler.crawl_search(
@@ -201,23 +294,38 @@ def run_auto_crawl(
 
                 raise CrawlError(f"Shopify: chưa hỗ trợ loại link '{target.crawl_type}'")
 
+        except CrawlError:
+            raise
         except requests.HTTPError as exc:
-
+            partial = _shopify_partial()
             if exc.response is not None and exc.response.status_code in (401, 403):
-
                 raise CrawlError(
-
-                    "Shopify: store yêu cầu token. Thêm token vào config.json hoặc --token."
-
+                    "Shopify: store yêu cầu token. Thêm token vào config.json hoặc --token.",
+                    partial_products=partial,
                 ) from exc
-
-            raise CrawlError(f"Shopify: lỗi HTTP {exc}") from exc
+            raise CrawlError(
+                f"Shopify: lỗi HTTP {exc}",
+                partial_products=partial,
+            ) from exc
+        except Exception as exc:
+            partial = _shopify_partial()
+            if partial:
+                raise CrawlError(
+                    f"Shopify: crawl dừng sớm ({exc}). Vẫn giữ được {len(partial)} SP.",
+                    partial_products=partial,
+                ) from exc
+            raise
 
 
 
         if not products:
-
-            raise CrawlError("Shopify: không crawl được sản phẩm nào. Store có thể tắt public API.")
+            partial = _shopify_partial()
+            if partial:
+                products = partial
+            else:
+                raise CrawlError(
+                    "Shopify: không crawl được sản phẩm nào. Store có thể tắt public API."
+                )
 
         return _apply_crawl_description_format(products, description_format), target
 
@@ -544,7 +652,8 @@ def run_auto_crawl(
 
                 raise CrawlError(
 
-                    "WooCommerce: cần API key/secret. Thêm vào config.json hoặc --key/--secret."
+                    "WooCommerce: API bị khóa (401/403) và không crawl được qua HTML/sitemap. "
+                    "Thử tắt Proxy, tăng Luồng crawl, hoặc thêm API key vào config.json."
 
                 ) from exc
 

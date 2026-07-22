@@ -9,6 +9,7 @@ PLATFORM_LABELS = {
     "trendsi": "Trendsi",
     "magento": "Magento / Jomashop",
     "redbubble": "Redbubble",
+    "fineartamerica": "Fine Art America",
     "generic-web": "Web thuần",
 }
 
@@ -18,20 +19,37 @@ CRAWL_TYPE_LABELS = {
     "brand": "Crawl brand Trendsi",
     "search": "Crawl kết quả tìm kiếm",
     "product": "Crawl 1 sản phẩm",
+    "sitemap": "Crawl theo sitemap",
     "unknown": "Chưa xác định loại link",
 }
 
 CRAWL_HINTS = {
-    ("shopify", "shop"): "Link trang chủ shop → lấy tất cả sản phẩm qua /products.json",
+    ("shopify", "shop"): (
+        "Link trang chủ → /products.json; nếu 429 thì sitemap + GraphQL theo handle"
+    ),
+    ("shopify", "sitemap"): (
+        "Link sitemap_products_*.xml hoặc /sitemap.xml → lấy SP trong sitemap đó"
+    ),
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
     ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",
     ("shopify", "product"): "Link sản phẩm → lấy 1 SP",
+    ("fineartamerica", "shop"): (
+        "Trang chủ → sitemap popular (~10 triệu URL). "
+        "UI mặc định ~3.000 SP. Full shop: chạy `python crawl_faa_full.py`."
+    ),
+    ("fineartamerica", "sitemap"): "Link sitemap → lấy /featured/*.html trong sitemap",
+    ("fineartamerica", "category"): (
+        "Link artist/collection/art/shop → quét listing rồi crawl SP (đa luồng)"
+    ),
+    ("fineartamerica", "product"): "Link /featured/...html → lấy 1 artwork",
     ("shopbase", "shop"): "Link trang chủ ShopBase (vd. nebsport.com) → crawl API catalog (~10k SP)",
     ("shopbase", "category"): "Link /collections/... → crawl collection (Football, Baseball…)",
     ("shopbase", "product"): "Link /products/... → lấy 1 SP + mô tả HTML",
-    ("woocommerce", "shop"): "Link /shop → lấy toàn bộ sản phẩm",
+    ("woocommerce", "shop"): (
+        "Trang chủ hoặc /shop → lấy toàn bộ SP (Store API hoặc sitemap HTML nếu API khóa)"
+    ),
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
-    ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm (Store API)",
+    ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
     ("trendsi", "brand"): "Link /brand?nameEn=...&id=... → crawl white-label brand (vd. CozyNest)",
     ("trendsi", "category"): (
@@ -53,12 +71,29 @@ CRAWL_HINTS = {
 }
 
 
-def describe_url(url: str) -> dict:
+def describe_url(url: str, proxy_url: str | None = None) -> dict:
     if not url.strip():
         return {"ok": False, "message": "Nhập link để nhận diện nền tảng.", "crawl_ready": False}
 
+    session = None
+    cleaned_proxy = (proxy_url or "").strip() or None
+    if cleaned_proxy is None:
+        try:
+            from utils.credentials import CrawlCredentials
+
+            cleaned_proxy = CrawlCredentials.load().proxy_url or None
+        except Exception:
+            cleaned_proxy = None
+    if cleaned_proxy:
+        try:
+            from utils.http_session import create_http_session
+
+            session = create_http_session(cleaned_proxy)
+        except Exception:
+            session = None
+
     try:
-        target = resolve_url(url.strip())
+        target = resolve_url(url.strip(), session=session)
     except UnsupportedUrlError as exc:
         if getattr(exc, "platform", None) == "redbubble":
             target = DetectedTarget(

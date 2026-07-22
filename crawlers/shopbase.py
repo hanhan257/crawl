@@ -290,15 +290,18 @@ class ShopBaseCrawler(BaseCrawler):
             pass
 
         try:
-            page = session.get(base, timeout=12)
-            if page.status_code == 200 and "shopbase" in page.text.lower():
-                return True
-        except requests.RequestException:
+            # Shopify cũng dùng sitemap_products_*.xml — không dùng làm tín hiệu ShopBase.
+            meta = session.get(f"{base}/meta.json", timeout=10)
+            if meta.status_code == 200:
+                payload = meta.json()
+                if isinstance(payload, dict) and payload.get("myshopify_domain"):
+                    return False
+        except (requests.RequestException, ValueError):
             pass
 
         try:
-            sitemap = session.get(f"{base}/sitemap.xml", timeout=12)
-            if sitemap.status_code == 200 and "sitemap_products" in sitemap.text.lower():
+            page = session.get(base, timeout=12)
+            if page.status_code == 200 and "shopbase" in page.text.lower():
                 return True
         except requests.RequestException:
             pass
