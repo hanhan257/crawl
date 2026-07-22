@@ -104,6 +104,7 @@ from ui.crawl_step1_layout import (
     open_crawl_step1_wrap,
     render_crawl_action_centered,
     render_crawl_description_format,
+    render_crawl_include_product_url,
     render_crawl_limits_row,
 )
 from ui.proxy_panel import render_proxy_panel
@@ -228,6 +229,7 @@ def init_session() -> None:
         "crawl_pages": 0,
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
         "crawl_description_format": "html",
+        "crawl_include_product_url": False,
         "crawl_report_json": None,
         "crawl_report_csv": None,
         "crawl_report_json_bytes": None,
@@ -622,6 +624,7 @@ def apply_edit_filter(
         google_category_default=gmc_google_default,
         gmc_defaults=gmc_defaults,
         gmc_condition=gmc_condition,
+        include_url=bool(st.session_state.get("crawl_include_product_url")),
     )
     st.session_state.edited_df = pd.DataFrame(rows)
     st.session_state.output_bytes = None
@@ -1299,7 +1302,7 @@ def render_export_file_preview_block(
     )
     st.info(
         f"**{label}** — {count} dòng sản phẩm · "
-        f"{len(all_export_columns(export_format))} cột template · "
+        f"{len(all_export_columns(export_format, include_url=bool(st.session_state.get('crawl_include_product_url'))))} cột template · "
         f"Trường đang chọn: {', '.join(export_fields.labels())}"
     )
     if export_format == "woocommerce-csv":
@@ -1319,6 +1322,7 @@ def render_export_file_preview_block(
             products,
             image_mode,
             max_img,
+            include_url=bool(st.session_state.get("crawl_include_product_url")),
         )
         st.code(", ".join(all_cols), language=None)
 
@@ -2102,6 +2106,9 @@ def render_export_fields_panel() -> ExportFields:
         selected = None
 
     fields = ExportFields.from_preset(preset, custom=selected)
+    if st.session_state.get("crawl_include_product_url"):
+        fields.enabled.add("url")
+        st.caption("Đã bật **Lấy cột link sản phẩm** ở Bước 1 → thêm trường Link URL vào file xuất.")
     st.info(f"File sẽ gồm: **{', '.join(fields.labels())}**")
     return fields
 
@@ -3242,6 +3249,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
 
     render_crawl_limits_row(include_workers=True)
     render_crawl_description_format()
+    render_crawl_include_product_url()
 
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))
@@ -3412,6 +3420,11 @@ def _render_main_workflow(
 
     export_clicked = False
     if st.session_state.edited_df is not None:
+        want_url = bool(st.session_state.get("crawl_include_product_url"))
+        has_url = "url" in st.session_state.edited_df.columns
+        if want_url != has_url and not is_gmc_workflow():
+            apply_edit_filter()
+            st.rerun()
         if "_index" in st.session_state.edited_df.columns:
             st.session_state.edited_df = st.session_state.edited_df.rename(
                 columns={"_index": "row_id"}
@@ -3507,6 +3520,11 @@ def _render_main_workflow(
                     ),
                     "vendor": st.column_config.TextColumn(column_header_label("vendor", hr)),
                     "sku": st.column_config.TextColumn(column_header_label("sku", hr)),
+                    "url": st.column_config.TextColumn(
+                        "Link sản phẩm",
+                        width="large",
+                        help="URL sản phẩm nguồn (Shopify/Woo/Trendsi…)",
+                    ),
                 }
             edited_main = st.data_editor(
                 st.session_state.edited_df[main_columns],
@@ -3526,6 +3544,7 @@ def _render_main_workflow(
                 column_config={
                     "row_id": None,
                     "title": st.column_config.TextColumn("Title", width="medium", disabled=True),
+
                     "description": st.column_config.TextColumn(
                         column_header_label("description", hr),
                         width="large",
@@ -3545,7 +3564,14 @@ def _render_main_workflow(
             on="row_id",
             how="left",
         )
-        column_order = [c for c in edit_columns_for_format(export_format) if c in edited_df.columns]
+        column_order = [
+            c
+            for c in edit_columns_for_format(
+                export_format,
+                include_url=bool(st.session_state.get("crawl_include_product_url")),
+            )
+            if c in edited_df.columns
+        ]
         edited_df = edited_df[column_order]
         prev_fp = st.session_state.get("_edited_df_fingerprint")
         new_fp = edited_df.to_json()

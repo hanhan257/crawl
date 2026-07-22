@@ -24,6 +24,15 @@ WEB_FEED_COLUMNS = [
     "vendor",
 ]
 
+WEB_FEED_URL_COLUMN = "product_url"
+
+
+def web_feed_columns(*, include_url: bool = False) -> list[str]:
+    columns = list(WEB_FEED_COLUMNS)
+    if include_url and WEB_FEED_URL_COLUMN not in columns:
+        columns.append(WEB_FEED_URL_COLUMN)
+    return columns
+
 
 def _join_category(categories: list[str]) -> str:
     cleaned = [str(c).strip() for c in categories if str(c).strip()]
@@ -53,6 +62,7 @@ def product_to_web_feed_row(
         "brand": brand,
         "tag": _join_tags(product.tags),
         "vendor": vendor,
+        WEB_FEED_URL_COLUMN: (product.url or "").strip(),
     }
 
 
@@ -70,12 +80,14 @@ def export_web_feed_import(
 
     max_images = max_images_per_product if max_images_per_product and max_images_per_product > 0 else None
     total = len(products)
+    include_url = fields.includes("url")
+    columns = web_feed_columns(include_url=include_url)
 
     if progress:
         progress.step("write", 0.0, "Ghi file CSV feed web thuần...")
 
     with final_csv.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=WEB_FEED_COLUMNS, extrasaction="ignore")
+        writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
         for index, product in enumerate(products):
             row = product_to_web_feed_row(
@@ -94,6 +106,8 @@ def export_web_feed_import(
             if not fields.includes("vendor"):
                 row["vendor"] = ""
                 row["brand"] = ""
+            if not include_url:
+                row.pop(WEB_FEED_URL_COLUMN, None)
             writer.writerow(row)
             if progress:
                 progress.product(index, total)

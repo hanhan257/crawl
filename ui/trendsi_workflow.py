@@ -12,6 +12,7 @@ from ui.crawl_step1_layout import (
     open_crawl_step1_wrap,
     render_crawl_action_centered,
     render_crawl_description_format,
+    render_crawl_include_product_url,
     render_crawl_limits_row,
 )
 from ui.proxy_panel import render_proxy_panel
@@ -158,6 +159,7 @@ def render_trendsi_crawl_panel(
 
     render_crawl_limits_row(include_workers=True)
     render_crawl_description_format()
+    render_crawl_include_product_url()
 
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))

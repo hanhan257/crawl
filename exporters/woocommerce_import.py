@@ -213,6 +213,7 @@ def product_to_woocommerce_row(
             "Regular price": format_export_price(product.price),
             "Categories": _woo_categories(product.categories),
             "Tags": _woo_tags(product.tags),
+            "External URL": (product.url or "").strip(),
         }
     )
     row.update(image_fields)

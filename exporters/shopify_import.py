@@ -52,6 +52,15 @@ SHOPIFY_COLUMNS = [
     "Status",
 ]
 
+SHOPIFY_URL_COLUMN = "Product URL"
+
+
+def shopify_columns(*, include_url: bool = False) -> list[str]:
+    columns = list(SHOPIFY_COLUMNS)
+    if include_url and SHOPIFY_URL_COLUMN not in columns:
+        columns.append(SHOPIFY_URL_COLUMN)
+    return columns
+
 
 def _slugify_handle(title: str, product_id: str) -> str:
     slug = re.sub(r"[^\w\s\-]", "", (title or "").lower())
@@ -155,7 +164,12 @@ def _shopify_option_fields(
     }
 
 
-def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) -> list[dict[str, str]]:
+def product_to_shopify_rows(
+    product: Product,
+    rules: ExportRules | None = None,
+    *,
+    include_url: bool = False,
+) -> list[dict[str, str]]:
     product = apply_export_rules(product, rules)
     handle = _slugify_handle(product.title, product.id)
     tags = _join_tags(product.tags)
@@ -163,12 +177,13 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
     priced_variants = [v for v in product.variants if _is_priced_variant(v)]
     attr_defs = _attribute_defs(product.variants)
     fallback_options = _variant_options(product.variants)
+    product_url = (product.url or "").strip() if include_url else ""
 
     rows: list[dict[str, str]] = []
 
     if priced_variants:
         for index, variant in enumerate(priced_variants):
-            row = _blank_shopify_row()
+            row = _blank_shopify_row(include_url=include_url)
             if index == 0:
                 row.update(
                     {
@@ -185,6 +200,8 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
                         "Status": "active",
                     }
                 )
+                if include_url:
+                    row[SHOPIFY_URL_COLUMN] = product_url
                 if product.image_urls:
                     row["Image Src"] = product.image_urls[0]
                     row["Image Position"] = "1"
@@ -204,7 +221,7 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
             row["Variant Weight Unit"] = "g"
             rows.append(row)
     else:
-        row = _blank_shopify_row()
+        row = _blank_shopify_row(include_url=include_url)
         row.update(
             {
                 "Handle": handle,
@@ -220,6 +237,8 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
                 "Status": "active",
             }
         )
+        if include_url:
+            row[SHOPIFY_URL_COLUMN] = product_url
         row.update(
             {
                 "Option1 Name": fallback_options[0],
@@ -249,7 +268,7 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
         rows.append(row)
 
     for position, image_url in enumerate(product.image_urls[1:], start=2):
-        image_row = _blank_shopify_row()
+        image_row = _blank_shopify_row(include_url=include_url)
         image_row["Handle"] = handle
         image_row["Image Src"] = image_url
         image_row["Image Position"] = str(position)
@@ -259,8 +278,8 @@ def product_to_shopify_rows(product: Product, rules: ExportRules | None = None) 
     return rows
 
 
-def _blank_shopify_row() -> dict[str, str]:
-    return {column: "" for column in SHOPIFY_COLUMNS}
+def _blank_shopify_row(*, include_url: bool = False) -> dict[str, str]:
+    return {column: "" for column in shopify_columns(include_url=include_url)}
 
 
 def count_shopify_export_rows(products: list[Product]) -> int:
@@ -282,6 +301,9 @@ def export_shopify_import(
 ) -> Path:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    fields = fields or ExportFields.from_preset("shop")
+    include_url = fields.includes("url")
+    columns = shopify_columns(include_url=include_url)
     total = len(products)
     workers = max(1, min(max_workers, total, 32))
     product_rows: list[list[dict[str, str]] | None] = [None] * total
@@ -291,7 +313,9 @@ def export_shopify_import(
         lock = threading.Lock()
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {
-                executor.submit(product_to_shopify_rows, product, rules): index
+                executor.submit(
+                    product_to_shopify_rows, product, rules, include_url=include_url
+                ): index
                 for index, product in enumerate(products)
             }
             for future in as_completed(futures):
@@ -303,7 +327,9 @@ def export_shopify_import(
                         progress.product(completed - 1, total)
     else:
         for index, product in enumerate(products):
-            product_rows[index] = product_to_shopify_rows(product, rules=rules)
+            product_rows[index] = product_to_shopify_rows(
+                product, rules=rules, include_url=include_url
+            )
             if progress:
                 progress.product(index, total)
 
@@ -316,7 +342,7 @@ def export_shopify_import(
         progress.step("write", 0.0, "Ghi file Shopify CSV...")
 
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=SHOPIFY_COLUMNS, extrasaction="ignore")
+        writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 

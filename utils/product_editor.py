@@ -43,10 +43,17 @@ GMC_EDIT_COLUMNS = [
 ]
 
 
-def edit_columns_for_format(export_format: str) -> list[str]:
+def edit_columns_for_format(
+    export_format: str,
+    *,
+    include_url: bool = False,
+) -> list[str]:
     if export_format == "gmc-feed-csv":
-        return GMC_EDIT_COLUMNS
-    return EDIT_COLUMNS
+        return list(GMC_EDIT_COLUMNS)
+    columns = list(EDIT_COLUMNS)
+    if include_url and "url" not in columns:
+        columns.append("url")
+    return columns
 
 
 def _is_missing_price(value: object) -> bool:
@@ -109,6 +116,7 @@ def products_to_rows(
     google_category_default: str = "",
     gmc_defaults: dict[str, str] | None = None,
     gmc_condition: str = "new",
+    include_url: bool = False,
 ) -> list[dict]:
     rows = []
     for index, product in enumerate(products):
@@ -123,20 +131,21 @@ def products_to_rows(
                 )
             )
             continue
-        rows.append(
-            {
-                "row_id": index,
-                "title": product.title,
-                "price": product.price,
-                "categories": ", ".join(product.categories)
-                or (product.product_type or "").strip(),
-                "tags": ", ".join(product.tags),
-                "description": product.description or "",
-                "product_type": product.product_type or "",
-                "vendor": product.vendor or "",
-                "sku": product.sku or "",
-            }
-        )
+        row = {
+            "row_id": index,
+            "title": product.title,
+            "price": product.price,
+            "categories": ", ".join(product.categories)
+            or (product.product_type or "").strip(),
+            "tags": ", ".join(product.tags),
+            "description": product.description or "",
+            "product_type": product.product_type or "",
+            "vendor": product.vendor or "",
+            "sku": product.sku or "",
+        }
+        if include_url:
+            row["url"] = product.url or ""
+        rows.append(row)
     return rows
 
 
@@ -229,6 +238,8 @@ def merge_edited_rows(
         product.product_type = str(row.get("product_type") or "").strip() or None
         product.vendor = str(row.get("vendor") or "").strip() or None
         product.sku = str(row.get("sku") or "").strip() or None
+        if "url" in row:
+            product.url = str(row.get("url") or "").strip() or None
 
         price_raw = row.get("price")
         if price_raw is not None and not _is_missing_price(price_raw):
@@ -268,6 +279,7 @@ def build_edit_subset_rows(
     google_category_default: str = "",
     gmc_defaults: dict[str, str] | None = None,
     gmc_condition: str = "new",
+    include_url: bool = False,
 ) -> list[dict]:
     indexed = list(enumerate(products))
     selected = apply_export_selection_indexed(indexed, quantity=quantity, order=order)
@@ -279,6 +291,7 @@ def build_edit_subset_rows(
             google_category_default=google_category_default,
             gmc_defaults=gmc_defaults,
             gmc_condition=gmc_condition,
+            include_url=include_url,
         )[0]
         row["row_id"] = row_id
         rows.append(row)

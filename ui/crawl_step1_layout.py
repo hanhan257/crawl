@@ -83,6 +83,18 @@ def render_crawl_description_format() -> None:
     )
 
 
+def render_crawl_include_product_url() -> None:
+    """Tùy chọn lấy cột link sản phẩm nguồn (Shopify/Woo/Trendsi…)."""
+    st.checkbox(
+        "Lấy cột link sản phẩm",
+        key="crawl_include_product_url",
+        help=(
+            "Bật để giữ **URL sản phẩm nguồn** (vd. `shop.myshopify.com/products/...`) "
+            "trong bảng sửa và file xuất (cột Link / Product URL / External URL)."
+        ),
+    )
+
+
 def render_crawl_action_centered(
     *,
     label: str,

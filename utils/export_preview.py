@@ -15,8 +15,8 @@ from exporters.gmc_feed_import import (
     finalize_gmc_feed_row,
     product_to_gmc_row,
 )
-from exporters.shopify_import import SHOPIFY_COLUMNS, product_to_shopify_rows
-from exporters.web_feed_import import WEB_FEED_COLUMNS, product_to_web_feed_row
+from exporters.shopify_import import shopify_columns, product_to_shopify_rows
+from exporters.web_feed_import import web_feed_columns, product_to_web_feed_row
 from exporters.woocommerce_import import WOOCOMMERCE_COLUMNS, product_to_woocommerce_rows
 from models.export_fields import ExportFields
 from models.export_rules import ExportRules, apply_export_rules
@@ -105,6 +105,13 @@ def _woo_export_rows(
     return rows
 
 
+def _shopify_preview_columns(*, include_url: bool = False) -> list[str]:
+    columns = list(SHOPIFY_PREVIEW_COLUMNS)
+    if include_url and "Product URL" not in columns:
+        columns.append("Product URL")
+    return columns
+
+
 def _shopify_export_rows(
     products: list[Product],
     rules: ExportRules | None,
@@ -112,15 +119,21 @@ def _shopify_export_rows(
     limit: int,
 ) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
+    include_url = fields.includes("url")
+    preview_cols = _shopify_preview_columns(include_url=include_url)
     preview_products = fields.filter_products_for_export(products, "shopify-csv")
     for product in preview_products:
         if len(rows) >= limit:
             break
-        shopify_rows = product_to_shopify_rows(apply_export_rules(product, rules), rules=rules)
+        shopify_rows = product_to_shopify_rows(
+            apply_export_rules(product, rules),
+            rules=rules,
+            include_url=include_url,
+        )
         for row in shopify_rows:
             if row.get("Title") or row.get("Variant Price"):
                 rows.append(
-                    {col: _truncate(row.get(col, ""), 120) for col in SHOPIFY_PREVIEW_COLUMNS}
+                    {col: _truncate(row.get(col, ""), 120) for col in preview_cols}
                 )
             if len(rows) >= limit:
                 break
@@ -159,13 +172,14 @@ def _web_feed_export_rows(
 ) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     max_images = max_images_per_product if max_images_per_product and max_images_per_product > 0 else None
+    columns = web_feed_columns(include_url=fields.includes("url"))
     for product in fields.apply_to_products(products)[:limit]:
         row = product_to_web_feed_row(
             apply_export_rules(product, rules),
             rules=rules,
             max_images=max_images,
         )
-        rows.append({col: _truncate(row.get(col, ""), 120) for col in WEB_FEED_COLUMNS})
+        rows.append({col: _truncate(row.get(col, ""), 120) for col in columns})
     return rows
 
 
@@ -238,11 +252,13 @@ def build_export_file_preview(
         )
         return rows, cols, label
     if export_format == "shopify-csv":
-        return _shopify_export_rows(products, rules, fields, limit), SHOPIFY_PREVIEW_COLUMNS, label
+        cols = _shopify_preview_columns(include_url=fields.includes("url"))
+        return _shopify_export_rows(products, rules, fields, limit), cols, label
     if export_format == "web-feed-csv":
+        cols = web_feed_columns(include_url=fields.includes("url"))
         return (
             _web_feed_export_rows(products, rules, fields, limit, max_images_per_product),
-            WEB_FEED_COLUMNS,
+            cols,
             label,
         )
     if export_format == "gmc-feed-csv":
@@ -274,6 +290,8 @@ def all_export_columns(
     products: list[Product] | None = None,
     image_mode: str = "comma",
     max_images_per_product: int | None = None,
+    *,
+    include_url: bool = False,
 ) -> list[str]:
     if export_format == "woocommerce-csv":
         if products and image_mode == "split_columns":
@@ -283,9 +301,9 @@ def all_export_columns(
             return woocommerce_columns_for_mode(image_mode, count)
         return WOOCOMMERCE_COLUMNS
     if export_format == "shopify-csv":
-        return SHOPIFY_COLUMNS
+        return shopify_columns(include_url=include_url)
     if export_format == "web-feed-csv":
-        return WEB_FEED_COLUMNS
+        return web_feed_columns(include_url=include_url)
     if export_format == "gmc-feed-csv":
         return GMC_FEED_COLUMNS
     return CSV_COLUMNS
