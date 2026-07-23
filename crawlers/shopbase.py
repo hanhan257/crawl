@@ -35,7 +35,7 @@ CATALOG_DETAIL_API = "/api/catalog/next/product.json"
 CATALOG_COLLECTIONS_API = "/api/catalog/next/collections.json"
 CATALOG_PAGE_SIZE = 50
 CATALOG_LIST_MAX_WORKERS = 32
-DETAIL_FETCH_MAX_WORKERS = 32
+DETAIL_FETCH_MAX_WORKERS = 500
 
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 PRODUCT_PATH = re.compile(r"/products/([^/?#]+)", re.I)
@@ -605,7 +605,7 @@ class ShopBaseCrawler(BaseCrawler):
         products: list[Product] = []
         lock = threading.Lock()
         total = len(handles)
-        workers = max(1, min(max_workers, 32))
+        workers = max(1, min(max_workers, 500))
         processed = 0
 
         def fetch_one(handle: str) -> Product | None:

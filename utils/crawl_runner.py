@@ -95,7 +95,7 @@ def run_auto_crawl(
 
     target = resolve_url(url)
 
-    workers = max(1, min(int(max_workers or 1), 32))
+    workers = max(1, min(int(max_workers or 1), 500))
 
 
 

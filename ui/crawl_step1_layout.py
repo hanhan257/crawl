@@ -20,6 +20,17 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
     st.markdown('<div class="crawl-limits-row">', unsafe_allow_html=True)
     col_count = 3 if include_workers else 2
     cols = st.columns(col_count, gap="small")
+    sitemap_mode = bool(st.session_state.get("crawl_via_sitemap"))
+    worker_max = 500
+    worker_help = (
+        "Tối đa **500** luồng. Sitemap Shopify lớn: **100–500** + proxy. "
+        "Số trang = số file sitemap_products tối đa (0 = hết)."
+        if sitemap_mode
+        else (
+            "Tối đa **500** luồng (nên bật proxy khi >32). "
+            "ShopBase/HTML: **24–64** thường đủ — quá cao dễ thiếu SP / lỗi ảnh."
+        )
+    )
 
     fields: list[tuple[int, str, str, dict[str, Any]]] = [
         (
@@ -32,7 +43,15 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
             2,
             "Số trang",
             "crawl_pages",
-            {"min_value": 0, "help": "0 = hết trang."},
+            {
+                "min_value": 0,
+                "help": (
+                    "Sitemap: 0 = hết file sitemap_products. "
+                    "API thường: 0 = hết trang."
+                    if sitemap_mode
+                    else "0 = hết trang."
+                ),
+            },
         ),
     ]
     if include_workers:
@@ -43,11 +62,8 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
                 "crawl_workers",
                 {
                     "min_value": 1,
-                    "max_value": 32,
-                    "help": (
-                        "ShopBase (nebsport…): **24–32** luồng. "
-                        "Web thuần HTML (Silverbene): **16–32** — quá cao dễ thiếu SP / lỗi ảnh."
-                    ),
+                    "max_value": worker_max,
+                    "help": worker_help,
                 },
             )
         )
@@ -92,6 +108,21 @@ def render_crawl_include_product_url() -> None:
             "Bật (mặc định) để giữ **URL sản phẩm nguồn** "
             "(vd. `https://gullprint.com/product/...`) trong bảng sửa và file xuất. "
             "Tắt nếu không cần cột link."
+        ),
+    )
+
+
+def render_crawl_via_sitemap() -> None:
+    """Crawl toàn bộ SP qua sitemap — dán link shop hoặc link sitemap đều được."""
+    st.checkbox(
+        "Crawl theo sitemap",
+        key="crawl_via_sitemap",
+        help=(
+            "Bật khi shop Shopify lớn / bị chặn `/products.json` (429) — "
+            "lấy SP qua sitemap + GraphQL. "
+            "Khách chỉ cần dán **link shop** (tự chuyển `/sitemap.xml`) "
+            "hoặc dán thẳng `sitemap_products_*.xml` / `/sitemap.xml`. "
+            "Fine Art America cũng dùng được. Luồng tối đa **500**."
         ),
     )
 

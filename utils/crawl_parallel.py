@@ -7,7 +7,7 @@ from typing import TypeVar
 T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
-API_LIST_MAX_WORKERS = 16
+API_LIST_MAX_WORKERS = 500
 
 
 def _matched_count(items: list, limit: int | None) -> int:

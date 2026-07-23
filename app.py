@@ -106,8 +106,10 @@ from ui.crawl_step1_layout import (
     render_crawl_action_centered,
     render_crawl_description_format,
     render_crawl_include_product_url,
+    render_crawl_via_sitemap,
     render_crawl_limits_row,
 )
+from ui.dedupe_filter_panel import render_dedupe_filter_panel
 from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from ui.trendsi_workflow import (
@@ -152,12 +154,13 @@ GMC_CONDITION_OPTIONS = ["", "new", "refurbished", "used"]
 GENERAL_EXPORT_FORMATS = ["woocommerce-csv", "shopify-csv", "web-feed-csv"]
 SHOP_EXPORT_FORMATS = GENERAL_EXPORT_FORMATS + ["gmc-feed-csv"]
 DEFAULT_EXPORT_WORKERS = min(32, max(16, (os.cpu_count() or 4) * 2))
-DEFAULT_CRAWL_WORKERS = DEFAULT_EXPORT_WORKERS
+DEFAULT_CRAWL_WORKERS = 500
 
 WORKFLOW_MODES = {
     "crawl": "Crawl từ link (Shopify / Woo / ShopBase / FAA / web)",
     "import": "Import CSV có sẵn → xuất file",
     "filter-title": "Lọc SP theo file title",
+    "filter-dedupe": "Lọc trùng file feed (title/giá/cate…)",
     "crawl-gmc": "Crawl → file feed GMC",
     "redbubble": "Crawl Redbubble → xuất file",
     "trendsi": "Crawl Trendsi → xuất file",
@@ -224,6 +227,7 @@ def init_session() -> None:
         "title_filter_result_bytes": None,
         "title_filter_result_name": "",
         "title_filter_stats": None,
+        "dedupe_result": None,
         "variant_option_names": "Size, Color",
         "variant_attribute_lines": (
             "S,M=1,L=2,XL=3,2XL=4,3XL=5,4XL=6,5XL=7\n"
@@ -235,6 +239,7 @@ def init_session() -> None:
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
         "crawl_description_format": "html",
         "crawl_include_product_url": True,
+        "crawl_via_sitemap": False,
         "crawl_report_json": None,
         "crawl_report_csv": None,
         "crawl_report_json_bytes": None,
@@ -272,7 +277,19 @@ def init_session() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
-    st.session_state.crawl_workers = min(32, max(1, int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))))
+    # Mặc định 500 luồng; giữ giá trị user đã chỉnh trong session.
+    if "crawl_workers" not in st.session_state or st.session_state.get(
+        "_crawl_workers_default_v500"
+    ) is not True:
+        # Nâng mặc định cũ (16–32) lên 500 một lần khi mở app bản mới.
+        current = int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS) or 0)
+        if current <= 32:
+            st.session_state.crawl_workers = DEFAULT_CRAWL_WORKERS
+        st.session_state._crawl_workers_default_v500 = True
+    st.session_state.crawl_workers = min(
+        500,
+        max(1, int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))),
+    )
 
     if not st.session_state.get("_export_pick_required_v1"):
         st.session_state.export_format = None
@@ -912,7 +929,7 @@ def render_title_filter_panel() -> None:
     st.caption(
         "Upload **file title** (danh sách tên SP cần giữ) + **file sản phẩm**. "
         "App tạo file mới chỉ gồm SP có title nằm trong file title. "
-        "Giới hạn upload **300 MB**/file (cần restart app sau khi đổi config)."
+        "Giới hạn upload **3 GB**/file (cần restart app sau khi đổi config)."
     )
 
     col_title, col_products = st.columns(2)
@@ -2323,6 +2340,18 @@ def run_crawl_only(
 
     try:
         crawl_url = url.strip()
+        if st.session_state.get("crawl_via_sitemap"):
+            from utils.sitemap_mode import apply_sitemap_mode
+
+            crawl_url, sitemap_target, sitemap_note = apply_sitemap_mode(
+                crawl_url, force=True
+            )
+            if sitemap_note:
+                st.session_state.last_info = sitemap_note
+            if live_area is not None and sitemap_target is not None:
+                live_area.info(
+                    f"Crawl theo sitemap · {crawl_url}"
+                )
         try:
             early_target = resolve_url(crawl_url)
         except UnsupportedUrlError:
@@ -2331,6 +2360,7 @@ def run_crawl_only(
             live_area is not None
             and early_target is not None
             and getattr(early_target, "platform", "") == "fineartamerica"
+            and not st.session_state.get("crawl_via_sitemap")
         ):
             live_area.info(
                 "Fine Art America: đang tải sitemap popular… "
@@ -2445,6 +2475,13 @@ def run_crawl_only(
                     elif crawl_platform == "fineartamerica":
                         label = (
                             f"Artwork {current}/{total} · {matched} SP · {workers} luồng"
+                        )
+                    elif (
+                        target_preview is not None
+                        and getattr(target_preview, "crawl_type", "") == "sitemap"
+                    ):
+                        label = (
+                            f"Sitemap {current}/{total} · {matched} SP · {workers} luồng"
                         )
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
@@ -3400,10 +3437,12 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
     with left_col:
         url = st.text_input(
             "Link shop / category / sản phẩm",
-            placeholder="https://www.redbubble.com/shop/shower-curtains",
+            placeholder="https://www.printyourwear.com/ hoặc …/sitemap.xml",
             help=(
                 "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
                 "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
+                "Sitemap Shopify: bật «Crawl theo sitemap» + dán link shop, "
+                "hoặc dán thẳng /sitemap.xml · sitemap_products_1.xml\n"
                 "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
                 "Magento/Jomashop: /jewelry.html, /watches-for-men.html, /sku-slug.html\n"
                 "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com)\n"
@@ -3458,6 +3497,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
             st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
         st.markdown("</div>", unsafe_allow_html=True)
 
+    render_crawl_via_sitemap()
     render_crawl_limits_row(include_workers=True)
     render_crawl_description_format()
     render_crawl_include_product_url()
@@ -3466,8 +3506,17 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
     pages = int(st.session_state.get("crawl_pages", 0))
 
     crawl_ready = True
-    if url.strip():
-        url_info = describe_url(url.strip())
+    preview_url = url.strip()
+    if preview_url and st.session_state.get("crawl_via_sitemap"):
+        from utils.sitemap_mode import apply_sitemap_mode
+
+        preview_url, _, sitemap_note = apply_sitemap_mode(
+            preview_url, force=True
+        )
+        if sitemap_note:
+            st.caption(sitemap_note)
+    if preview_url:
+        url_info = describe_url(preview_url)
         crawl_ready = bool(url_info.get("ok") and url_info.get("crawl_ready", True))
 
     if st.session_state.get("crawl_running") and st.session_state.products_raw is None:
@@ -3552,6 +3601,9 @@ def main() -> None:
     elif workflow_mode == "filter-title":
         with st.container(border=True):
             render_title_filter_panel()
+    elif workflow_mode == "filter-dedupe":
+        with st.container(border=True):
+            render_dedupe_filter_panel()
     elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
             url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
@@ -3574,6 +3626,12 @@ def main() -> None:
                 "Sau khi lọc, SP khớp đã vào bảng bên dưới — chọn định dạng nếu muốn xuất Woo/Shopify/feed."
             )
             export_format = render_export_format_selector()
+        elif workflow_mode == "filter-dedupe":
+            st.markdown("### Bước 2 · File kết quả")
+            st.caption(
+                "File đã lọc lưu trong thư mục `output`. "
+                "File nhỏ có nút tải ở Bước 1; file rất lớn mở trực tiếp trên ổ đĩa."
+            )
         else:
             export_format = render_export_format_selector()
 
@@ -3607,6 +3665,9 @@ def _render_main_workflow(
     crawl_error = _current_crawl_error()
     if crawl_error:
         st.error(crawl_error)
+
+    if workflow_mode == "filter-dedupe":
+        return
 
     _render_data_status_banner()
 

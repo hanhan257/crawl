@@ -331,7 +331,7 @@ class ShopifyCrawler(BaseCrawler):
             product.categories = [search]
             return product
 
-        workers = max(1, min(max_workers, 32))
+        workers = max(1, min(max_workers, 500))
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {executor.submit(fetch_one, handle): handle for handle in handles}
             for future in as_completed(futures):
@@ -761,8 +761,9 @@ class ShopifyCrawler(BaseCrawler):
             handles[i : i + GRAPHQL_HANDLE_BATCH]
             for i in range(0, len(handles), GRAPHQL_HANDLE_BATCH)
         ]
-        # GraphQL dễ throttle nếu quá nhiều luồng (UI hay để 32).
-        workers = max(1, min(max_workers or 1, 8))
+        # UI cho tới 500 luồng; không proxy thì hạ nhẹ để tránh 429 hàng loạt.
+        worker_cap = 500 if self.proxy_rotator.count > 0 else 64
+        workers = max(1, min(max_workers or 1, worker_cap))
         by_handle: dict[str, Product] = {}
         done_handles = 0
         lock = threading.Lock()
@@ -1072,6 +1073,8 @@ class ShopifyCrawler(BaseCrawler):
         else:
             product_status = "active"
 
+        product_type = item.get("product_type") or ""
+        categories = [str(product_type).strip()] if str(product_type).strip() else []
         return Product(
             source=self.source,
             id=str(item.get("id", "")),
@@ -1084,7 +1087,8 @@ class ShopifyCrawler(BaseCrawler):
             vendor=item.get("vendor"),
             sku=first_variant.get("sku"),
             tags=self._parse_tags(item.get("tags")),
-            product_type=item.get("product_type"),
+            categories=categories,
+            product_type=product_type or None,
             status=product_status,
             variants=mapped_variants,
         )
