@@ -297,3 +297,202 @@ def preview_csv_head(path: Path, limit: int = 20) -> tuple[list[str], list[dict[
                 break
             rows.append({k: str(row.get(k, "") or "") for k in columns})
     return columns, rows
+
+
+@dataclass
+class TwoFileCompareResult:
+    output_path: Path
+    dedupe_fields: list[str] = field(default_factory=list)
+    file1_rows: int = 0
+    file2_rows: int = 0
+    match_rows: int = 0
+    only_file1_rows: int = 0
+    only_file2_rows: int = 0
+    field_columns_file1: dict[str, str] = field(default_factory=dict)
+    field_columns_file2: dict[str, str] = field(default_factory=dict)
+
+
+def _read_csv_meta(path: Path) -> tuple[csv.Dialect, list[str], dict[str, str]]:
+    with path.open("r", encoding="utf-8-sig", newline="", errors="replace") as fh:
+        sample = fh.read(65536)
+        fh.seek(0)
+        dialect = _sniff_dialect(sample)
+        reader = csv.DictReader(fh, dialect=dialect)
+        if not reader.fieldnames:
+            raise ValueError(f"File không có header: {path.name}")
+        columns = [str(c) for c in reader.fieldnames if c is not None]
+        header_map = _build_header_map(columns)
+    return dialect, columns, header_map
+
+
+def _row_key(
+    row: dict[str, str],
+    *,
+    fields: list[str],
+    field_cols: dict[str, str],
+) -> str:
+    parts: list[str] = []
+    for field_name in fields:
+        col = field_cols[field_name]
+        raw = row.get(col, "")
+        if field_name == "price":
+            parts.append(normalize_price(raw))
+        else:
+            parts.append(normalize_cell(raw))
+    return _key_hash(parts)
+
+
+def _stringify_row(row: dict[str, str], columns: list[str]) -> dict[str, str]:
+    return {c: str(row.get(c, "") or "") for c in columns}
+
+
+def compare_two_feed_files(
+    file1_path: Path,
+    file2_path: Path,
+    output_path: Path,
+    *,
+    dedupe_fields: list[str] | None = None,
+    file1_label: str = "file1",
+    file2_label: str = "file2",
+) -> TwoFileCompareResult:
+    """
+    So sánh 2 file feed theo các cột đã chọn (AND).
+    Xuất Excel (.xlsx) 2 sheet:
+      - trung: dòng khớp giữa 2 file
+      - khong_trung: dòng chỉ có ở file 1 hoặc chỉ file 2
+    """
+    fields = [f for f in (dedupe_fields or []) if f in DEDUP_FIELDS]
+    if not fields:
+        raise ValueError(
+            "Chọn ít nhất một cột để so (title / giá / des…) hoặc «Trùng hết»."
+        )
+
+    dialect1, columns1, map1 = _read_csv_meta(file1_path)
+    dialect2, columns2, map2 = _read_csv_meta(file2_path)
+
+    missing1 = [f for f in fields if f not in map1]
+    missing2 = [f for f in fields if f not in map2]
+    if missing1 or missing2:
+        parts: list[str] = []
+        if missing1:
+            parts.append(
+                f"File 1 thiếu: {', '.join(FIELD_LABELS.get(f, f) for f in missing1)}"
+            )
+        if missing2:
+            parts.append(
+                f"File 2 thiếu: {', '.join(FIELD_LABELS.get(f, f) for f in missing2)}"
+            )
+        raise ValueError(". ".join(parts))
+
+    field_cols1 = {f: map1[f] for f in fields}
+    field_cols2 = {f: map2[f] for f in fields}
+
+    # Index file 2: key -> list rows
+    index2: dict[str, list[dict[str, str]]] = {}
+    file2_rows = 0
+    with file2_path.open(
+        "r", encoding="utf-8-sig", newline="", errors="replace"
+    ) as src:
+        reader = csv.DictReader(src, dialect=dialect2)
+        for row in reader:
+            file2_rows += 1
+            key = _row_key(row, fields=fields, field_cols=field_cols2)
+            index2.setdefault(key, []).append(_stringify_row(row, columns2))
+
+    matched_keys: set[str] = set()
+    match_rows: list[dict[str, str]] = []
+    only1: list[dict[str, str]] = []
+    file1_rows = 0
+
+    # Union columns for match sheet readability
+    union_cols = list(dict.fromkeys([*columns1, *columns2]))
+
+    with file1_path.open(
+        "r", encoding="utf-8-sig", newline="", errors="replace"
+    ) as src:
+        reader = csv.DictReader(src, dialect=dialect1)
+        for row in reader:
+            file1_rows += 1
+            key = _row_key(row, fields=fields, field_cols=field_cols1)
+            row1 = _stringify_row(row, columns1)
+            if key in index2 and index2[key]:
+                matched_keys.add(key)
+                out = {c: "" for c in union_cols}
+                out.update(row1)
+                out["_nguon"] = file1_label
+                out["_khoa_trung"] = key[:12]
+                match_rows.append(out)
+            else:
+                out = dict(row1)
+                out["_nguon"] = file1_label
+                only1.append(out)
+
+    only2: list[dict[str, str]] = []
+    for key, rows in index2.items():
+        if key in matched_keys:
+            for row2 in rows:
+                out = {c: "" for c in union_cols}
+                out.update(row2)
+                out["_nguon"] = file2_label
+                out["_khoa_trung"] = key[:12]
+                match_rows.append(out)
+        else:
+            for row2 in rows:
+                out = dict(row2)
+                out["_nguon"] = file2_label
+                only2.append(out)
+
+    khong_trung = only1 + only2
+
+    output_path = Path(output_path)
+    if output_path.suffix.lower() != ".xlsx":
+        output_path = output_path.with_suffix(".xlsx")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ValueError("Cần pandas để xuất Excel.") from exc
+
+    match_cols = ["_nguon", "_khoa_trung", *union_cols]
+    # Sheet không trùng: union cột + _nguon
+    only_union = list(dict.fromkeys(["_nguon", *columns1, *columns2]))
+
+    df_match = pd.DataFrame(match_rows)
+    if not df_match.empty:
+        for c in match_cols:
+            if c not in df_match.columns:
+                df_match[c] = ""
+        df_match = df_match[match_cols]
+    else:
+        df_match = pd.DataFrame(columns=match_cols)
+
+    df_only = pd.DataFrame(khong_trung)
+    if not df_only.empty:
+        for c in only_union:
+            if c not in df_only.columns:
+                df_only[c] = ""
+        df_only = df_only[only_union]
+    else:
+        df_only = pd.DataFrame(columns=only_union)
+
+    try:
+        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+            df_match.to_excel(writer, sheet_name="trung", index=False)
+            df_only.to_excel(writer, sheet_name="khong_trung", index=False)
+    except ImportError as exc:
+        raise ValueError(
+            "Cần gói openpyxl để xuất .xlsx — chạy: pip install openpyxl"
+        ) from exc
+
+    return TwoFileCompareResult(
+        output_path=output_path,
+        dedupe_fields=list(fields),
+        file1_rows=file1_rows,
+        file2_rows=file2_rows,
+        match_rows=len(match_rows),
+        only_file1_rows=len(only1),
+        only_file2_rows=len(only2),
+        field_columns_file1=dict(field_cols1),
+        field_columns_file2=dict(field_cols2),
+    )
