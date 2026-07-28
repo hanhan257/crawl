@@ -28,11 +28,12 @@ else
   echo "[deploy] Cảnh báo: chưa có .venv — bỏ qua pip install"
 fi
 
-if systemctl list-unit-files | grep -q '^crawl-feed-gmc\.service'; then
+if systemctl cat crawl-feed-gmc >/dev/null 2>&1; then
   systemctl restart crawl-feed-gmc
   systemctl is-active crawl-feed-gmc
+  echo "[deploy] Đã restart crawl-feed-gmc"
 else
-  echo "[deploy] Không thấy service crawl-feed-gmc — bỏ qua restart"
+  echo "[deploy] Không thấy unit crawl-feed-gmc — bỏ qua restart" >&2
 fi
 
 echo "[deploy] OK → $(git rev-parse --short HEAD)"
