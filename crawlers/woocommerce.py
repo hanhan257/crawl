@@ -20,6 +20,7 @@ from utils.description_html import (
     woo_description_from_item,
 )
 from utils.http_retry import DEFAULT_REQUEST_TIMEOUT, get_with_retry
+from utils.http_session import ProxyRotator, create_http_session
 
 CrawlProgressCallback = Callable[[int, int, int], None]
 
@@ -76,6 +77,7 @@ class WooCommerceCrawler(BaseCrawler):
         request_delay: float = 0.0,
         verify_ssl: bool = True,
         use_public_api: bool = False,
+        proxy_url: str | None = None,
     ):
         self.site_url = site_url.strip().rstrip("/")
         if not self.site_url.startswith("http"):
@@ -84,7 +86,8 @@ class WooCommerceCrawler(BaseCrawler):
         self.consumer_secret = consumer_secret
         self.use_public_api = use_public_api or not (consumer_key and consumer_secret)
         self.request_delay = request_delay
-        self.session = requests.Session()
+        self.proxy_rotator = ProxyRotator(proxy_url)
+        self.session = create_http_session(self.proxy_rotator.current())
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self.session.verify = verify_ssl
         self._api_total_pages: int | None = None
@@ -311,8 +314,14 @@ class WooCommerceCrawler(BaseCrawler):
         return None
 
     def _worker_session(self) -> requests.Session:
-        session = requests.Session()
+        proxy = (
+            self.proxy_rotator.rotate()
+            if self.proxy_rotator.count > 1
+            else self.proxy_rotator.current()
+        )
+        session = create_http_session(proxy)
         session.headers.update(self.session.headers)
+        session.headers["User-Agent"] = DEFAULT_USER_AGENT
         session.verify = self.session.verify
         return session
 

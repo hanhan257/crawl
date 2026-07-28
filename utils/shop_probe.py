@@ -600,6 +600,7 @@ def _probe_woocommerce(
         consumer_key=key or "",
         consumer_secret=secret or "",
         use_public_api=not (key and secret),
+        proxy_url=credentials.proxy_url or None,
     )
 
     if target.crawl_type == "search" and target.query:

@@ -110,6 +110,7 @@ from ui.crawl_step1_layout import (
     render_crawl_limits_row,
 )
 from ui.dedupe_filter_panel import render_dedupe_filter_panel
+from ui.proxy_dedupe_panel import render_proxy_dedupe_panel
 from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from ui.trendsi_workflow import (
@@ -164,6 +165,7 @@ WORKFLOW_MODES = {
     "crawl-gmc": "Crawl → file feed GMC",
     "redbubble": "Crawl Redbubble → xuất file",
     "trendsi": "Crawl Trendsi → xuất file",
+    "filter-proxy": "Lọc trùng proxy",
 }
 
 RULE_DEFAULTS = {
@@ -228,6 +230,7 @@ def init_session() -> None:
         "title_filter_result_name": "",
         "title_filter_stats": None,
         "dedupe_result": None,
+        "proxy_dedupe_result": None,
         "variant_option_names": "Size, Color",
         "variant_attribute_lines": (
             "S,M=1,L=2,XL=3,2XL=4,3XL=5,4XL=6,5XL=7\n"
@@ -3604,6 +3607,9 @@ def main() -> None:
     elif workflow_mode == "filter-dedupe":
         with st.container(border=True):
             render_dedupe_filter_panel()
+    elif workflow_mode == "filter-proxy":
+        with st.container(border=True):
+            render_proxy_dedupe_panel()
     elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
             url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
@@ -3631,6 +3637,12 @@ def main() -> None:
             st.caption(
                 "File đã lọc lưu trong thư mục `output`. "
                 "File nhỏ có nút tải ở Bước 1; file rất lớn mở trực tiếp trên ổ đĩa."
+            )
+        elif workflow_mode == "filter-proxy":
+            st.markdown("### Bước 2 · Kết quả proxy")
+            st.caption(
+                "Kết quả lọc nằm ở Bước 1 (ô kết quả + nút tải). "
+                "File `.txt` cũng lưu trong thư mục `output`."
             )
         else:
             export_format = render_export_format_selector()
@@ -3666,7 +3678,7 @@ def _render_main_workflow(
     if crawl_error:
         st.error(crawl_error)
 
-    if workflow_mode == "filter-dedupe":
+    if workflow_mode in ("filter-dedupe", "filter-proxy"):
         return
 
     _render_data_status_banner()

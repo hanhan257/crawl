@@ -586,6 +586,8 @@ def run_auto_crawl(
 
             use_public_api=not (key and secret),
 
+            proxy_url=raw_proxy,
+
         )
 
 

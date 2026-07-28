@@ -8,6 +8,9 @@ T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
 API_LIST_MAX_WORKERS = 500
+# Woo/Shopify list API dễ 429 nếu bắn hàng trăm page cùng lúc.
+API_LIST_WAVE_SIZE = 48
+EMPTY_PAGE_RETRY_ROUNDS = 3
 
 
 def _matched_count(items: list, limit: int | None) -> int:
@@ -41,6 +44,49 @@ def _merge_page_batches(
     return items
 
 
+def _fetch_page_map(
+    fetch_page: Callable[[int], list[T]],
+    pages: list[int],
+    *,
+    max_workers: int,
+) -> dict[int, list[T]]:
+    """Fetch pages; failed requests become []."""
+    if not pages:
+        return {}
+    workers = max(1, min(max_workers, len(pages)))
+    out: dict[int, list[T]] = {}
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(fetch_page, page_num): page_num for page_num in pages}
+        for future in as_completed(futures):
+            page_num = futures[future]
+            try:
+                out[page_num] = future.result()
+            except Exception:
+                out[page_num] = []
+    return out
+
+
+def _empty_pages_to_retry(
+    page_batches: dict[int, list[T]],
+    *,
+    start_page: int,
+    end_page: int,
+    per_page: int,
+) -> list[int]:
+    """Trang trống giữa khoảng đã biết total pages — thường do 429/timeout."""
+    holes: list[int] = []
+    for page_num in range(start_page, end_page + 1):
+        batch = page_batches.get(page_num)
+        if batch is None or len(batch) == 0:
+            # Trang cuối có thể thật sự ngắn / rỗng sau khi hết SP — vẫn thử lại nếu trống hẳn.
+            holes.append(page_num)
+            continue
+        # Trang giữa mà < per_page → nghi lỗi cắt sớm, thử lại (trừ trang cuối).
+        if page_num < end_page and len(batch) < per_page:
+            holes.append(page_num)
+    return holes
+
+
 def fetch_pages_in_waves(
     fetch_page: Callable[[int], list[T]],
     *,
@@ -64,6 +110,8 @@ def fetch_pages_in_waves(
         return max(pages_fetched, pages_fetched + 1)
 
     def report_progress(items: list[T] | None = None) -> None:
+        nonlocal pages_fetched
+        pages_fetched = len(page_batches)
         if progress_callback:
             progress_callback(
                 pages_fetched,
@@ -90,19 +138,33 @@ def fetch_pages_in_waves(
             pages_to_fetch = [page for page in pages_to_fetch if page <= max_item_pages]
 
         if pages_to_fetch:
-            with ThreadPoolExecutor(max_workers=min(workers, len(pages_to_fetch))) as executor:
-                futures = {
-                    executor.submit(fetch_page, page_num): page_num
-                    for page_num in pages_to_fetch
-                }
-                for future in as_completed(futures):
-                    page_num = futures[future]
-                    try:
-                        page_batches[page_num] = future.result()
-                    except Exception:
-                        page_batches[page_num] = []
-                    pages_fetched = len(page_batches)
-                    report_progress()
+            # Fetch theo đợt — tránh 500 request cùng lúc (Woo joyoce mất ~2/3 SP).
+            wave = max(1, min(workers, API_LIST_WAVE_SIZE))
+            for idx in range(0, len(pages_to_fetch), wave):
+                chunk = pages_to_fetch[idx : idx + wave]
+                fetched = _fetch_page_map(fetch_page, chunk, max_workers=wave)
+                page_batches.update(fetched)
+                report_progress()
+
+            # Retry trang trống / lỗi (429) vài vòng với ít luồng hơn.
+            retry_workers = max(1, min(24, wave))
+            for _round in range(EMPTY_PAGE_RETRY_ROUNDS):
+                holes = _empty_pages_to_retry(
+                    page_batches,
+                    start_page=2,
+                    end_page=pages_to_fetch[-1],
+                    per_page=per_page,
+                )
+                if not holes:
+                    break
+                # Trang cuối thật sự hết SP → bỏ nếu các trang trước đã đủ/đầy.
+                if len(holes) == 1 and holes[0] == pages_to_fetch[-1]:
+                    prev = page_batches.get(holes[0] - 1) or []
+                    if prev and len(prev) < per_page:
+                        break
+                fetched = _fetch_page_map(fetch_page, holes, max_workers=retry_workers)
+                page_batches.update(fetched)
+                report_progress()
 
             items = _merge_page_batches(page_batches, limit=limit)
             last_batch = page_batches.get(end_page) or []
