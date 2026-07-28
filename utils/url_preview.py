@@ -26,11 +26,11 @@ CRAWL_TYPE_LABELS = {
 CRAWL_HINTS = {
     ("shopify", "shop"): (
         "Link trang chủ → /products.json (tối đa ~25k SP). "
-        "Shop lớn / 429: bật «Crawl theo sitemap» hoặc dán /sitemap.xml"
+        "Shop lớn / 429: dùng chế độ **Crawl theo sitemap** hoặc dán /sitemap.xml"
     ),
     ("shopify", "sitemap"): (
         "Sitemap → lấy toàn bộ SP (vượt giới hạn 25k của /products.json). "
-        "Dán link shop + bật «Crawl theo sitemap», hoặc dán thẳng sitemap_products_*.xml"
+        "Dán link shop hoặc thẳng sitemap_products_*.xml trong chế độ **Crawl theo sitemap**"
     ),
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
     ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",

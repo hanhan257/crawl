@@ -113,18 +113,8 @@ def render_crawl_include_product_url() -> None:
 
 
 def render_crawl_via_sitemap() -> None:
-    """Crawl toàn bộ SP qua sitemap — dán link shop hoặc link sitemap đều được."""
-    st.checkbox(
-        "Crawl theo sitemap",
-        key="crawl_via_sitemap",
-        help=(
-            "Bật khi shop Shopify lớn / bị chặn `/products.json` (429) — "
-            "lấy SP qua sitemap + GraphQL. "
-            "Khách chỉ cần dán **link shop** (tự chuyển `/sitemap.xml`) "
-            "hoặc dán thẳng `sitemap_products_*.xml` / `/sitemap.xml`. "
-            "Fine Art America cũng dùng được. Luồng tối đa **500**."
-        ),
-    )
+    """Deprecated — sitemap là chế độ sidebar riêng. Giữ stub tránh import lỗi."""
+    return
 
 
 def render_crawl_action_centered(

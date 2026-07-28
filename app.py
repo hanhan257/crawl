@@ -106,7 +106,6 @@ from ui.crawl_step1_layout import (
     render_crawl_action_centered,
     render_crawl_description_format,
     render_crawl_include_product_url,
-    render_crawl_via_sitemap,
     render_crawl_limits_row,
 )
 from ui.dedupe_filter_panel import render_dedupe_filter_panel
@@ -159,6 +158,7 @@ DEFAULT_CRAWL_WORKERS = 500
 
 WORKFLOW_MODES = {
     "crawl": "Crawl từ link (Shopify / Woo / ShopBase / FAA / web)",
+    "sitemap": "Crawl theo sitemap",
     "import": "Import CSV có sẵn → xuất file",
     "filter-title": "Lọc SP theo file title",
     "filter-dedupe": "Lọc trùng file feed (title/giá/cate…)",
@@ -404,6 +404,9 @@ def _clear_image_cache() -> None:
 
 def _on_workflow_mode_change() -> None:
     _ensure_export_format_for_workflow()
+    mode = st.session_state.get("workflow_mode", "crawl")
+    # Sitemap là chế độ riêng — không còn checkbox trong Crawl từ link.
+    st.session_state.crawl_via_sitemap = mode == "sitemap"
     if st.session_state.products_raw is not None:
         apply_edit_filter()
 
@@ -3422,10 +3425,18 @@ def render_workflow_selector() -> str:
         return mode
 
 
-def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
+def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, str, str, str, bool]:
     """Bước 1 — link & nhận diện bên trái, cài đặt crawl bên phải."""
+    st.session_state.crawl_via_sitemap = bool(sitemap_mode)
     gmc_mode = is_gmc_workflow()
-    if gmc_mode:
+    if sitemap_mode:
+        st.markdown("### Bước 1 · Crawl theo sitemap")
+        st.caption(
+            "Shopify / ShopBase / Fine Art America lớn hoặc bị **429** trên `/products.json`. "
+            "Dán **link shop** (tự chuyển `/sitemap.xml`) hoặc dán thẳng "
+            "`sitemap_products_*.xml` / `/sitemap.xml`. Luồng tối đa **500**."
+        )
+    elif gmc_mode:
         st.markdown("### Bước 1 · Crawl link → feed GMC")
         st.caption(
             "Chọn cách tách biến thể bên phải trước khi crawl. "
@@ -3439,17 +3450,25 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
 
     with left_col:
         url = st.text_input(
-            "Link shop / category / sản phẩm",
-            placeholder="https://www.printyourwear.com/ hoặc …/sitemap.xml",
+            "Link shop / sitemap" if sitemap_mode else "Link shop / category / sản phẩm",
+            placeholder=(
+                "https://shop.com/ hoặc …/sitemap.xml · sitemap_products_1.xml"
+                if sitemap_mode
+                else "https://www.printyourwear.com/ hoặc …/collections/..."
+            ),
             help=(
-                "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
-                "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
-                "Sitemap Shopify: bật «Crawl theo sitemap» + dán link shop, "
-                "hoặc dán thẳng /sitemap.xml · sitemap_products_1.xml\n"
-                "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
-                "Magento/Jomashop: /jewelry.html, /watches-for-men.html, /sku-slug.html\n"
-                "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html (vd. silverbene.com)\n"
-                "ShopBase: nebsport.com, wc.luminaaura.us (API catalog + mô tả HTML)"
+                "Shopify/ShopBase: dán trang chủ hoặc file sitemap_products_*.xml /sitemap.xml\n"
+                "Fine Art America: trang chủ hoặc link sitemap"
+                if sitemap_mode
+                else (
+                    "Redbubble: link /shop/từ-khóa hoặc /i/... (KHÔNG dùng trang chủ)\n"
+                    "Shopify/ShopBase: trang chủ, /collections/..., /products/...\n"
+                    "Sitemap lớn: dùng chế độ sidebar **Crawl theo sitemap**\n"
+                    "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
+                    "Magento/Jomashop: /jewelry.html, /watches-for-men.html, /sku-slug.html\n"
+                    "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html\n"
+                    "ShopBase: nebsport.com, wc.luminaaura.us (API catalog + mô tả HTML)"
+                )
             ),
             key="crawl_url",
             on_change=_on_crawl_url_change,
@@ -3500,7 +3519,11 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
             st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
         st.markdown("</div>", unsafe_allow_html=True)
 
-    render_crawl_via_sitemap()
+    if sitemap_mode:
+        st.info(
+            "Đang dùng **crawl theo sitemap** — shop lớn / 429: nên bật proxy + "
+            "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
+        )
     render_crawl_limits_row(include_workers=True)
     render_crawl_description_format()
     render_crawl_include_product_url()
@@ -3510,7 +3533,7 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
 
     crawl_ready = True
     preview_url = url.strip()
-    if preview_url and st.session_state.get("crawl_via_sitemap"):
+    if preview_url and sitemap_mode:
         from utils.sitemap_mode import apply_sitemap_mode
 
         preview_url, _, sitemap_note = apply_sitemap_mode(
@@ -3526,10 +3549,18 @@ def render_crawl_panel() -> tuple[str, int, int, str, str, str, bool]:
         st.session_state.crawl_running = False
 
     crawl_clicked, crawl_action, crawl_live = render_crawl_action_centered(
-        label="Crawl → GMC" if gmc_mode else "Crawl dữ liệu",
+        label=(
+            "Crawl sitemap"
+            if sitemap_mode
+            else ("Crawl → GMC" if gmc_mode else "Crawl dữ liệu")
+        ),
         button_key="crawl_data_btn",
         crawl_ready=crawl_ready,
-        not_ready_help="Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được.",
+        not_ready_help=(
+            "Dán link shop hoặc /sitemap.xml · sitemap_products_*.xml."
+            if sitemap_mode
+            else "Dán link /shop/... hoặc /i/... — trang chủ Redbubble không crawl được."
+        ),
         is_running=bool(st.session_state.get("crawl_running")),
         update_live_ui=_update_crawl_live_ui,
         matched_count=int(st.session_state.get("crawl_matched_count", 0)),
@@ -3558,6 +3589,7 @@ def main() -> None:
     inject_pastel_pink_theme()
 
     workflow_mode = render_workflow_selector()
+    st.session_state.crawl_via_sitemap = workflow_mode == "sitemap"
     gmc_mode = is_gmc_workflow(workflow_mode)
     rb_mode = is_redbubble_workflow(workflow_mode)
     trendsi_mode = is_trendsi_workflow(workflow_mode)
@@ -3613,7 +3645,12 @@ def main() -> None:
     elif workflow_mode in ("crawl", "crawl-gmc"):
         with st.container(border=True):
             url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
-                render_crawl_panel()
+                render_crawl_panel(sitemap_mode=False)
+            )
+    elif workflow_mode == "sitemap":
+        with st.container(border=True):
+            url, limit, pages, shopify_token, woo_key, woo_secret, crawl_clicked = (
+                render_crawl_panel(sitemap_mode=True)
             )
     else:
         with st.container(border=True):
