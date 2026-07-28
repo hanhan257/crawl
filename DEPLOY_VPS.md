@@ -8,6 +8,10 @@ App chạy **Streamlit** trên port **8501**.
 | **AlmaLinux 8/9** / RHEL 8/9 | `deploy/install-vps-almalinux.sh` · `deploy/install-native-almalinux.sh` |
 | **WPTangToc + OpenLiteSpeed** | Xem `deploy/WPTANGTOC_OLS.md` (không dùng Nginx) |
 
+## Tự cập nhật web khi `git push`
+
+Xem **`deploy/AUTO_DEPLOY.md`**: GitHub Actions SSH vào VPS → `bash deploy/update-web.sh`.
+
 ## Domain mẫu: crawl.egeadcompany.com (AlmaLinux 8/9)
 
 **DNS:** bản ghi `A` của `crawl.egeadcompany.com` → IP VPS (vd. `64.225.56.106`).

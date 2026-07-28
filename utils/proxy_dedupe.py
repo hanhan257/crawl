@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from dataclasses import dataclass, field
 
 # Bỏ ngày giờ phía sau: "host:port:user:pass 2026-05-08 02:01:35"
@@ -26,7 +25,6 @@ def extract_proxy_key(line: str) -> str | None:
     cleaned = _DATETIME_SUFFIX.sub("", raw).strip()
     if not cleaned:
         return None
-    # Chỉ lấy token đầu (trước khoảng trắng còn lại)
     token = cleaned.split()[0].strip()
     if not token or ":" not in token:
         return None
@@ -50,8 +48,16 @@ class ProxyListParse:
     raw_lines: int = 0
     valid: int = 0
     invalid: int = 0
-    keys: list[str] = field(default_factory=list)  # display keys (first-seen form)
+    keys: list[str] = field(default_factory=list)
     compare_keys: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ProxyListExclusive:
+    """Proxy chỉ có trong list này (không có ở list khác)."""
+
+    label: str
+    lines: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -62,7 +68,10 @@ class ProxyDedupeResult:
     duplicate_keys: int
     unique_only_keys: int
     list_stats: list[ProxyListParse]
-    # key → danh sách nhãn list chứa key đó
+    # Mỗi list → proxy chỉ thuộc list đó
+    exclusive_by_list: list[ProxyListExclusive] = field(default_factory=list)
+    # Proxy trùng giữa ≥2 list (chung)
+    shared_duplicates: list[str] = field(default_factory=list)
     key_sources: dict[str, list[str]] = field(default_factory=dict)
 
 
@@ -96,11 +105,11 @@ def dedupe_proxy_lists(
     """
     lists: [(label, text), ...]
     mode:
-      - unique: chỉ proxy xuất hiện đúng 1 list (không trùng giữa các list)
-      - duplicates: proxy xuất hiện ≥ 2 list
+      - unique: kết quả chính = gộp mọi proxy chỉ có đúng 1 list
+        + exclusive_by_list tách riêng từng list
+      - duplicates: kết quả chính = proxy có ≥ 2 list
     """
     parsed: list[ProxyListParse] = []
-    # compare_key → (display_key, set of list labels)
     sources: dict[str, tuple[str, set[str]]] = {}
 
     for label, text in lists:
@@ -114,22 +123,40 @@ def dedupe_proxy_lists(
             else:
                 sources[cmp][1].add(label)
 
+    # compare_key chỉ thuộc đúng 1 label
+    exclusive_cmp: dict[str, list[tuple[str, str]]] = {p.label: [] for p in parsed}
+    shared: list[str] = []
+    key_sources: dict[str, list[str]] = {}
     duplicate_keys = 0
     unique_only = 0
-    output: list[str] = []
-    key_sources: dict[str, list[str]] = {}
 
     for cmp, (display, labels) in sources.items():
         label_list = sorted(labels)
         key_sources[display] = label_list
         if len(labels) >= 2:
             duplicate_keys += 1
-            if mode == "duplicates":
-                output.append(display)
+            shared.append(display)
         else:
             unique_only += 1
-            if mode == "unique":
-                output.append(display)
+            only_label = next(iter(labels))
+            if only_label in exclusive_cmp:
+                exclusive_cmp[only_label].append((cmp, display))
+
+    exclusive_by_list: list[ProxyListExclusive] = []
+    for item in parsed:
+        # Giữ thứ tự như trong list gốc
+        lines: list[str] = []
+        exclusive_set = {c for c, _ in exclusive_cmp.get(item.label, [])}
+        for display, cmp in zip(item.keys, item.compare_keys):
+            if cmp in exclusive_set:
+                lines.append(display)
+        exclusive_by_list.append(ProxyListExclusive(label=item.label, lines=lines))
+
+    if mode == "duplicates":
+        output = list(shared)
+    else:
+        # Gộp theo thứ tự list 1 → 2 → …
+        output = [line for block in exclusive_by_list for line in block.lines]
 
     return ProxyDedupeResult(
         mode=mode,
@@ -138,5 +165,7 @@ def dedupe_proxy_lists(
         duplicate_keys=duplicate_keys,
         unique_only_keys=unique_only,
         list_stats=parsed,
+        exclusive_by_list=exclusive_by_list,
+        shared_duplicates=shared,
         key_sources=key_sources,
     )
