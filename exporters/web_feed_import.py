@@ -19,10 +19,58 @@ WEB_FEED_COLUMNS = [
     "images",
     "category",
     "price",
+    "color",
     "brand",
     "tag",
     "vendor",
 ]
+
+COLOR_SWATCH_TYPE = "color_swatch"
+
+
+def _color_swatches(product: Product) -> list[dict]:
+    return [
+        v
+        for v in (product.variants or [])
+        if isinstance(v, dict) and v.get("_type") == COLOR_SWATCH_TYPE
+    ]
+
+
+def web_feed_rows_for_product(
+    product: Product,
+    rules: ExportRules | None = None,
+    max_images: int | None = None,
+    *,
+    include_url: bool = False,
+) -> list[dict[str, str]]:
+    """1 SP Trendsi nhiều màu → 1 dòng / màu (link + ảnh theo skuId)."""
+    swatches = _color_swatches(product)
+    if not swatches:
+        row = product_to_web_feed_row(product, rules=rules, max_images=max_images)
+        if product.gmc_color:
+            row["color"] = product.gmc_color
+        if not include_url:
+            row.pop(WEB_FEED_URL_COLUMN, None)
+        return [row]
+
+    rows: list[dict[str, str]] = []
+    base = product_to_web_feed_row(product, rules=rules, max_images=max_images)
+    for swatch in swatches:
+        row = dict(base)
+        color = str(swatch.get("color") or "").strip()
+        row["color"] = color
+        if color and product.title:
+            row["title"] = f"{product.title} - {color}"
+        if swatch.get("url"):
+            row[WEB_FEED_URL_COLUMN] = str(swatch["url"])
+        if swatch.get("image_url"):
+            row["images"] = str(swatch["image_url"])
+        if swatch.get("price") not in (None, ""):
+            row["price"] = format_export_price(swatch.get("price"))
+        if not include_url:
+            row.pop(WEB_FEED_URL_COLUMN, None)
+        rows.append(row)
+    return rows
 
 WEB_FEED_URL_COLUMN = "product_url"
 
@@ -59,6 +107,7 @@ def product_to_web_feed_row(
         "images": ",".join(images),
         "category": _join_category(product.categories),
         "price": format_export_price(product.price),
+        "color": (product.gmc_color or "").strip(),
         "brand": brand,
         "tag": _join_tags(product.tags),
         "vendor": vendor,
@@ -90,25 +139,24 @@ def export_web_feed_import(
         writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
         for index, product in enumerate(products):
-            row = product_to_web_feed_row(
+            for row in web_feed_rows_for_product(
                 product,
                 rules=rules,
                 max_images=max_images,
-            )
-            if not fields.includes("images"):
-                row["images"] = ""
-            if not fields.includes("description"):
-                row["description"] = ""
-            if not fields.includes("categories"):
-                row["category"] = ""
-            if not fields.includes("tags"):
-                row["tag"] = ""
-            if not fields.includes("vendor"):
-                row["vendor"] = ""
-                row["brand"] = ""
-            if not include_url:
-                row.pop(WEB_FEED_URL_COLUMN, None)
-            writer.writerow(row)
+                include_url=include_url,
+            ):
+                if not fields.includes("images"):
+                    row["images"] = ""
+                if not fields.includes("description"):
+                    row["description"] = ""
+                if not fields.includes("categories"):
+                    row["category"] = ""
+                if not fields.includes("tags"):
+                    row["tag"] = ""
+                if not fields.includes("vendor"):
+                    row["vendor"] = ""
+                    row["brand"] = ""
+                writer.writerow(row)
             if progress:
                 progress.product(index, total)
 

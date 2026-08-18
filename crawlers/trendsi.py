@@ -384,10 +384,13 @@ class TrendsiCrawler(BaseCrawler):
         vendor = brand_name.strip() or str(item.get("brand") or "").strip() or "Trendsi"
         categories = self._parse_back_cates(item.get("backCates"))
         images = self._collect_images(item)
-        variants = self._map_variants(item)
+        color_swatches = self._map_color_swatches(item, product_id, title)
+        variants = self._map_variants(item) + color_swatches
         price = self._resolve_price(item, list_stub, variants)
         sku = str(item.get("spuCode") or product_id)
         status = "instock" if int(item.get("stock") or 0) > 0 else "outofstock"
+        colors = [str(s.get("color") or "").strip() for s in color_swatches if s.get("color")]
+        gmc_color = ", ".join(colors) if colors else None
 
         return Product(
             source=self.source,
@@ -405,6 +408,7 @@ class TrendsiCrawler(BaseCrawler):
             product_type=categories[-1] if categories else None,
             status=status,
             variants=variants,
+            gmc_color=gmc_color,
         )
 
     @classmethod
@@ -502,9 +506,46 @@ class TrendsiCrawler(BaseCrawler):
         )
 
     @staticmethod
-    def _product_url(product_id: str, title: str = "") -> str:
-        query = urlencode({"id": product_id, "name": title})
+    def _product_url(product_id: str, title: str = "", *, sku_id: str | None = None) -> str:
+        params: dict[str, str] = {"id": product_id, "name": title}
+        if sku_id:
+            params["skuId"] = str(sku_id)
+        query = urlencode(params)
         return f"{TRENDSI_BASE}/products/detail?{query}"
+
+    @classmethod
+    def _map_color_swatches(
+        cls,
+        item: dict[str, Any],
+        product_id: str,
+        title: str,
+    ) -> list[dict[str, Any]]:
+        """Mỗi màu: tên, ảnh, giá, link có skuId (vd. ...&skuId=2586142)."""
+        swatches: list[dict[str, Any]] = []
+        for entry in item.get("colorList") or []:
+            if not isinstance(entry, dict):
+                continue
+            color = str(entry.get("color") or "").strip()
+            if not color:
+                continue
+            sku_id = str(entry.get("firstSkuId") or "").strip()
+            image = cls._normalize_image_url(
+                str(entry.get("image") or entry.get("iconImage") or "")
+            )
+            price = cls._safe_float(entry.get("dpMinSkCPrice")) or cls._safe_float(
+                entry.get("dpMaxSkCPrice")
+            )
+            swatches.append(
+                {
+                    "_type": "color_swatch",
+                    "color": color,
+                    "sku_id": sku_id,
+                    "price": price,
+                    "image_url": image,
+                    "url": cls._product_url(product_id, title, sku_id=sku_id or None),
+                }
+            )
+        return swatches
 
     @staticmethod
     def _parse_back_cates(raw: object) -> list[str]:
@@ -577,8 +618,12 @@ class TrendsiCrawler(BaseCrawler):
                 continue
             dim_value = sku.get("dimensionValue") or {}
             option_map: dict[str, str] = {}
-            for index, key in enumerate(list(dim_value.keys())[:3], start=1):
-                option_map[f"option{index}"] = str(dim_value.get(key) or "").strip()
+            if option_names:
+                for index, name in enumerate(option_names[:3], start=1):
+                    option_map[f"option{index}"] = str(dim_value.get(name) or "").strip()
+            else:
+                for index, key in enumerate(list(dim_value.keys())[:3], start=1):
+                    option_map[f"option{index}"] = str(dim_value.get(key) or "").strip()
             labels = [value for value in option_map.values() if value]
             price = TrendsiCrawler._safe_float(sku.get("priceB")) or TrendsiCrawler._safe_float(
                 sku.get("price")
