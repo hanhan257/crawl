@@ -419,6 +419,8 @@ def _is_stale_homepage_crawl_error(message: str) -> bool:
         "Link chưa đủ thông tin",
         "không crawl được",
         "loại link 'unknown'",
+        "Không kết nối được",
+        "kiểm tra lại link hoặc mạng/proxy",
     )
     return any(marker in text for marker in markers)
 

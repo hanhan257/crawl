@@ -416,7 +416,13 @@ def run_auto_crawl(
 
         from crawlers.trendsi import TrendsiCrawler
 
-        crawler = TrendsiCrawler(proxy_url=effective_proxy)
+        # Trendsi thường chặn/đứt proxy list — ưu tiên direct, fallback proxy nếu cần.
+        crawler = TrendsiCrawler(proxy_url=None)
+        try:
+            crawler.session.get(target.base_url or "https://www.trendsi.com/", timeout=12)
+        except requests.RequestException:
+            if effective_proxy:
+                crawler = TrendsiCrawler(proxy_url=effective_proxy)
 
         try:
 

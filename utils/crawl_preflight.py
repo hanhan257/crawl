@@ -42,6 +42,15 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
         try:
             session.get(normalized, timeout=PREFLIGHT_TIMEOUT)
         except requests.ConnectionError as conn_exc:
+            # Proxy hỏng → thử direct trước khi báo lỗi nhận diện.
+            if _used_or_saved_proxy(proxy_url):
+                try:
+                    _preflight_session(None, allow_saved_proxy=False).get(
+                        normalized, timeout=PREFLIGHT_TIMEOUT
+                    )
+                except requests.RequestException:
+                    return _connection_error_message(cleaned, conn_exc)
+                return str(exc)
             return _connection_error_message(cleaned, conn_exc)
         except requests.Timeout:
             return (
@@ -87,25 +96,35 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
                 return "Redbubble đang lỗi — thử lại sau hoặc bật Proxy."
             return None
         if target.platform == "trendsi":
-            response = session.get(normalized, timeout=PREFLIGHT_TIMEOUT)
-            if response.status_code == 200:
-                return None
-            return (
-                f"Trendsi trả HTTP {response.status_code}. "
-                "Thử tắt **Proxy** hoặc giảm **Luồng crawl**."
-            )
+            return _check_trendsi(session, normalized, proxy_url=proxy_url)
         if target.platform == "magento":
             from crawlers.magento_graphql import MagentoGraphqlCrawler
 
             if MagentoGraphqlCrawler.site_supports(base, session=session):
                 return None
+            # Proxy có thể chặn GraphQL — thử direct.
+            if _used_or_saved_proxy(proxy_url):
+                direct = _preflight_session(None, allow_saved_proxy=False)
+                if MagentoGraphqlCrawler.site_supports(base, session=direct):
+                    return None
             return (
                 f"Magento **{host}** không mở được GraphQL. "
                 "Thử tắt **Proxy** hoặc kiểm tra lại domain."
             )
     except requests.ConnectionError as exc:
+        # Nhiều shop (Trendsi, …) chặn proxy — retry không proxy trước khi fail.
+        if _used_or_saved_proxy(proxy_url):
+            try:
+                return _check_reachable_direct(cleaned, target, normalized, base, host)
+            except requests.RequestException:
+                pass
         return _connection_error_message(cleaned, exc)
     except requests.Timeout:
+        if _used_or_saved_proxy(proxy_url):
+            try:
+                return _check_reachable_direct(cleaned, target, normalized, base, host)
+            except requests.RequestException:
+                pass
         return (
             f"Shop **{host}** phản hồi quá chậm. "
             "Thử **Luồng crawl = 4–8** rồi bấm crawl lại."
@@ -116,9 +135,95 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
     return None
 
 
-def _preflight_session(proxy_url: str | None = None) -> requests.Session:
+def _used_or_saved_proxy(proxy_url: str | None) -> bool:
+    if (proxy_url or "").strip():
+        return True
+    try:
+        from utils.credentials import CrawlCredentials
+
+        return bool((CrawlCredentials.load().proxy_url or "").strip())
+    except Exception:
+        return False
+
+
+def _check_reachable_direct(
+    cleaned: str,
+    target: DetectedTarget,
+    normalized: str,
+    base: str,
+    host: str,
+) -> str | None:
+    """Preflight lại không dùng proxy (proxy list trong config hay chết)."""
+    session = _preflight_session(None, allow_saved_proxy=False)
+    if target.platform == "woocommerce":
+        return _check_woocommerce(session, base, host, target)
+    if target.platform == "shopify":
+        return _check_shopify(session, base, host, target, proxy_url=None)
+    if target.platform == "generic-web":
+        return _check_generic(session, base, host)
+    if target.platform == "trendsi":
+        return _check_trendsi(session, normalized, proxy_url=None, allow_saved=False)
+    if target.platform == "magento":
+        from crawlers.magento_graphql import MagentoGraphqlCrawler
+
+        if MagentoGraphqlCrawler.site_supports(base, session=session):
+            return None
+        return (
+            f"Magento **{host}** không mở được GraphQL. "
+            "Thử tắt **Proxy** hoặc kiểm tra lại domain."
+        )
+    if target.platform in {"fineartamerica", "redbubble"}:
+        return None
+    response = session.get(normalized, timeout=PREFLIGHT_TIMEOUT)
+    if response.status_code == 200:
+        return None
+    return f"Shop **{host}** trả HTTP {response.status_code}."
+
+
+def _check_trendsi(
+    session: requests.Session,
+    normalized: str,
+    *,
+    proxy_url: str | None = None,
+    allow_saved: bool = True,
+) -> str | None:
+    """Trendsi thường chặn proxy — thử session hiện tại rồi direct; không chặn crawl cứng."""
+    try:
+        response = session.get(normalized, timeout=PREFLIGHT_TIMEOUT)
+        if response.status_code == 200:
+            return None
+        status = response.status_code
+    except requests.RequestException:
+        status = None
+
+    if allow_saved and _used_or_saved_proxy(proxy_url):
+        try:
+            direct = _preflight_session(None, allow_saved_proxy=False)
+            response = direct.get(normalized, timeout=PREFLIGHT_TIMEOUT)
+            if response.status_code == 200:
+                return None
+            status = response.status_code
+        except requests.RequestException:
+            pass
+
+    # Nhận diện đã OK — cho crawl chạy (TrendsiCrawler dùng direct khi proxy fail).
+    if status is None or status in {403, 429, 503}:
+        return None
+    if status == 200:
+        return None
+    return (
+        f"Trendsi trả HTTP {status}. "
+        "Thử tắt **Proxy** hoặc giảm **Luồng crawl**."
+    )
+
+
+def _preflight_session(
+    proxy_url: str | None = None,
+    *,
+    allow_saved_proxy: bool = True,
+) -> requests.Session:
     cleaned = (proxy_url or "").strip() or None
-    if cleaned is None:
+    if cleaned is None and allow_saved_proxy:
         try:
             from utils.credentials import CrawlCredentials
 
