@@ -250,6 +250,24 @@ def _check_woocommerce(
     host: str,
     target: DetectedTarget,
 ) -> str | None:
+    err = _check_woocommerce_once(session, base, host, target)
+    if err is None:
+        return None
+    if session.proxies or _used_or_saved_proxy(None):
+        direct = _preflight_session(None, allow_saved_proxy=False)
+        if direct is not session:
+            direct_err = _check_woocommerce_once(direct, base, host, target)
+            if direct_err is None:
+                return None
+    return err
+
+
+def _check_woocommerce_once(
+    session: requests.Session,
+    base: str,
+    host: str,
+    target: DetectedTarget,
+) -> str | None:
     params: dict[str, str | int] = {"per_page": 1}
     if target.crawl_type == "search" and target.query:
         params["search"] = target.query

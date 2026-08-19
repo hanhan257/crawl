@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TypeVar
@@ -8,9 +9,13 @@ T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
 API_LIST_MAX_WORKERS = 500
+# Woo Store API dễ 429 — tool mặc định 500 luồng nhưng Woo chỉ nên ~24.
+API_LIST_WOO_MAX_WORKERS = 24
 # Woo/Shopify list API dễ 429 nếu bắn hàng trăm page cùng lúc.
 API_LIST_WAVE_SIZE = 48
+API_LIST_WOO_WAVE_SIZE = 16
 EMPTY_PAGE_RETRY_ROUNDS = 3
+SEQUENTIAL_BACKFILL_DELAY = 0.35
 
 
 def _matched_count(items: list, limit: int | None) -> int:
@@ -87,6 +92,35 @@ def _empty_pages_to_retry(
     return holes
 
 
+def _sequential_backfill_holes(
+    fetch_page: Callable[[int], list[T]],
+    page_batches: dict[int, list[T]],
+    holes: list[int],
+    *,
+    delay: float = SEQUENTIAL_BACKFILL_DELAY,
+) -> None:
+    """Trang trống sau fetch song song — lấy lại tuần tự (tránh 429 Woo lớn)."""
+    for page_num in sorted(holes):
+        existing = page_batches.get(page_num)
+        if existing:
+            continue
+        if delay > 0:
+            time.sleep(delay)
+        try:
+            batch = fetch_page(page_num)
+        except Exception:
+            batch = []
+        if batch:
+            page_batches[page_num] = batch
+
+
+def _effective_wave_size(workers: int, end_page: int | None) -> int:
+    wave = max(1, min(workers, API_LIST_WAVE_SIZE))
+    if end_page and end_page > 100:
+        wave = min(wave, API_LIST_WOO_WAVE_SIZE)
+    return wave
+
+
 def fetch_pages_in_waves(
     fetch_page: Callable[[int], list[T]],
     *,
@@ -139,7 +173,7 @@ def fetch_pages_in_waves(
 
         if pages_to_fetch:
             # Fetch theo đợt — tránh 500 request cùng lúc (Woo joyoce mất ~2/3 SP).
-            wave = max(1, min(workers, API_LIST_WAVE_SIZE))
+            wave = _effective_wave_size(workers, end_page)
             for idx in range(0, len(pages_to_fetch), wave):
                 chunk = pages_to_fetch[idx : idx + wave]
                 fetched = _fetch_page_map(fetch_page, chunk, max_workers=wave)
@@ -147,7 +181,7 @@ def fetch_pages_in_waves(
                 report_progress()
 
             # Retry trang trống / lỗi (429) vài vòng với ít luồng hơn.
-            retry_workers = max(1, min(24, wave))
+            retry_workers = max(1, min(8, wave))
             for _round in range(EMPTY_PAGE_RETRY_ROUNDS):
                 holes = _empty_pages_to_retry(
                     page_batches,
@@ -164,6 +198,16 @@ def fetch_pages_in_waves(
                         break
                 fetched = _fetch_page_map(fetch_page, holes, max_workers=retry_workers)
                 page_batches.update(fetched)
+                report_progress()
+
+            holes = _empty_pages_to_retry(
+                page_batches,
+                start_page=2,
+                end_page=pages_to_fetch[-1],
+                per_page=per_page,
+            )
+            if holes:
+                _sequential_backfill_holes(fetch_page, page_batches, holes)
                 report_progress()
 
             items = _merge_page_batches(page_batches, limit=limit)

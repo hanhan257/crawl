@@ -48,7 +48,8 @@ CRAWL_HINTS = {
     ("shopbase", "category"): "Link /collections/... → crawl collection (Football, Baseball…)",
     ("shopbase", "product"): "Link /products/... → lấy 1 SP + mô tả HTML",
     ("woocommerce", "shop"): (
-        "Trang chủ hoặc /shop → lấy toàn bộ SP (Store API hoặc sitemap HTML nếu API khóa)"
+        "Trang chủ hoặc /shop → Store API (tự giới hạn ~24 luồng). "
+        "Shop lớn (>10k SP): để **Luồng crawl** mặc định hoặc 16–24; tắt Proxy nếu lỗi."
     ),
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm",

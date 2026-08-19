@@ -21,6 +21,7 @@ from utils.credentials import CrawlCredentials
 
 from utils.detector import DetectedTarget, UnsupportedUrlError, resolve_url
 
+from utils.crawl_parallel import API_LIST_WOO_MAX_WORKERS
 from utils.http_session import normalize_proxy_url
 
 
@@ -582,6 +583,8 @@ def run_auto_crawl(
 
         key, secret = credentials.woocommerce_for(host)
 
+        woo_workers = min(workers, API_LIST_WOO_MAX_WORKERS)
+
         crawler = WooCommerceCrawler(
 
             site_url=target.base_url or target.url,
@@ -614,7 +617,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    max_workers=workers,
+                    max_workers=woo_workers,
 
                     progress_callback=progress_callback,
 
@@ -628,7 +631,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    max_workers=workers,
+                    max_workers=woo_workers,
 
                     progress_callback=progress_callback,
 
@@ -644,7 +647,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    max_workers=workers,
+                    max_workers=woo_workers,
 
                     progress_callback=progress_callback,
 

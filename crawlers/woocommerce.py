@@ -13,7 +13,7 @@ import requests
 
 from crawlers.base import BaseCrawler
 from models.product import Product
-from utils.crawl_parallel import fetch_pages_in_waves
+from utils.crawl_parallel import API_LIST_WOO_MAX_WORKERS, fetch_pages_in_waves
 from utils.description_html import (
     description_from_json_ld,
     extract_woo_description_from_html,
@@ -92,6 +92,54 @@ class WooCommerceCrawler(BaseCrawler):
         self.session.verify = verify_ssl
         self._api_total_pages: int | None = None
         self._parallel_fetch = False
+        self._store_api_direct = False
+
+    def _switch_to_direct_session(self) -> None:
+        if self._store_api_direct or not self.proxy_rotator.current():
+            return
+        verify = self.session.verify
+        self._store_api_direct = True
+        self.proxy_rotator = ProxyRotator(None)
+        self.session = create_http_session(None)
+        self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        self.session.verify = verify
+
+    def _store_api_probe_ok(self) -> bool:
+        """Store API qua proxy hay bị chặn — thử direct trước khi crawl."""
+        try:
+            response = self.session.get(
+                f"{self.site_url}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return isinstance(data, list)
+            if response.status_code in (401, 403, 429) and self.proxy_rotator.current():
+                self._switch_to_direct_session()
+                response = self.session.get(
+                    f"{self.site_url}/wp-json/wc/store/v1/products",
+                    params={"per_page": 1},
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return isinstance(data, list)
+        except requests.RequestException:
+            if self.proxy_rotator.current():
+                self._switch_to_direct_session()
+                try:
+                    response = self.session.get(
+                        f"{self.site_url}/wp-json/wc/store/v1/products",
+                        params={"per_page": 1},
+                        timeout=DEFAULT_REQUEST_TIMEOUT,
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        return isinstance(data, list)
+                except requests.RequestException:
+                    pass
+        return False
 
     def crawl(
         self,
@@ -103,6 +151,8 @@ class WooCommerceCrawler(BaseCrawler):
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         if self.use_public_api:
+            if not (self.consumer_key and self.consumer_secret):
+                self._store_api_probe_ok()
             try:
                 return self._crawl_store_api(
                     limit=limit,
@@ -338,14 +388,57 @@ class WooCommerceCrawler(BaseCrawler):
         return None
 
     def _fetch_store_page(self, page: int, params_base: dict[str, Any]) -> list[dict[str, Any]]:
+        batch = self._fetch_store_page_once(page, params_base)
+        if (
+            not batch
+            and page > 1
+            and self._api_total_pages
+            and page < self._api_total_pages
+        ):
+            time.sleep(0.4)
+            batch = self._fetch_store_page_once(page, params_base)
+        return batch
+
+    def _fetch_store_page_once(
+        self, page: int, params_base: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         session = self._worker_session()
         params = {**params_base, "page": page}
-        response = get_with_retry(
-            session,
-            f"{self.site_url}/wp-json/wc/store/v1/products",
-            params=params,
-            timeout=DEFAULT_REQUEST_TIMEOUT,
-        )
+        try:
+            response = get_with_retry(
+                session,
+                f"{self.site_url}/wp-json/wc/store/v1/products",
+                params=params,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+        except requests.HTTPError as exc:
+            if (
+                self.proxy_rotator.current()
+                and exc.response is not None
+                and exc.response.status_code in (401, 403, 429)
+            ):
+                self._switch_to_direct_session()
+                session = self._worker_session()
+                response = get_with_retry(
+                    session,
+                    f"{self.site_url}/wp-json/wc/store/v1/products",
+                    params=params,
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                )
+            else:
+                raise
+        except requests.RequestException:
+            if self.proxy_rotator.current():
+                self._switch_to_direct_session()
+                session = self._worker_session()
+                response = get_with_retry(
+                    session,
+                    f"{self.site_url}/wp-json/wc/store/v1/products",
+                    params=params,
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                )
+            else:
+                raise
         if page == 1:
             self._api_total_pages = self._total_pages_from_headers(response)
         batch = response.json()
@@ -386,6 +479,7 @@ class WooCommerceCrawler(BaseCrawler):
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
         per_page = min(per_page, 100)
+        max_workers = max(1, min(int(max_workers or 1), API_LIST_WOO_MAX_WORKERS))
         self._parallel_fetch = max_workers > 1
         params_base: dict[str, Any] = {"per_page": per_page}
         if category_id:
