@@ -135,6 +135,31 @@ class ShopifyCrawler(BaseCrawler):
         self._public_json_ok = None
         self._graphql_ok = None
 
+    def _switch_to_direct_session(self) -> None:
+        """Một số shop chặn proxy list — chuyển sang direct cho cả crawl."""
+        self.proxy_rotator = ProxyRotator(None)
+        self.session = create_http_session(None)
+        self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        if hasattr(self._page_local, "session"):
+            delattr(self._page_local, "session")
+        self._public_json_ok = None
+        self._graphql_ok = None
+
+    @staticmethod
+    def _products_json_probe(session: requests.Session, shop_url: str) -> bool:
+        try:
+            response = session.get(
+                f"{shop_url}/products.json",
+                params={"limit": 1, "page": 1},
+                timeout=12,
+            )
+            if response.status_code != 200:
+                return False
+            data = response.json()
+            return isinstance(data, dict) and isinstance(data.get("products"), list)
+        except (requests.RequestException, ValueError):
+            return False
+
     def _page_session(self, *, rotate: bool = False) -> requests.Session:
         if rotate or not hasattr(self._page_local, "session"):
             proxy = (
@@ -444,31 +469,16 @@ class ShopifyCrawler(BaseCrawler):
         cached = getattr(self, "_public_json_ok", None)
         if cached is not None:
             return cached
-        try:
-            response = self.session.get(
-                f"{self.shop_url}/products.json",
-                params={"limit": 1, "page": 1},
-                timeout=12,
-            )
-            ok = response.status_code == 200
-            if ok:
-                data = response.json()
-                ok = isinstance(data, dict) and isinstance(data.get("products"), list)
-            elif response.status_code == 429 and self.proxy_rotator.count > 1:
-                self.refresh_session(rotate=True)
-                response = self.session.get(
-                    f"{self.shop_url}/products.json",
-                    params={"limit": 1, "page": 1},
-                    timeout=12,
-                )
-                ok = response.status_code == 200
-                if ok:
-                    data = response.json()
-                    ok = isinstance(data, dict) and isinstance(
-                        data.get("products"), list
-                    )
-        except (requests.RequestException, ValueError):
-            ok = False
+        ok = self._products_json_probe(self.session, self.shop_url)
+        if not ok and self.proxy_rotator.has_proxy:
+            direct = create_http_session(None)
+            direct.headers["User-Agent"] = DEFAULT_USER_AGENT
+            if self._products_json_probe(direct, self.shop_url):
+                self._switch_to_direct_session()
+                ok = True
+        elif not ok and self.proxy_rotator.count > 1:
+            self.refresh_session(rotate=True)
+            ok = self._products_json_probe(self.session, self.shop_url)
         self._public_json_ok = ok
         return ok
 

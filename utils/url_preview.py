@@ -94,16 +94,27 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
         except Exception:
             session = None
 
+    target: DetectedTarget | None = None
+    last_exc: UnsupportedUrlError | None = None
     try:
         target = resolve_url(url.strip(), session=session)
     except UnsupportedUrlError as exc:
-        if getattr(exc, "platform", None) == "redbubble":
+        last_exc = exc
+        if session is not None:
+            try:
+                target = resolve_url(url.strip(), session=None)
+                last_exc = None
+            except UnsupportedUrlError as exc2:
+                last_exc = exc2
+
+    if target is None and last_exc is not None:
+        if getattr(last_exc, "platform", None) == "redbubble":
             target = DetectedTarget(
                 platform="redbubble",
                 crawl_type="unknown",
                 url=url.strip(),
                 base_url="https://www.redbubble.com",
-                message=str(exc),
+                message=str(last_exc),
             )
             platform = PLATFORM_LABELS["redbubble"]
             crawl = CRAWL_TYPE_LABELS["unknown"]
@@ -117,9 +128,11 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
                 "detail": "",
                 "hint": hint,
                 "message": f"{platform} · {crawl}",
-                "notice": str(exc),
+                "notice": str(last_exc),
             }
-        return {"ok": False, "message": str(exc), "crawl_ready": False}
+        return {"ok": False, "message": str(last_exc), "crawl_ready": False}
+
+    assert target is not None
 
     platform = PLATFORM_LABELS.get(target.platform, target.platform)
     crawl = CRAWL_TYPE_LABELS.get(target.crawl_type, target.crawl_type)

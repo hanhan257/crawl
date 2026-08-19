@@ -254,6 +254,9 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             platform = future.result()
             if platform:
                 return platform
+    # Proxy hay bị shop chặn → thử nhận diện direct.
+    if session is not None and session.proxies:
+        return probe_platform(url, session=None)
     return None
 
 
