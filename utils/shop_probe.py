@@ -603,6 +603,9 @@ def _probe_woocommerce(
         proxy_url=credentials.proxy_url or None,
     )
 
+    if crawler.use_public_api and not (key and secret):
+        crawler._store_api_probe_ok()
+
     if target.crawl_type == "search" and target.query:
         total = _woo_search_count(crawler, target.query)
         total_text = f"**{total}** SP" if total is not None else "**?** SP"
@@ -900,16 +903,20 @@ def _woo_product_count(crawler) -> int | None:
                 total = response.headers.get("X-WP-Total")
                 if total is not None:
                     return int(total)
-
-        response = crawler.session.get(
-            f"{crawler.site_url}/wp-json/wc/store/v1/products",
-            params={"per_page": 1},
-            timeout=30,
-        )
-        if response.status_code == 200:
-            total = response.headers.get("X-WP-Total") or response.headers.get("x-wp-total")
-            if total is not None:
-                return int(total)
+        else:
+            if hasattr(crawler, "_store_api_probe_ok"):
+                crawler._store_api_probe_ok()
+            response = crawler.session.get(
+                f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=30,
+            )
+            if response.status_code == 200:
+                total = response.headers.get("X-WP-Total") or response.headers.get(
+                    "x-wp-total"
+                )
+                if total is not None:
+                    return int(total)
     except (requests.RequestException, ValueError, TypeError):
         pass
 
