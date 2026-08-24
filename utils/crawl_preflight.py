@@ -284,6 +284,19 @@ def _check_woocommerce_once(
         return f"Store API **{host}** trả dữ liệu không hợp lệ."
 
     if response.status_code in {401, 403}:
+        # Cloudflare — Store API vẫn mở qua curl_cffi (vd. usa.hobbypew.com).
+        try:
+            from utils.curl_http import curl_get_json_list
+
+            data, curl_status, _headers = curl_get_json_list(
+                f"{base}/wp-json/wc/store/v1/products",
+                params=params,
+                timeout=20,
+            )
+            if curl_status == 200 and isinstance(data, list):
+                return None
+        except Exception:
+            pass
         # Store API khóa — vẫn crawl được qua sitemap / HTML (vd. gullprint.com).
         if _woocommerce_html_fallback_ok(session, base, target):
             return None
