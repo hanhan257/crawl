@@ -413,6 +413,44 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "teemill":
+
+        from crawlers.teemill import TeemillCrawler
+
+        crawler = TeemillCrawler(
+            site_url=target.base_url or target.url,
+            proxy_url=effective_proxy,
+        )
+
+        if target.crawl_type == "product" and target.handle:
+            product = crawler.crawl_product(target.handle)
+            products = [product] if product else []
+        elif target.crawl_type == "category" and target.handle:
+            products = crawler.crawl_collection(
+                target.handle,
+                limit=limit,
+                max_pages=max_pages,
+                progress_callback=progress_callback,
+                max_workers=workers,
+            )
+        elif target.crawl_type == "shop":
+            products = crawler.crawl(
+                limit=limit,
+                max_pages=max_pages,
+                category_slug=category_slug,
+                progress_callback=progress_callback,
+                max_workers=workers,
+            )
+        else:
+            raise CrawlError(f"Teemill: chưa hỗ trợ loại link '{target.crawl_type}'")
+
+        if not products:
+            raise CrawlError("Teemill: không crawl được sản phẩm nào từ link này.")
+
+        return _apply_crawl_description_format(products, description_format), target
+
+
+
     if target.platform == "trendsi":
 
         from crawlers.trendsi import TrendsiCrawler

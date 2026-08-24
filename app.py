@@ -2414,6 +2414,12 @@ def run_crawl_only(
             }:
                 # Giữ nguyên link user dán (homepage /shop /product /home-living/mug…).
                 pass
+            elif target.platform == "teemill" and target.crawl_type in {
+                "shop",
+                "product",
+                "category",
+            }:
+                pass
             elif target.platform == "generic-web":
                 if getattr(target, "crawl_type", "") == "shop":
                     category_filter = category_slug
@@ -3015,7 +3021,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Trendsi · Magento · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
         info = _cached_describe_url(
             cleaned,
             st.session_state.get("proxy_url", "") or "",

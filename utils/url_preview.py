@@ -6,6 +6,7 @@ PLATFORM_LABELS = {
     "shopify": "Shopify",
     "shopbase": "ShopBase",
     "woocommerce": "WooCommerce",
+    "teemill": "Teemill",
     "trendsi": "Trendsi",
     "magento": "Magento / Jomashop",
     "redbubble": "Redbubble",
@@ -54,6 +55,9 @@ CRAWL_HINTS = {
     ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
+    ("teemill", "shop"): "Trang chủ Teemill → crawl toàn bộ shop qua Omnis API",
+    ("teemill", "category"): "Link /collection/... → lấy SP trong collection đó",
+    ("teemill", "product"): "Link /product/... → lấy 1 SP",
     ("trendsi", "brand"): "Link /brand?nameEn=...&id=... → crawl white-label brand (vd. CozyNest)",
     ("trendsi", "category"): (
         "Link /classify/Category/... hoặc /classify/Product/... "

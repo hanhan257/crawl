@@ -67,6 +67,8 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
     try:
         if target.platform == "woocommerce":
             return _check_woocommerce(session, base, host, target)
+        if target.platform == "teemill":
+            return _check_teemill(session, base, host, target)
         if target.platform == "shopify":
             return _check_shopify(session, base, host, target, proxy_url=proxy_url)
         if target.platform == "generic-web":
@@ -157,6 +159,8 @@ def _check_reachable_direct(
     session = _preflight_session(None, allow_saved_proxy=False)
     if target.platform == "woocommerce":
         return _check_woocommerce(session, base, host, target)
+    if target.platform == "teemill":
+        return _check_teemill(session, base, host, target)
     if target.platform == "shopify":
         return _check_shopify(session, base, host, target, proxy_url=None)
     if target.platform == "generic-web":
@@ -352,6 +356,48 @@ def _woocommerce_html_fallback_ok(
         except requests.RequestException:
             continue
     return False
+
+
+def _check_teemill(
+    session: requests.Session,
+    base: str,
+    host: str,
+    target: DetectedTarget,
+) -> str | None:
+    from crawlers.teemill import TeemillCrawler
+
+    if not TeemillCrawler.site_supports(base, session=session):
+        if session.proxies or _used_or_saved_proxy(None):
+            direct = _preflight_session(None, allow_saved_proxy=False)
+            if TeemillCrawler.site_supports(base, session=direct):
+                session = direct
+            else:
+                return f"Teemill **{host}** không mở được Omnis API."
+        else:
+            return f"Teemill **{host}** không mở được Omnis API."
+
+    try:
+        crawler = TeemillCrawler(base)
+        division_id = crawler._resolve_division_id(
+            page_url=target.url if target.crawl_type == "category" else None
+        )
+        params: dict[str, str | int] = {}
+        slug = (target.category_slug or target.handle or "").strip().strip("/")
+        if target.crawl_type == "category" and slug:
+            params["collection"] = slug
+        response = crawler._api_session.get(
+            f"{base}/omnis/v3/division/{division_id}/products/",
+            params=params,
+            timeout=PREFLIGHT_TIMEOUT,
+        )
+        if response.status_code == 200 and isinstance(response.json(), list):
+            return None
+        return (
+            f"Teemill **{host}** Store API trả HTTP {response.status_code}. "
+            "Thử tắt Proxy hoặc kiểm tra lại link collection."
+        )
+    except requests.RequestException as exc:
+        return f"Teemill **{host}** — không kiểm tra được API: {exc}"
 
 
 def _check_shopify(

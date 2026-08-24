@@ -28,6 +28,8 @@ REDBUBBLE_SHOP = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_PRODUCT = re.compile(r"/product/([^/?#]+)")
 GENERIC_WEB_SHOP_CATEGORY = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_CATEGORY = re.compile(r"/category/([^/?#]+)")
+TEEMILL_COLLECTION = re.compile(r"/collection/([^/?#]+)", re.I)
+TEEMILL_PRODUCT = re.compile(r"/product/([^/?#]+)", re.I)
 MAGENTO_SEARCH = re.compile(r"/catalogsearch/result", re.I)
 HTML_CATALOG_SEARCH = MAGENTO_SEARCH
 
@@ -222,6 +224,19 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_teemill() -> str | None:
+        try:
+            from crawlers.teemill import TeemillCrawler
+
+            if TeemillCrawler.site_supports(base, session=fresh_session()):
+                return "teemill"
+            if "/collection/" in normalized or "/product/" in normalized:
+                if TeemillCrawler.site_supports(normalized, session=fresh_session()):
+                    return "teemill"
+        except Exception:
+            pass
+        return None
+
     def check_generic() -> str | None:
         try:
             if GenericWebCrawler.site_supports(base, session=fresh_session()):
@@ -256,6 +271,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         check_shopbase,
         check_woo_store,
         check_wp_json,
+        check_teemill,
         check_magento,
         check_generic,
         check_html_signals,
@@ -340,6 +356,17 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
             base_url=f"{parsed.scheme}://{parsed.netloc}",
         )
 
+    if platform == "teemill":
+        teemill_target = _detect_teemill(normalized, host, path)
+        if teemill_target.crawl_type != "unknown":
+            return teemill_target
+        return DetectedTarget(
+            platform="teemill",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
     if platform == "generic-web":
         generic_target = _detect_generic_web(normalized, path)
         generic_target = _refine_generic_web_target(generic_target, session=session)
@@ -395,9 +422,9 @@ def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTa
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Trendsi, Magento/Jomashop, "
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Teemill, Trendsi, Magento/Jomashop, "
         "Redbubble, Fine Art America, Web thuần (Next.js / HTML / sitemap).\n"
-        "Ví dụ: jomashop.com/jewelry.html · fineartamerica.com · keeptee.com",
+        "Ví dụ: jomashop.com/jewelry.html · thewildlifetrustsshop.com/collection/... · keeptee.com",
         platform="unknown",
     )
 
@@ -821,6 +848,55 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
 
     return DetectedTarget(
         platform="woocommerce",
+        crawl_type="unknown",
+        url=url,
+        base_url=base_url,
+    )
+
+
+def _detect_teemill(url: str, host: str, path: str) -> DetectedTarget:
+    base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+
+    product_match = TEEMILL_PRODUCT.search(path)
+    if product_match:
+        handle = product_match.group(1)
+        return DetectedTarget(
+            platform="teemill",
+            crawl_type="product",
+            url=url,
+            base_url=base_url,
+            handle=handle,
+        )
+
+    collection_match = TEEMILL_COLLECTION.search(path)
+    if collection_match:
+        handle = collection_match.group(1)
+        if handle.lower() in {"all-products", "all"}:
+            return DetectedTarget(
+                platform="teemill",
+                crawl_type="shop",
+                url=url,
+                base_url=base_url,
+            )
+        return DetectedTarget(
+            platform="teemill",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=handle,
+            category_slug=handle,
+        )
+
+    if path.rstrip("/") in ("", "/"):
+        return DetectedTarget(
+            platform="teemill",
+            crawl_type="shop",
+            url=url,
+            base_url=base_url,
+        )
+
+    return DetectedTarget(
+        platform="teemill",
         crawl_type="unknown",
         url=url,
         base_url=base_url,

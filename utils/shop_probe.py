@@ -87,6 +87,11 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/collections/{category_slug}"
     if platform == "shopbase":
         return f"{base}/collections/{category_slug}"
+    if platform == "teemill":
+        slug = category_slug.strip().strip("/")
+        if slug in {"", "all-products", "all"}:
+            return f"{base}/"
+        return f"{base}/collection/{slug}/"
     if platform == "trendsi":
         # Không được trả về homepage — sẽ rơi vào crawl catalog mặc định (quần áo).
         slug = category_slug.strip().strip("/")
@@ -290,6 +295,8 @@ def probe_shop_stats(
         return _probe_shopify(target, credentials, base_url, url_category)
     if target.platform == "shopbase":
         return _probe_shopbase(target, base_url, url_category)
+    if target.platform == "teemill":
+        return _probe_teemill(target, base_url, url_category)
     if target.platform == "trendsi":
         return _probe_trendsi(target, base_url, url_category)
     if target.platform == "magento":
@@ -635,6 +642,76 @@ def _probe_woocommerce(
         total_products=total,
         categories=categories,
         url_category_slug=url_category,
+    )
+
+
+def _probe_teemill(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+) -> ShopProbeResult:
+    from crawlers.teemill import TeemillCrawler
+
+    crawler = TeemillCrawler(base_url)
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="teemill",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link /product/...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    collection_slug = url_category or target.category_slug or target.handle
+    try:
+        collections_raw = crawler.list_collections()
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=True,
+            platform="teemill",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"Teemill — không đọc được collection ({exc}). Vẫn có thể bấm crawl.",
+            total_products=None,
+            categories=[],
+            url_category_slug=collection_slug,
+        )
+
+    categories = [
+        ShopCategoryInfo(
+            slug=str(item.get("slug") or ""),
+            name=str(item.get("name") or item.get("slug") or ""),
+            count=item.get("count"),
+        )
+        for item in collections_raw
+        if item.get("slug")
+    ]
+
+    total: int | None = None
+    if target.crawl_type == "category" and collection_slug:
+        try:
+            total = crawler.count_products(collection_slug)
+        except Exception:
+            total = None
+    elif target.crawl_type == "shop":
+        try:
+            total = crawler.count_products()
+        except Exception:
+            total = None
+
+    return ShopProbeResult(
+        ok=True,
+        platform="teemill",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=_stats_message(total, len(categories)),
+        total_products=total,
+        categories=categories,
+        url_category_slug=collection_slug,
     )
 
 
