@@ -67,10 +67,17 @@ firewall-cmd --reload
 ```bash
 cd ~/crawl
 git pull
-# native:
+.venv/bin/pip install -r requirements.txt
 systemctl restart crawl-feed-gmc
-# docker:
-# docker compose up -d --build
+```
+
+**Shop Cloudflare (vd. us.wdycraftlab.com):** cần `curl_cffi` trong requirements — nếu lỗi `pip: command not found` thì dùng `.venv/bin/pip`, không gõ `pip` trực tiếp:
+
+```bash
+cd ~/crawl
+.venv/bin/pip install "curl_cffi>=0.7.0"
+.venv/bin/python -c "import curl_cffi; print('OK')"
+systemctl restart crawl-feed-gmc
 ```
 
 Mở: **https://crawl.egeadcompany.com**

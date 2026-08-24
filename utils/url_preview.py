@@ -109,6 +109,33 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
                 last_exc = exc2
 
     if target is None and last_exc is not None:
+        # Cloudflare Woo — curl_cffi direct khi requests + proxy đều fail.
+        try:
+            from urllib.parse import urlparse
+
+            from utils.curl_http import curl_get_json_list
+            from utils.detector import normalize_url
+
+            normalized = normalize_url(url.strip())
+            parsed = urlparse(normalized)
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            data, status, _headers = curl_get_json_list(
+                f"{base}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=20,
+            )
+            if status == 200 and isinstance(data, list):
+                target = DetectedTarget(
+                    platform="woocommerce",
+                    crawl_type="shop",
+                    url=normalized,
+                    base_url=base,
+                )
+                last_exc = None
+        except Exception:
+            pass
+
+    if target is None and last_exc is not None:
         if getattr(last_exc, "platform", None) == "redbubble":
             target = DetectedTarget(
                 platform="redbubble",

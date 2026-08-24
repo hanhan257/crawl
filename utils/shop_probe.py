@@ -906,17 +906,49 @@ def _woo_product_count(crawler) -> int | None:
         else:
             if hasattr(crawler, "_store_api_probe_ok"):
                 crawler._store_api_probe_ok()
-            response = crawler.session.get(
-                f"{crawler.site_url}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
-                timeout=30,
-            )
-            if response.status_code == 200:
-                total = response.headers.get("X-WP-Total") or response.headers.get(
-                    "x-wp-total"
+            if getattr(crawler, "_use_curl_cffi", False):
+                from utils.curl_http import curl_get
+
+                response = curl_get(
+                    f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                    params={"per_page": 1},
+                    timeout=30,
                 )
-                if total is not None:
-                    return int(total)
+                if response is not None and response.status_code == 200:
+                    total = response.headers.get("X-WP-Total") or response.headers.get(
+                        "x-wp-total"
+                    )
+                    if total is not None:
+                        return int(total)
+            else:
+                response = crawler.session.get(
+                    f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                    params={"per_page": 1},
+                    timeout=30,
+                )
+                if response.status_code == 200:
+                    total = response.headers.get("X-WP-Total") or response.headers.get(
+                        "x-wp-total"
+                    )
+                    if total is not None:
+                        return int(total)
+                if response.status_code == 403 and hasattr(
+                    crawler, "_curl_store_probe"
+                ):
+                    if crawler._curl_store_probe() and crawler._switch_to_curl_cffi():
+                        from utils.curl_http import curl_get
+
+                        curl_resp = curl_get(
+                            f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                            params={"per_page": 1},
+                            timeout=30,
+                        )
+                        if curl_resp is not None and curl_resp.status_code == 200:
+                            total = curl_resp.headers.get(
+                                "X-WP-Total"
+                            ) or curl_resp.headers.get("x-wp-total")
+                            if total is not None:
+                                return int(total)
     except (requests.RequestException, ValueError, TypeError):
         pass
 

@@ -159,6 +159,18 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                     return "woocommerce"
         except (requests.RequestException, ValueError):
             pass
+        try:
+            from utils.curl_http import curl_get_json_list
+
+            data, status, _headers = curl_get_json_list(
+                f"{base}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=15,
+            )
+            if status == 200 and isinstance(data, list):
+                return "woocommerce"
+        except Exception:
+            pass
         return None
 
     def check_wp_json() -> str | None:
@@ -256,7 +268,23 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                 return platform
     # Proxy hay bị shop chặn → thử nhận diện direct.
     if session is not None and session.proxies:
-        return probe_platform(url, session=None)
+        direct = probe_platform(url, session=None)
+        if direct:
+            return direct
+
+    # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
+    try:
+        from utils.curl_http import curl_get_json_list
+
+        data, status, _headers = curl_get_json_list(
+            f"{base}/wp-json/wc/store/v1/products",
+            params={"per_page": 1},
+            timeout=20,
+        )
+        if status == 200 and isinstance(data, list):
+            return "woocommerce"
+    except Exception:
+        pass
     return None
 
 

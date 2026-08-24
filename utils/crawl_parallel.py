@@ -211,18 +211,13 @@ def fetch_pages_in_waves(
                 report_progress()
 
             items = _merge_page_batches(page_batches, limit=limit)
-            last_batch = page_batches.get(end_page) or []
-            if (
-                (limit is None or len(items) < limit)
-                and len(last_batch) >= per_page
-                and estimated_pages
-                and end_page >= estimated_pages
-            ):
-                next_page = end_page + 1
-            else:
-                if progress_callback:
-                    progress_callback(pages_fetched, pages_fetched, _matched_count(items, limit))
-                return items, pages_fetched
+            if progress_callback:
+                progress_callback(
+                    len(page_batches),
+                    progress_total(),
+                    _matched_count(items, limit),
+                )
+            return items, len(page_batches)
         else:
             items = _merge_page_batches(page_batches, limit=limit)
             if progress_callback:

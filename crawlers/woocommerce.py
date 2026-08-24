@@ -19,6 +19,7 @@ from utils.description_html import (
     extract_woo_description_from_html,
     woo_description_from_item,
 )
+from utils.curl_http import CurlResponse, curl_get, curl_cffi_available
 from utils.http_retry import DEFAULT_REQUEST_TIMEOUT, get_with_retry
 from utils.http_session import ProxyRotator, create_http_session
 
@@ -93,6 +94,96 @@ class WooCommerceCrawler(BaseCrawler):
         self._api_total_pages: int | None = None
         self._parallel_fetch = False
         self._store_api_direct = False
+        self._use_curl_cffi = False
+
+    def _switch_to_curl_cffi(self) -> bool:
+        if self._use_curl_cffi:
+            return True
+        if not curl_cffi_available():
+            return False
+        self._switch_to_direct_session()
+        self._use_curl_cffi = True
+        return True
+
+    def _curl_store_probe(self) -> bool:
+        response = curl_get(
+            f"{self.site_url}/wp-json/wc/store/v1/products",
+            params={"per_page": 1},
+            timeout=DEFAULT_REQUEST_TIMEOUT,
+        )
+        if response is None or response.status_code != 200:
+            return False
+        try:
+            return isinstance(response.json(), list)
+        except (ValueError, TypeError):
+            return False
+
+    def _store_api_get(
+        self, params: dict[str, Any]
+    ) -> requests.Response | CurlResponse:
+        if self._use_curl_cffi:
+            response = curl_get(
+                f"{self.site_url}/wp-json/wc/store/v1/products",
+                params=params,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+            if response is None:
+                raise requests.RequestException(
+                    f"curl_cffi không tải được Store API: {self.site_url}"
+                )
+            if response.status_code >= 400:
+                http_resp = requests.Response()
+                http_resp.status_code = response.status_code
+                http_resp._content = response.text.encode("utf-8", errors="replace")
+                raise requests.HTTPError(
+                    f"Store API {response.status_code}",
+                    response=http_resp,
+                )
+            return response
+
+        session = self._worker_session()
+        try:
+            return get_with_retry(
+                session,
+                f"{self.site_url}/wp-json/wc/store/v1/products",
+                params=params,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
+        except requests.HTTPError as exc:
+            if (
+                self.proxy_rotator.current()
+                and exc.response is not None
+                and exc.response.status_code in (401, 403, 429)
+            ):
+                self._switch_to_direct_session()
+                session = self._worker_session()
+                return get_with_retry(
+                    session,
+                    f"{self.site_url}/wp-json/wc/store/v1/products",
+                    params=params,
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                )
+            if (
+                exc.response is not None
+                and exc.response.status_code == 403
+                and self._curl_store_probe()
+                and self._switch_to_curl_cffi()
+            ):
+                return self._store_api_get(params)
+            raise
+        except requests.RequestException:
+            if self.proxy_rotator.current():
+                self._switch_to_direct_session()
+                session = self._worker_session()
+                return get_with_retry(
+                    session,
+                    f"{self.site_url}/wp-json/wc/store/v1/products",
+                    params=params,
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                )
+            if self._curl_store_probe() and self._switch_to_curl_cffi():
+                return self._store_api_get(params)
+            raise
 
     def _switch_to_direct_session(self) -> None:
         if self._store_api_direct or not self.proxy_rotator.current():
@@ -139,6 +230,9 @@ class WooCommerceCrawler(BaseCrawler):
                         return isinstance(data, list)
                 except requests.RequestException:
                     pass
+        if self._curl_store_probe():
+            self._switch_to_curl_cffi()
+            return True
         return False
 
     def crawl(
@@ -163,6 +257,14 @@ class WooCommerceCrawler(BaseCrawler):
                 )
             except requests.HTTPError as exc:
                 if self._is_auth_blocked(exc):
+                    if self._curl_store_probe() and self._switch_to_curl_cffi():
+                        return self._crawl_store_api(
+                            limit=limit,
+                            max_pages=max_pages,
+                            per_page=per_page,
+                            max_workers=max_workers,
+                            progress_callback=progress_callback,
+                        )
                     return self._crawl_html_catalog(
                         limit=limit,
                         max_pages=max_pages,
@@ -376,7 +478,7 @@ class WooCommerceCrawler(BaseCrawler):
         return session
 
     @staticmethod
-    def _total_pages_from_headers(response: requests.Response) -> int | None:
+    def _total_pages_from_headers(response: requests.Response | CurlResponse) -> int | None:
         for key in ("X-WP-TotalPages", "x-wp-totalpages"):
             raw = response.headers.get(key)
             if not raw:
@@ -402,43 +504,8 @@ class WooCommerceCrawler(BaseCrawler):
     def _fetch_store_page_once(
         self, page: int, params_base: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        session = self._worker_session()
         params = {**params_base, "page": page}
-        try:
-            response = get_with_retry(
-                session,
-                f"{self.site_url}/wp-json/wc/store/v1/products",
-                params=params,
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-            )
-        except requests.HTTPError as exc:
-            if (
-                self.proxy_rotator.current()
-                and exc.response is not None
-                and exc.response.status_code in (401, 403, 429)
-            ):
-                self._switch_to_direct_session()
-                session = self._worker_session()
-                response = get_with_retry(
-                    session,
-                    f"{self.site_url}/wp-json/wc/store/v1/products",
-                    params=params,
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
-                )
-            else:
-                raise
-        except requests.RequestException:
-            if self.proxy_rotator.current():
-                self._switch_to_direct_session()
-                session = self._worker_session()
-                response = get_with_retry(
-                    session,
-                    f"{self.site_url}/wp-json/wc/store/v1/products",
-                    params=params,
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
-                )
-            else:
-                raise
+        response = self._store_api_get(params)
         if page == 1:
             self._api_total_pages = self._total_pages_from_headers(response)
         batch = response.json()
