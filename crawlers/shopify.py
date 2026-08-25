@@ -270,11 +270,8 @@ class ShopifyCrawler(BaseCrawler):
             raise
 
         estimated_pages = max_pages
-        if estimated_pages is None:
-            if limit is not None:
-                estimated_pages = max(1, (limit + per_page - 1) // per_page)
-            elif len(first_batch) >= per_page:
-                estimated_pages = 2
+        if estimated_pages is None and limit is not None:
+            estimated_pages = max(1, (limit + per_page - 1) // per_page)
 
         raw_items, _pages = fetch_pages_in_waves(
             fetch_page,
@@ -615,11 +612,8 @@ class ShopifyCrawler(BaseCrawler):
             raise
 
         estimated_pages = max_pages
-        if estimated_pages is None:
-            if limit is not None:
-                estimated_pages = max(1, (limit + per_page - 1) // per_page)
-            elif len(first_batch) >= per_page:
-                estimated_pages = 2
+        if estimated_pages is None and limit is not None:
+            estimated_pages = max(1, (limit + per_page - 1) // per_page)
 
         raw_items, _pages = fetch_pages_in_waves(
             self._fetch_public_page,
