@@ -60,8 +60,8 @@ CRAWL_HINTS = {
     ("teemill", "product"): "Link /product/... → lấy 1 SP",
     ("trendsi", "brand"): "Link /brand?nameEn=...&id=... → crawl white-label brand (vd. CozyNest)",
     ("trendsi", "category"): (
-        "Link /classify/Category/... hoặc /classify/Product/... "
-        "(vd. Jewelry & Beauty) → crawl đúng danh mục Trendsi"
+        "Link /classify/... (Women, Category, Product, …) "
+        "→ crawl đúng danh mục Trendsi (vd. Denim Shorts ~346 SP)"
     ),
     ("trendsi", "shop"): "Trang chủ Trendsi → crawl catalog qua API",
     ("trendsi", "product"): "Link /products/detail?id=... → lấy 1 SP + biến thể Size/Color",

@@ -459,11 +459,16 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
                 query=str(brand_name).strip() or None,
             )
 
-    # /classify/Category/Kids/Dresses  hoặc  /classify/Product/Jewelry & Beauty
-    if path.startswith("/classify/Category/") or path.startswith("/classify/Product/"):
-        parts = [unquote(segment) for segment in path.strip("/").split("/")[2:] if segment]
-        if parts:
-            category_path = "/".join(parts)
+    # /classify/Category/Kids/Dresses · /classify/Product/Jewelry & Beauty
+    # · /classify/Women/Jeans & Denim/Denim Shorts (menu danh mục mới)
+    if path.startswith("/classify/"):
+        segments = [
+            unquote(segment)
+            for segment in path.strip("/").split("/")[1:]
+            if segment
+        ]
+        if segments:
+            category_path = "/".join(segments)
             return DetectedTarget(
                 platform="trendsi",
                 crawl_type="category",
@@ -471,7 +476,7 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
                 base_url=base_url,
                 handle=category_path,
                 category_slug=category_path,
-                query=" / ".join(parts),
+                query=" / ".join(segments),
             )
 
     if path in ("", "/"):
@@ -489,8 +494,8 @@ def _detect_trendsi(url: str, path: str, parsed) -> DetectedTarget:
         url=url,
         base_url=base_url,
         message=(
-            "Trendsi: dán link **/brand?...** · **/classify/Category/...** · "
-            "**/classify/Product/...** · **/products/detail?id=...**."
+            "Trendsi: dán link **/brand?...** · **/classify/...** (Category, Product, Women, …) · "
+            "**/products/detail?id=...**."
         ),
     )
 

@@ -20,6 +20,9 @@ from utils.url_preview import describe_url
 
 TRENDSI_LINK_EXAMPLES: dict[str, str] = {
     "Trang chủ Trendsi": "https://www.trendsi.com/",
+    "Category Women / Denim Shorts": (
+        "https://www.trendsi.com/classify/Women/Jeans%20&%20Denim/Denim%20Shorts"
+    ),
     "Category Jewelry & Beauty": (
         "https://www.trendsi.com/classify/Product/Jewelry%20%26%20Beauty"
     ),
@@ -67,8 +70,8 @@ def validate_trendsi_url(url: str) -> dict[str, Any]:
             "message": info.get("notice")
             or info.get("hint")
             or (
-                "Trendsi: dán **/brand?...** · **/classify/Category/...** · "
-                "**/classify/Product/...** · **/products/detail?id=...** "
+                "Trendsi: dán **/brand?...** · **/classify/...** (Women, Category, Product…) · "
+                "**/products/detail?id=...** "
                 "hoặc trang chủ."
             ),
         }
@@ -107,7 +110,7 @@ def render_trendsi_crawl_panel(
             placeholder="https://www.trendsi.com/brand?nameEn=CozyNest&id=...",
             help=(
                 "Brand: /brand?nameEn=...&id=...\n"
-                "Category: /classify/Product/...\n"
+                "Category: /classify/Women/... · /classify/Product/...\n"
                 "1 SP: /products/detail?id=...\n"
                 "Catalog: https://www.trendsi.com/"
             ),
