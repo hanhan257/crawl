@@ -412,12 +412,20 @@ class TrendsiCrawler(BaseCrawler):
         )
 
     @classmethod
+    def _clean_description_html(cls, html: str) -> str:
+        cleaned = re.sub(r"<li>\s*Imported\s*</li>", "", html, flags=re.I)
+        cleaned = re.sub(r"<ul>\s*</ul>", "", cleaned, flags=re.I)
+        return cleaned.strip()
+
+    @classmethod
     def _build_description(cls, item: dict[str, Any]) -> str | None:
         """Gộp Size & Fit (HTML table) + Product Details vào đầu description."""
         base = str(item.get("description") or "").strip()
         if not base:
             text = str(item.get("text") or "").strip()
             base = f"<p>{escape(text)}</p>" if text else ""
+        else:
+            base = cls._clean_description_html(base)
         size_html = cls._size_fit_html(item)
         parts = [part for part in (size_html, base) if part]
         return "".join(parts) or None
