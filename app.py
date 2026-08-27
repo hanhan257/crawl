@@ -3124,6 +3124,19 @@ def render_url_preview(
                 st.caption(
                     "Web thuần không có collection shop — crawl **Tất cả** hoặc lọc danh mục nếu có pill."
                 )
+        elif platform == "trendsi" and probe.get("crawl_type") == "category":
+            total = probe.get("total_products")
+            if total:
+                st.caption(
+                    f"Danh mục Trendsi — crawl đúng link `/classify/...` "
+                    f"(~**{total:,}** SP trong category này).".replace(",", ".")
+                )
+            else:
+                st.caption(
+                    "Danh mục Trendsi — crawl đúng link `/classify/...`, không lấy cả catalog."
+                )
+        elif platform == "trendsi" and probe.get("crawl_type") == "brand":
+            st.caption("Brand Trendsi — crawl đúng link `/brand?...`, không lấy cả catalog.")
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
         elif probe.get("crawl_type") == "search" and probe.get("url_category_slug"):
