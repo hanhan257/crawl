@@ -3137,6 +3137,13 @@ def render_url_preview(
                 )
         elif platform == "trendsi" and probe.get("crawl_type") == "brand":
             st.caption("Brand Trendsi — crawl đúng link `/brand?...`, không lấy cả catalog.")
+        elif platform == "shopify" and probe.get("crawl_type") == "shop":
+            total = probe.get("total_products")
+            if total and int(total) > 5000:
+                st.caption(
+                    f"Shop Shopify lớn (~**{int(total):,}** SP) — để **Giới hạn=0** · "
+                    f"**Số trang=0** để tool tự lấy hết (GraphQL + sitemap).".replace(",", ".")
+                )
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
         elif probe.get("crawl_type") == "search" and probe.get("url_category_slug"):
@@ -3162,6 +3169,13 @@ def render_url_preview(
                 first_slug = probe["categories"][0].get("slug")
                 if first_slug:
                     default_cat = first_slug
+            if platform == "shopify" and probe.get("total_products"):
+                total = int(probe["total_products"])
+                if total > 5000 and int(st.session_state.get("crawl_limit") or 0) == 0:
+                    st.session_state["crawl_workers"] = max(
+                        int(st.session_state.get("crawl_workers") or 500),
+                        64 if total > 20000 else 32,
+                    )
             st.session_state["crawl_category_pill"] = default_cat
         render_crawl_category_pills(probe)
 

@@ -37,7 +37,7 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
             1,
             "Giới hạn SP",
             "crawl_limit",
-            {"min_value": 0, "help": "0 = lấy hết. Shop lớn nên thử 50–500 trước."},
+            {"min_value": 0, "help": "0 = lấy hết. Shop >5k SP: tool tự dùng sitemap nếu cần."},
         ),
         (
             2,

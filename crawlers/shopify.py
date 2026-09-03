@@ -591,25 +591,19 @@ class ShopifyCrawler(BaseCrawler):
                     max_pages=max_pages,
                     progress_callback=progress_callback,
                 )
-                if limit is not None:
-                    return products
-                if products and len(products) < 24_500:
-                    return products
-                sitemap_handles = self._discover_handles_from_sitemaps()
-                if len(sitemap_handles) > len(products):
-                    return self._crawl_via_sitemap(
-                        limit=limit,
-                        max_sitemaps=max_pages,
-                        max_workers=max_workers,
-                        progress_callback=progress_callback,
-                    )
-                return products
+                return self._crawl_via_sitemap_if_larger(
+                    products,
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=max_workers,
+                    progress_callback=progress_callback,
+                )
             except requests.RequestException as exc:
                 if "25000" in str(exc):
                     return self._crawl_via_sitemap(
                         limit=limit,
                         max_sitemaps=max_pages,
-                        max_workers=max_workers,
+                        max_workers=max(max_workers, 64),
                         progress_callback=progress_callback,
                     )
 
@@ -655,7 +649,14 @@ class ShopifyCrawler(BaseCrawler):
             progress_callback=progress_callback,
             estimated_pages=estimated_pages,
         )
-        return [self._map_public_product(item) for item in raw_items]
+        products = [self._map_public_product(item) for item in raw_items]
+        return self._crawl_via_sitemap_if_larger(
+            products,
+            limit=limit,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
 
     def _collect_product_sitemaps(self) -> list[str]:
         index_url = f"{self.shop_url}/sitemap.xml"
@@ -719,6 +720,36 @@ class ShopifyCrawler(BaseCrawler):
                 seen.add(handle)
                 handles.append(handle)
         return handles
+
+    def _sitemap_handle_count(self, *, max_sitemaps: int | None = None) -> int:
+        return len(self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps))
+
+    def _crawl_via_sitemap_if_larger(
+        self,
+        products: list[Product],
+        *,
+        limit: int | None,
+        max_pages: int | None,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+    ) -> list[Product]:
+        """Nếu sitemap có nhiều handle hơn batch vừa lấy → crawl hết qua sitemap."""
+        if limit is not None:
+            return products
+        sitemap_total = self._sitemap_handle_count(max_sitemaps=max_pages)
+        if sitemap_total <= len(products):
+            return products
+        workers = max_workers
+        if sitemap_total > 5000:
+            workers = max(workers, 32)
+        if sitemap_total > 20000:
+            workers = max(workers, 64)
+        return self._crawl_via_sitemap(
+            limit=limit,
+            max_sitemaps=max_pages,
+            max_workers=workers,
+            progress_callback=progress_callback,
+        )
 
     def _fetch_product_by_handle_graphql(self, handle: str) -> Product | None:
         try:
