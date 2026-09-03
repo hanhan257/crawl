@@ -463,9 +463,8 @@ class ShopifyCrawler(BaseCrawler):
 
     def _public_products_json_ok(self) -> bool:
         """True nếu /products.json còn dùng được (một số shop Shopify chặn 429)."""
-        cached = getattr(self, "_public_json_ok", None)
-        if cached is not None:
-            return cached
+        if getattr(self, "_public_json_ok", None) is True:
+            return True
         ok = self._products_json_probe(self.session, self.shop_url)
         if not ok and self.proxy_rotator.has_proxy:
             direct = create_http_session(None)
@@ -476,13 +475,13 @@ class ShopifyCrawler(BaseCrawler):
         elif not ok and self.proxy_rotator.count > 1:
             self.refresh_session(rotate=True)
             ok = self._products_json_probe(self.session, self.shop_url)
-        self._public_json_ok = ok
+        if ok:
+            self._public_json_ok = True
         return ok
 
     def _graphql_available(self) -> bool:
-        cached = getattr(self, "_graphql_ok", None)
-        if cached is not None:
-            return cached
+        if getattr(self, "_graphql_ok", None) is True:
+            return True
         try:
             payload = self._graphql_request(
                 "query { products(first: 1) { edges { node { handle } } } }"
@@ -490,7 +489,8 @@ class ShopifyCrawler(BaseCrawler):
             ok = bool(payload.get("data", {}).get("products"))
         except (requests.RequestException, ValueError, KeyError):
             ok = False
-        self._graphql_ok = ok
+        if ok:
+            self._graphql_ok = True
         return ok
 
     def _graphql_request(
@@ -583,6 +583,12 @@ class ShopifyCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        # Probe lại — có thể vừa bị 429 từ bước nhận diện / crawl trước.
+        if getattr(self, "_public_json_ok", None) is not True:
+            self._public_json_ok = None
+        if getattr(self, "_graphql_ok", None) is not True:
+            self._graphql_ok = None
+
         # GraphQL catalog đầy đủ hơn products.json (hết page ~21) và hỗ trợ tới ~25k SP.
         if self._graphql_available():
             try:
@@ -610,15 +616,17 @@ class ShopifyCrawler(BaseCrawler):
         # PopFanPrints: /products.json 429 — crawl sitemap + GraphQL theo handle
         # (không paginate products GraphQL: dễ throttle/đứng ~7–8k SP).
         if not self._public_products_json_ok():
-            if self._graphql_available():
-                return self._crawl_via_sitemap(
-                    limit=limit,
-                    max_sitemaps=max_pages,
-                    max_workers=max_workers,
-                    progress_callback=progress_callback,
-                )
+            products = self._crawl_via_sitemap(
+                limit=limit,
+                max_sitemaps=max_pages,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+            if products:
+                return products
             raise requests.RequestException(
-                "Shopify /products.json bị chặn (429) và GraphQL cũng không dùng được."
+                "Shopify /products.json bị chặn (429) và GraphQL cũng không dùng được. "
+                "Bật **Proxy**, giảm luồng crawl (8–32), đợi vài phút rồi thử lại."
             )
 
         per_page = 250
@@ -626,13 +634,15 @@ class ShopifyCrawler(BaseCrawler):
             first_batch = self._fetch_public_page(1)
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
-            if status == 429 and self._graphql_available():
-                return self._crawl_via_sitemap(
+            if status == 429:
+                products = self._crawl_via_sitemap(
                     limit=limit,
                     max_sitemaps=max_pages,
                     max_workers=max_workers,
                     progress_callback=progress_callback,
                 )
+                if products:
+                    return products
             raise
 
         estimated_pages = max_pages
