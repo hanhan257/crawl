@@ -413,8 +413,15 @@ class TrendsiCrawler(BaseCrawler):
 
     @classmethod
     def _clean_description_html(cls, html: str) -> str:
-        cleaned = re.sub(r"<li>\s*Imported\s*</li>", "", html, flags=re.I)
+        cleaned = re.sub(
+            r"</li>\s*<li>\s*Imported\s*</li>\s*</ul>",
+            "</ul>",
+            html,
+            flags=re.I,
+        )
+        cleaned = re.sub(r"<li>\s*Imported\s*</li>", "", cleaned, flags=re.I)
         cleaned = re.sub(r"<ul>\s*</ul>", "", cleaned, flags=re.I)
+        cleaned = re.sub(r"</li>\s*</ul>\s*$", "</ul>", cleaned, flags=re.I)
         return cleaned.strip()
 
     @classmethod

@@ -583,6 +583,36 @@ class ShopifyCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        # GraphQL catalog đầy đủ hơn products.json (hết page ~21) và hỗ trợ tới ~25k SP.
+        if self._graphql_available():
+            try:
+                products = self._crawl_graphql(
+                    limit=limit,
+                    max_pages=max_pages,
+                    progress_callback=progress_callback,
+                )
+                if limit is not None:
+                    return products
+                if products and len(products) < 24_500:
+                    return products
+                sitemap_handles = self._discover_handles_from_sitemaps()
+                if len(sitemap_handles) > len(products):
+                    return self._crawl_via_sitemap(
+                        limit=limit,
+                        max_sitemaps=max_pages,
+                        max_workers=max_workers,
+                        progress_callback=progress_callback,
+                    )
+                return products
+            except requests.RequestException as exc:
+                if "25000" in str(exc):
+                    return self._crawl_via_sitemap(
+                        limit=limit,
+                        max_sitemaps=max_pages,
+                        max_workers=max_workers,
+                        progress_callback=progress_callback,
+                    )
+
         # PopFanPrints: /products.json 429 — crawl sitemap + GraphQL theo handle
         # (không paginate products GraphQL: dễ throttle/đứng ~7–8k SP).
         if not self._public_products_json_ok():
