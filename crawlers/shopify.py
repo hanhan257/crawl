@@ -13,7 +13,7 @@ import requests
 
 from crawlers.base import BaseCrawler
 from models.product import Product
-from utils.crawl_parallel import fetch_pages_in_waves
+from utils.crawl_parallel import API_LIST_WAVE_SIZE, fetch_pages_in_waves
 from utils.description_html import (
     extract_shopify_description_from_html,
     shopify_description_from_item,
@@ -598,14 +598,14 @@ class ShopifyCrawler(BaseCrawler):
                     max_workers=max_workers,
                     progress_callback=progress_callback,
                 )
-            except requests.RequestException as exc:
-                if "25000" in str(exc):
-                    return self._crawl_via_sitemap(
-                        limit=limit,
-                        max_sitemaps=max_pages,
-                        max_workers=max(max_workers, 64),
-                        progress_callback=progress_callback,
-                    )
+            except requests.RequestException:
+                # GraphQL lỗi/throttle → sitemap + batch handle (tránh products.json đứng ở page 2).
+                return self._crawl_via_sitemap(
+                    limit=limit,
+                    max_sitemaps=max_pages,
+                    max_workers=max_workers,
+                    progress_callback=progress_callback,
+                )
 
         # PopFanPrints: /products.json 429 — crawl sitemap + GraphQL theo handle
         # (không paginate products GraphQL: dễ throttle/đứng ~7–8k SP).
@@ -639,12 +639,16 @@ class ShopifyCrawler(BaseCrawler):
         if estimated_pages is None and limit is not None:
             estimated_pages = max(1, (limit + per_page - 1) // per_page)
 
+        list_workers = max_workers
+        if list_workers > API_LIST_WAVE_SIZE:
+            list_workers = API_LIST_WAVE_SIZE
+
         raw_items, _pages = fetch_pages_in_waves(
             self._fetch_public_page,
             per_page=per_page,
             first_batch=first_batch,
             max_pages=max_pages,
-            max_workers=max_workers,
+            max_workers=list_workers,
             limit=limit,
             progress_callback=progress_callback,
             estimated_pages=estimated_pages,

@@ -255,6 +255,9 @@ def fetch_pages_in_waves(
         pages_left = _remaining_pages(limit, per_page, len(_merge_page_batches(page_batches)))
         if pages_left is not None:
             wave_size = min(wave_size, pages_left)
+        # Chưa biết tổng trang — chỉ lấy từng trang; tránh 500 request page 2..501 cùng lúc.
+        if end_page is None:
+            wave_size = 1
 
         wave_pages = list(range(next_page, next_page + wave_size))
         if max_pages:
