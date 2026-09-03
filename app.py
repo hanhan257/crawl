@@ -3171,7 +3171,13 @@ def render_url_preview(
                     default_cat = first_slug
             if platform == "shopify" and probe.get("total_products"):
                 total = int(probe["total_products"])
-                if total > 5000 and int(st.session_state.get("crawl_limit") or 0) == 0:
+                has_proxy = bool((st.session_state.get("proxy_url") or "").strip())
+                if not has_proxy:
+                    st.session_state["crawl_workers"] = min(
+                        int(st.session_state.get("crawl_workers") or 500),
+                        32,
+                    )
+                elif total > 5000 and int(st.session_state.get("crawl_limit") or 0) == 0:
                     st.session_state["crawl_workers"] = max(
                         int(st.session_state.get("crawl_workers") or 500),
                         64 if total > 20000 else 32,
