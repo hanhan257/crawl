@@ -3142,7 +3142,8 @@ def render_url_preview(
             if total and int(total) > 5000:
                 st.caption(
                     f"Shop Shopify lớn (~**{int(total):,}** SP) — để **Giới hạn=0** · "
-                    f"**Số trang=0** để tool tự lấy hết (GraphQL + sitemap).".replace(",", ".")
+                    f"**Số trang=0**. Tool crawl qua **sitemap** (~1–3 phút, "
+                    f"32–64 luồng; bật **Proxy** nếu bị 429).".replace(",", ".")
                 )
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
@@ -3175,7 +3176,7 @@ def render_url_preview(
                 if not has_proxy:
                     st.session_state["crawl_workers"] = min(
                         int(st.session_state.get("crawl_workers") or 500),
-                        32,
+                        64 if total > 10000 else 32,
                     )
                 elif total > 5000 and int(st.session_state.get("crawl_limit") or 0) == 0:
                     st.session_state["crawl_workers"] = max(

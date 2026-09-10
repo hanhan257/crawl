@@ -31,6 +31,8 @@ DEFAULT_USER_AGENT = (
 GRAPHQL_PATH = "/api/2024-10/graphql.json"
 GRAPHQL_PAGE_SIZE = 50
 GRAPHQL_HANDLE_BATCH = 5
+# Shop lớn: sitemap + GraphQL batch song song nhanh hơn paginate catalog GraphQL (~50 SP/trang).
+SITEMAP_FIRST_MIN_PRODUCTS = 5000
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 GID_NUMERIC = re.compile(r"/(\d+)\s*$")
 PRODUCT_PATH = re.compile(r"/products/([^/?#]+)", re.I)
@@ -588,6 +590,23 @@ class ShopifyCrawler(BaseCrawler):
             self._public_json_ok = None
         if getattr(self, "_graphql_ok", None) is not True:
             self._graphql_ok = None
+
+        if limit is None or limit > 2500:
+            sitemap_total = self._sitemap_handle_count(max_sitemaps=max_pages)
+            if sitemap_total >= SITEMAP_FIRST_MIN_PRODUCTS and (
+                limit is None or limit >= sitemap_total
+            ):
+                workers = max_workers
+                if sitemap_total > 5000:
+                    workers = max(workers, 32)
+                if sitemap_total > 20000:
+                    workers = max(workers, 64)
+                return self._crawl_via_sitemap(
+                    limit=limit,
+                    max_sitemaps=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
 
         # GraphQL catalog đầy đủ hơn products.json (hết page ~21) và hỗ trợ tới ~25k SP.
         if self._graphql_available():
