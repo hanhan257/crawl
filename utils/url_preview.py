@@ -27,7 +27,8 @@ CRAWL_TYPE_LABELS = {
 CRAWL_HINTS = {
     ("shopify", "shop"): (
         "Link trang chủ → /products.json (tối đa ~25k SP). "
-        "Shop lớn / 429: dùng chế độ **Crawl theo sitemap** hoặc dán /sitemap.xml"
+        "Shop lớn / 429: dùng chế độ **Crawl theo sitemap** hoặc dán /sitemap.xml. "
+        "**Shopify Hydrogen (Remix):** crawl catalog athlete (vd. influxermerch.com)."
     ),
     ("shopify", "sitemap"): (
         "Sitemap → lấy toàn bộ SP (vượt giới hạn 25k của /products.json). "

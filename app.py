@@ -2462,6 +2462,14 @@ def run_crawl_only(
         )
         rb_platform = crawl_platform == "redbubble"
         workers = int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))
+        if crawl_platform == "shopify":
+            from crawlers.shopify_hydrogen import ShopifyHydrogenCrawler
+
+            st.session_state.crawl_shopify_hydrogen = (
+                ShopifyHydrogenCrawler.is_hydrogen_store(crawl_url)
+            )
+        else:
+            st.session_state.crawl_shopify_hydrogen = False
 
         if target_preview and crawl_platform != "redbubble":
             progress_bar = st.progress(0.0, text="Đang chuẩn bị crawl…")
@@ -2496,6 +2504,10 @@ def run_crawl_only(
                     ):
                         label = (
                             f"Sitemap {current}/{total} · {matched} SP · {workers} luồng"
+                        )
+                    elif st.session_state.get("crawl_shopify_hydrogen"):
+                        label = (
+                            f"Athletes {current}/{total} · {matched} SP · {workers} luồng"
                         )
                     else:
                         label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
@@ -3138,13 +3150,21 @@ def render_url_preview(
         elif platform == "trendsi" and probe.get("crawl_type") == "brand":
             st.caption("Brand Trendsi — crawl đúng link `/brand?...`, không lấy cả catalog.")
         elif platform == "shopify" and probe.get("crawl_type") == "shop":
-            total = probe.get("total_products")
-            if total and int(total) > 5000:
+            probe_msg = str(probe.get("message") or "")
+            if "Hydrogen" in probe_msg:
                 st.caption(
-                    f"Shop Shopify lớn (~**{int(total):,}** SP) — để **Giới hạn=0** · "
-                    f"**Số trang=0**. Tool crawl qua **sitemap** (~1–3 phút, "
-                    f"32–64 luồng; bật **Proxy** nếu bị 429).".replace(",", ".")
+                    "**Shopify Hydrogen (Remix)** — crawl catalog athlete "
+                    "(~40–50 SP/athlete). Để **Giới hạn=0**, **Luồng=32**, "
+                    "có thể mất **30–90 phút** với shop lớn."
                 )
+            else:
+                total = probe.get("total_products")
+                if total and int(total) > 5000:
+                    st.caption(
+                        f"Shop Shopify lớn (~**{int(total):,}** SP) — để **Giới hạn=0** · "
+                        f"**Số trang=0**. Tool crawl qua **sitemap** (~1–3 phút, "
+                        f"32–64 luồng; bật **Proxy** nếu bị 429).".replace(",", ".")
+                    )
         elif not probe.get("categories") and probe.get("crawl_type") == "shop":
             st.caption("Shop không public danh mục — crawl **Tất cả shop**.")
         elif probe.get("crawl_type") == "search" and probe.get("url_category_slug"):

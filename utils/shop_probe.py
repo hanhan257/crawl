@@ -803,9 +803,34 @@ def _probe_shopify(
     url_category: str | None,
 ) -> ShopProbeResult:
     from crawlers.shopify import ShopifyCrawler
+    from crawlers.shopify_hydrogen import ShopifyHydrogenCrawler
 
     host = urlparse(base_url).netloc
     token = credentials.shopify_token_for(host)
+    is_hydrogen = (
+        not token
+        and target.crawl_type == "shop"
+        and ShopifyHydrogenCrawler.is_hydrogen_store(base_url)
+    )
+
+    if is_hydrogen:
+        athlete_count = ShopifyHydrogenCrawler.estimate_athlete_count(base_url)
+        total = None
+        if athlete_count is not None:
+            message = f"**{athlete_count}** athletes · Shopify Hydrogen"
+        else:
+            message = "**?** athletes · Shopify Hydrogen (catalog lớn)"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type=target.crawl_type,
+            base_url=base_url.rstrip("/"),
+            message=message,
+            total_products=total,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
     crawler = ShopifyCrawler(
         shop_url=base_url,
         access_token=token,

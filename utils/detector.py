@@ -239,7 +239,15 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_generic() -> str | None:
         try:
-            if GenericWebCrawler.site_supports(base, session=fresh_session()):
+            session = fresh_session()
+            home = session.get(base, timeout=10)
+            if home.status_code == 200:
+                text = home.text
+                if "cdn.shopify.com" in text and (
+                    "__remixContext" in text or "oxygen-v2" in text
+                ):
+                    return None
+            if GenericWebCrawler.site_supports(base, session=session):
                 return "generic-web"
         except Exception:
             pass
@@ -266,16 +274,20 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
-    checks = (
+    priority_checks = (
         check_shopify,
         check_shopbase,
         check_woo_store,
         check_wp_json,
         check_teemill,
         check_magento,
-        check_generic,
-        check_html_signals,
     )
+    for fn in priority_checks:
+        platform = fn()
+        if platform:
+            return platform
+
+    checks = (check_generic, check_html_signals)
     with ThreadPoolExecutor(max_workers=len(checks)) as executor:
         futures = [executor.submit(fn) for fn in checks]
         for future in as_completed(futures):

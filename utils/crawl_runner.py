@@ -206,17 +206,29 @@ def run_auto_crawl(
 
         token = credentials.shopify_token_for(host)
 
-        crawler = ShopifyCrawler(
+        shop_url = target.base_url or target.url
 
-            shop_url=target.base_url or target.url,
+        from crawlers.shopify_hydrogen import ShopifyHydrogenCrawler
 
-            access_token=token,
-
-            use_public_api=not token,
-
-            proxy_url=raw_proxy,
-
+        use_hydrogen = (
+            not token
+            and target.crawl_type == "shop"
+            and ShopifyHydrogenCrawler.is_hydrogen_store(shop_url)
         )
+
+        if use_hydrogen:
+            crawler = ShopifyHydrogenCrawler(
+                shop_url=shop_url,
+                proxy_url=raw_proxy,
+                max_workers=workers,
+            )
+        else:
+            crawler = ShopifyCrawler(
+                shop_url=shop_url,
+                access_token=token,
+                use_public_api=not token,
+                proxy_url=raw_proxy,
+            )
         if partial_callback is not None:
             crawler.partial_callback = partial_callback
 
@@ -225,7 +237,18 @@ def run_auto_crawl(
 
         try:
 
-            if target.crawl_type == "product" and target.handle:
+            if use_hydrogen:
+                if target.crawl_type != "shop":
+                    raise CrawlError(
+                        "Shopify Hydrogen (Remix): chỉ hỗ trợ crawl toàn bộ shop (/browse/athletes)."
+                    )
+                products = crawler.crawl(
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
+            elif target.crawl_type == "product" and target.handle:
 
                 products = crawler.crawl_product(target.handle)
 
