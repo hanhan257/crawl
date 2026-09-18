@@ -218,7 +218,7 @@ def render_trendsi_export_selector() -> str | None:
         format_func=lambda key: options[key],
         index=None,
         key="export_format",
-        horizontal=True,
+        horizontal=False,
     )
     if not export_format:
         st.caption(
