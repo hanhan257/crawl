@@ -59,8 +59,7 @@ def web_feed_rows_for_product(
         row = dict(base)
         color = str(swatch.get("color") or "").strip()
         row["color"] = color
-        if color and product.title:
-            row["title"] = f"{product.title} - {color}"
+        # Màu ở cột color riêng — title giữ nguyên (Trendsi / web thuần)
         if swatch.get("url"):
             row[WEB_FEED_URL_COLUMN] = str(swatch["url"])
         if swatch.get("image_url"):

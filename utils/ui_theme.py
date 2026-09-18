@@ -577,8 +577,8 @@ def render_app_hero(
             "<strong>Quy trình Trendsi:</strong> Bước 1 Crawl brand / category / SP → "
             "<strong>Bước 2 chọn file xuất</strong> → "
             "Đổi giá / title → Xem trước → "
-            "<strong>Xuất web thuần / WooCommerce / WordPress</strong> "
-            "(Size &amp; Fit HTML trong description)"
+            "<strong>Xuất web thuần / WooCommerce / Shopify</strong> "
+            "(Size &amp; Fit HTML trong description; Shopify có cột Color metafield)"
         )
         badge = "Trendsi"
     else:

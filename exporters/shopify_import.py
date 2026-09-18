@@ -15,7 +15,17 @@ from utils.price_format import format_export_price
 if TYPE_CHECKING:
     from utils.export_progress import ExportProgress
 
-SHOPIFY_COLUMNS = [
+COLOR_SWATCH_TYPE = "color_swatch"
+SHOPIFY_URL_COLUMN = "Product URL"
+SHOPIFY_TEMPLATE_FILE = (
+    Path(__file__).resolve().parents[1] / "output" / "fileShopify.txt"
+)
+
+METAFIELD_COLOR = "Color (product.metafields.shopify.color-pattern)"
+METAFIELD_MATERIAL = "Material (product.metafields.shopify.material)"
+
+# Fallback nếu chưa có fileShopify.txt
+SHOPIFY_COLUMNS_FALLBACK = [
     "Handle",
     "Title",
     "Body (HTML)",
@@ -26,10 +36,13 @@ SHOPIFY_COLUMNS = [
     "Published",
     "Option1 Name",
     "Option1 Value",
+    "Option1 Linked To",
     "Option2 Name",
     "Option2 Value",
+    "Option2 Linked To",
     "Option3 Name",
     "Option3 Value",
+    "Option3 Linked To",
     "Variant SKU",
     "Variant Grams",
     "Variant Inventory Tracker",
@@ -40,6 +53,10 @@ SHOPIFY_COLUMNS = [
     "Variant Compare At Price",
     "Variant Requires Shipping",
     "Variant Taxable",
+    "Unit Price Total Measure",
+    "Unit Price Total Measure Unit",
+    "Unit Price Base Measure",
+    "Unit Price Base Measure Unit",
     "Variant Barcode",
     "Image Src",
     "Image Position",
@@ -47,16 +64,39 @@ SHOPIFY_COLUMNS = [
     "Gift Card",
     "SEO Title",
     "SEO Description",
+    METAFIELD_COLOR,
+    "Drinkware material (product.metafields.shopify.drinkware-material)",
+    "Food storage material (product.metafields.shopify.food-storage-material)",
+    METAFIELD_MATERIAL,
+    "Tableware material (product.metafields.shopify.tableware-material)",
     "Variant Image",
     "Variant Weight Unit",
+    "Variant Tax Code",
+    "Cost per item",
     "Status",
 ]
 
-SHOPIFY_URL_COLUMN = "Product URL"
+_cached_columns: list[str] | None = None
+
+
+def _load_template_columns() -> list[str] | None:
+    if not SHOPIFY_TEMPLATE_FILE.is_file():
+        return None
+    try:
+        with SHOPIFY_TEMPLATE_FILE.open(encoding="utf-8-sig", newline="") as fh:
+            row = next(csv.reader(fh, delimiter="\t"), None)
+        if row and row[0] == "Handle":
+            return row
+    except OSError:
+        pass
+    return None
 
 
 def shopify_columns(*, include_url: bool = False) -> list[str]:
-    columns = list(SHOPIFY_COLUMNS)
+    global _cached_columns
+    if _cached_columns is None:
+        _cached_columns = _load_template_columns() or list(SHOPIFY_COLUMNS_FALLBACK)
+    columns = list(_cached_columns)
     if include_url and SHOPIFY_URL_COLUMN not in columns:
         columns.append(SHOPIFY_URL_COLUMN)
     return columns
@@ -82,14 +122,44 @@ def _join_tags(tags: list[str]) -> str:
     return ", ".join(tags)
 
 
+def _color_swatches(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        v
+        for v in variants
+        if isinstance(v, dict) and v.get("_type") == COLOR_SWATCH_TYPE
+    ]
+
+
+def _color_metafield_value(swatches: list[dict[str, Any]], product: Product) -> str:
+    colors: list[str] = []
+    seen: set[str] = set()
+    for swatch in swatches:
+        color = str(swatch.get("color") or "").strip().lower()
+        if color and color not in seen:
+            seen.add(color)
+            colors.append(color)
+    if colors:
+        return "; ".join(colors)
+    if product.gmc_color:
+        parts = re.split(r"[,;/]", product.gmc_color)
+        return "; ".join(p.strip().lower() for p in parts if p.strip())
+    return ""
+
+
 def _is_priced_variant(variant: dict[str, Any]) -> bool:
+    if variant.get("_type") == COLOR_SWATCH_TYPE:
+        return True
     if variant.get("name") and not variant.get("price"):
         return False
     return any(key in variant for key in ("price", "sku", "id", "title"))
 
 
 def _attribute_defs(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [v for v in variants if v.get("name") and not v.get("price")]
+    return [
+        v
+        for v in variants
+        if v.get("name") and not v.get("price") and v.get("_type") != COLOR_SWATCH_TYPE
+    ]
 
 
 def _variant_options(variants: list[dict[str, Any]]) -> tuple[str, str, str, str, str, str]:
@@ -123,6 +193,8 @@ def _shopify_option_fields(
     variant: dict[str, Any],
     attr_defs: list[dict[str, Any]],
     fallback: tuple[str, str, str, str, str, str],
+    *,
+    first_variant: bool,
 ) -> dict[str, str]:
     names = _shopify_option_names(attr_defs, variant)
     while len(names) < 3:
@@ -135,18 +207,18 @@ def _shopify_option_fields(
     ]
     if any(values):
         return {
-            "Option1 Name": names[0],
+            "Option1 Name": names[0] if first_variant else "",
             "Option1 Value": values[0],
-            "Option2 Name": names[1],
+            "Option2 Name": names[1] if first_variant else "",
             "Option2 Value": values[1],
-            "Option3 Name": names[2],
+            "Option3 Name": names[2] if first_variant else "",
             "Option3 Value": values[2],
         }
 
     title = str(variant.get("title") or "").strip()
     if title and title.lower() not in {"default title", "default"}:
         return {
-            "Option1 Name": "Title",
+            "Option1 Name": "Title" if first_variant else "",
             "Option1 Value": title,
             "Option2 Name": "",
             "Option2 Value": "",
@@ -155,13 +227,120 @@ def _shopify_option_fields(
         }
 
     return {
-        "Option1 Name": fallback[0],
+        "Option1 Name": fallback[0] if first_variant else "",
         "Option1 Value": fallback[1],
-        "Option2 Name": fallback[2],
+        "Option2 Name": fallback[2] if first_variant else "",
         "Option2 Value": fallback[3],
-        "Option3 Name": fallback[4],
+        "Option3 Name": fallback[4] if first_variant else "",
         "Option3 Value": fallback[5],
     }
+
+
+def _product_base_fields(
+    product: Product,
+    handle: str,
+    *,
+    include_url: bool,
+    color_metafield: str = "",
+) -> dict[str, str]:
+    tags = _join_tags(product.tags)
+    category = ", ".join(product.categories) if product.categories else ""
+    row: dict[str, str] = {
+        "Handle": handle,
+        "Title": product.title or "",
+        "Body (HTML)": _html_body(product.description),
+        "Vendor": product.vendor or "",
+        "Product Category": category,
+        "Type": product.product_type or "",
+        "Tags": tags,
+        "Published": "TRUE",
+        "Gift Card": "FALSE",
+        "SEO Title": product.title or "",
+        "Status": "active",
+        "Variant Weight Unit": "kg",
+    }
+    if include_url:
+        row[SHOPIFY_URL_COLUMN] = (product.url or "").strip()
+    if color_metafield and METAFIELD_COLOR in shopify_columns():
+        row[METAFIELD_COLOR] = color_metafield
+    return row
+
+
+def _variant_common_fields(
+    variant: dict[str, Any],
+    product: Product,
+) -> dict[str, str]:
+    return {
+        "Variant SKU": str(variant.get("sku") or product.sku or ""),
+        "Variant Inventory Tracker": "",
+        "Variant Inventory Qty": "100" if variant.get("available", True) else "0",
+        "Variant Inventory Policy": "deny",
+        "Variant Fulfillment Service": "manual",
+        "Variant Price": format_export_price(variant.get("price") or product.price),
+        "Variant Requires Shipping": "TRUE",
+        "Variant Taxable": "TRUE",
+        "Variant Weight Unit": "kg",
+    }
+
+
+def _shopify_rows_from_color_swatches(
+    product: Product,
+    handle: str,
+    swatches: list[dict[str, Any]],
+    *,
+    include_url: bool,
+) -> list[dict[str, str]]:
+    color_meta = _color_metafield_value(swatches, product)
+    rows: list[dict[str, str]] = []
+    used_images: set[str] = set()
+
+    for index, swatch in enumerate(swatches):
+        row = _blank_shopify_row(include_url=include_url)
+        if index == 0:
+            row.update(_product_base_fields(product, handle, include_url=include_url, color_metafield=color_meta))
+            if product.image_urls:
+                row["Image Src"] = product.image_urls[0]
+                row["Image Position"] = "1"
+                row["Image Alt Text"] = product.title or ""
+                used_images.add(product.image_urls[0])
+        else:
+            row["Handle"] = handle
+
+        color = str(swatch.get("color") or "").strip()
+        if index == 0:
+            row["Option1 Name"] = "Color"
+        row["Option1 Value"] = color
+        row.update(_variant_common_fields(swatch, product))
+
+        image_url = str(swatch.get("image_url") or "").strip()
+        if image_url:
+            row["Variant Image"] = image_url
+            if index == 0 and not row.get("Image Src"):
+                row["Image Src"] = image_url
+                row["Image Position"] = "1"
+                row["Image Alt Text"] = product.title or ""
+            elif index > 0 and image_url not in used_images:
+                row["Image Src"] = image_url
+                row["Image Position"] = str(index + 1)
+                row["Image Alt Text"] = product.title or ""
+                used_images.add(image_url)
+
+        rows.append(row)
+
+    start_pos = len(used_images) + 1
+    for position, image_url in enumerate(product.image_urls, start=1):
+        if image_url in used_images:
+            continue
+        image_row = _blank_shopify_row(include_url=include_url)
+        image_row["Handle"] = handle
+        image_row["Image Src"] = image_url
+        image_row["Image Position"] = str(start_pos)
+        image_row["Image Alt Text"] = product.title or ""
+        rows.append(image_row)
+        used_images.add(image_url)
+        start_pos += 1
+
+    return rows
 
 
 def product_to_shopify_rows(
@@ -172,6 +351,12 @@ def product_to_shopify_rows(
 ) -> list[dict[str, str]]:
     product = apply_export_rules(product, rules)
     handle = _slugify_handle(product.title, product.id)
+    swatches = _color_swatches(product.variants or [])
+    if swatches:
+        return _shopify_rows_from_color_swatches(
+            product, handle, swatches, include_url=include_url
+        )
+
     tags = _join_tags(product.tags)
     category = ", ".join(product.categories) if product.categories else ""
     priced_variants = [v for v in product.variants if _is_priced_variant(v)]
@@ -198,10 +383,13 @@ def product_to_shopify_rows(
                         "Gift Card": "FALSE",
                         "SEO Title": product.title,
                         "Status": "active",
+                        "Variant Weight Unit": "kg",
                     }
                 )
                 if include_url:
                     row[SHOPIFY_URL_COLUMN] = product_url
+                if product.gmc_color and METAFIELD_COLOR in shopify_columns():
+                    row[METAFIELD_COLOR] = _color_metafield_value([], product)
                 if product.image_urls:
                     row["Image Src"] = product.image_urls[0]
                     row["Image Position"] = "1"
@@ -209,16 +397,17 @@ def product_to_shopify_rows(
             else:
                 row["Handle"] = handle
 
-            row.update(_shopify_option_fields(variant, attr_defs, fallback_options))
-            row["Variant SKU"] = str(variant.get("sku") or product.sku or "")
-            row["Variant Inventory Tracker"] = ""
-            row["Variant Inventory Qty"] = "100" if variant.get("available", True) else "0"
-            row["Variant Inventory Policy"] = "deny"
-            row["Variant Fulfillment Service"] = "manual"
-            row["Variant Price"] = format_export_price(variant.get("price") or product.price)
-            row["Variant Requires Shipping"] = "TRUE"
-            row["Variant Taxable"] = "TRUE"
-            row["Variant Weight Unit"] = "g"
+            row.update(
+                _shopify_option_fields(
+                    variant,
+                    attr_defs,
+                    fallback_options,
+                    first_variant=index == 0,
+                )
+            )
+            row.update(_variant_common_fields(variant, product))
+            if variant.get("image_url"):
+                row["Variant Image"] = str(variant["image_url"])
             rows.append(row)
     else:
         row = _blank_shopify_row(include_url=include_url)
@@ -235,10 +424,13 @@ def product_to_shopify_rows(
                 "Gift Card": "FALSE",
                 "SEO Title": product.title,
                 "Status": "active",
+                "Variant Weight Unit": "kg",
             }
         )
         if include_url:
             row[SHOPIFY_URL_COLUMN] = product_url
+        if product.gmc_color and METAFIELD_COLOR in shopify_columns():
+            row[METAFIELD_COLOR] = _color_metafield_value([], product)
         row.update(
             {
                 "Option1 Name": fallback_options[0],
@@ -255,10 +447,6 @@ def product_to_shopify_rows(
                 "Variant Price": format_export_price(product.price),
                 "Variant Requires Shipping": "TRUE",
                 "Variant Taxable": "TRUE",
-                "Gift Card": "FALSE",
-                "SEO Title": product.title,
-                "Variant Weight Unit": "g",
-                "Status": "active",
             }
         )
         if product.image_urls:

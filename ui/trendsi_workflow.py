@@ -34,6 +34,7 @@ TRENDSI_LINK_EXAMPLES: dict[str, str] = {
 TRENDSI_EXPORT_FORMATS = [
     "web-feed-csv",
     "woocommerce-csv",
+    "shopify-csv",
 ]
 
 
@@ -199,12 +200,16 @@ def render_trendsi_crawl_panel(
 
 
 def render_trendsi_export_selector() -> str | None:
-    """Bước 2 — xuất CSV web thuần / Woo / WP (không dùng feed GMC)."""
+    """Bước 2 — xuất CSV web thuần / Woo / Shopify (không dùng feed GMC)."""
     st.markdown("### Bước 2 · Chọn file xuất")
-    st.caption("Trendsi xuất CSV import web — không xuất file feed GMC.")
+    st.caption(
+        "Trendsi xuất CSV import web / Woo / Shopify (template `fileShopify.txt`) — "
+        "không xuất file feed GMC."
+    )
     options = {
         "web-feed-csv": "CSV feed web thuần",
         "woocommerce-csv": "CSV import WooCommerce / WordPress",
+        "shopify-csv": "CSV import Shopify",
     }
 
     export_format = st.radio(
