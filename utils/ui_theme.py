@@ -239,10 +239,17 @@ button[kind="header"] {
     padding: 0 !important;
     gap: 0.42rem !important;
 }
-/* Ẩn vòng tròn radio — chỉ dùng pill text cho rõ */
-[data-testid="stSidebar"] .stRadio [data-baseweb="radio"],
-[data-testid="stSidebar"] .stRadio label > div:first-child {
+/* Ẩn vòng tròn radio — giữ nguyên text label */
+[data-testid="stSidebar"] .stRadio [data-baseweb="radio"] {
     display: none !important;
+}
+[data-testid="stSidebar"] .stRadio input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
 }
 [data-testid="stSidebar"] .stRadio label {
     background: var(--sidebar-item-bg) !important;
