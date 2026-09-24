@@ -11,21 +11,20 @@ PASTEL_PINK_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-    --rose-50: #FFF0FC;
-    --rose-100: #FFD6F5;
-    --rose-200: #FFAEEC;
-    --rose-300: #FF6EC7;
-    --rose-400: #FF1493;
-    --rose-500: #FF10F0;
-    --rose-600: #E000CC;
-    --ink: #2A0A24;
-    --ink-muted: #8A4578;
+    --rose-50: #FBF2F5;
+    --rose-100: #F3DCE6;
+    --rose-200: #E8B8CA;
+    --rose-300: #D992AE;
+    --rose-400: #C97895;
+    --rose-500: #B85C7A;
+    --rose-600: #9E4866;
+    --ink: #3D2430;
+    --ink-muted: #7A5568;
     --surface: #FFFFFF;
-    --canvas: #FFF5FD;
-    --shadow-sm: 0 1px 4px rgba(255, 16, 240, 0.14);
-    --shadow-md: 0 8px 32px rgba(255, 20, 147, 0.2);
-    --shadow-btn: 0 4px 20px rgba(255, 16, 240, 0.48);
-    --neon-glow: 0 0 14px rgba(255, 16, 240, 0.35);
+    --canvas: #FAF4F7;
+    --shadow-sm: 0 1px 4px rgba(61, 36, 48, 0.08);
+    --shadow-md: 0 8px 28px rgba(184, 92, 122, 0.14);
+    --shadow-btn: 0 4px 16px rgba(158, 72, 102, 0.28);
     --radius: 16px;
     --radius-sm: 12px;
     /* aliases — giữ tương thích class cũ */
@@ -36,7 +35,7 @@ PASTEL_PINK_CSS = """
     --pink-400: var(--rose-400);
     --pink-500: var(--rose-500);
     --pink-600: var(--rose-600);
-    --pink-700: #C400B8;
+    --pink-700: #853A52;
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
@@ -50,8 +49,8 @@ html, body, [class*="css"] {
 .stApp {
     background-color: var(--canvas);
     background-image:
-        radial-gradient(circle at 12% 8%, rgba(255, 16, 240, 0.1) 0%, transparent 42%),
-        radial-gradient(circle at 88% 92%, rgba(255, 20, 147, 0.08) 0%, transparent 38%);
+        radial-gradient(circle at 12% 8%, rgba(184, 92, 122, 0.09) 0%, transparent 42%),
+        radial-gradient(circle at 88% 92%, rgba(201, 120, 149, 0.07) 0%, transparent 38%);
     font-family: "Outfit", "Segoe UI", sans-serif;
     color: var(--ink-muted);
 }
@@ -109,7 +108,7 @@ button[kind="header"] {
     transition: none !important;
     background: var(--surface) !important;
     border-right: none !important;
-    border-left: 4px solid var(--rose-500) !important;
+    border-left: 4px solid var(--rose-400) !important;
     box-shadow: var(--shadow-md) !important;
     cursor: default !important;
 }
@@ -167,18 +166,18 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stRadio label[data-checked="true"],
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
-    background: linear-gradient(135deg, var(--rose-400), var(--rose-500)) !important;
-    border-color: var(--rose-500) !important;
+    background: var(--rose-500) !important;
+    border-color: var(--rose-600) !important;
     color: #fff !important;
     font-weight: 600 !important;
-    box-shadow: var(--shadow-btn), var(--neon-glow) !important;
+    box-shadow: var(--shadow-btn) !important;
 }
 
 /* ── Hero ── */
 .app-hero {
     background: var(--surface);
     border: 1px solid var(--rose-100);
-    border-top: 3px solid var(--rose-500);
+    border-top: 3px solid var(--rose-400);
     border-radius: var(--radius);
     padding: 1.4rem 1.65rem 1.25rem;
     margin-bottom: 1.1rem;
@@ -253,7 +252,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* ── Buttons ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"] {
-    background: linear-gradient(135deg, var(--rose-400), var(--rose-500)) !important;
+    background: var(--rose-500) !important;
     color: #fff !important;
     border: none !important;
     border-radius: 999px !important;
@@ -267,7 +266,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .stDownloadButton > button[kind="primary"]:hover:not(:disabled) {
     background: var(--rose-600) !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(168, 67, 99, 0.35) !important;
+    box-shadow: 0 6px 18px rgba(158, 72, 102, 0.32) !important;
 }
 .stButton > button[kind="primary"]:disabled {
     opacity: 0.5;
