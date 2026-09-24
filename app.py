@@ -2928,7 +2928,7 @@ def render_feed_history_panel(*, in_sidebar: bool = False) -> None:
 
             if in_sidebar and index < len(entries) - 1:
                 ui.markdown(
-                    '<hr style="margin:0.35rem 0;border:none;border-top:1px solid #f0c4d4;">',
+                    '<hr style="margin:0.35rem 0;border:none;border-top:1px solid rgba(255,255,255,0.16);">',
                     unsafe_allow_html=True,
                 )
 

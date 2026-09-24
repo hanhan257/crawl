@@ -8,50 +8,74 @@ from app_brand import APP_NAME, APP_TAGLINE, APP_VERSION, app_build_id
 
 PASTEL_PINK_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --rose-50: #FBF2F5;
-    --rose-100: #F3DCE6;
-    --rose-200: #E8B8CA;
-    --rose-300: #D992AE;
-    --rose-400: #C97895;
-    --rose-500: #B85C7A;
-    --rose-600: #9E4866;
-    --ink: #3D2430;
-    --ink-muted: #7A5568;
+    --coral-50: #FFF5F5;
+    --coral-100: #FFE8E8;
+    --coral-200: #FFD1D1;
+    --coral-300: #FFB4B4;
+    --coral-400: #FF8A8A;
+    --coral-500: #FF7675;
+    --coral-600: #F05A59;
+    --coral-700: #D94443;
+    --rose-50: var(--coral-50);
+    --rose-100: var(--coral-100);
+    --rose-200: var(--coral-200);
+    --rose-300: var(--coral-300);
+    --rose-400: var(--coral-400);
+    --rose-500: var(--coral-500);
+    --rose-600: var(--coral-600);
+    --ink: #1A1A1A;
+    --ink-muted: #9CA3AF;
     --surface: #FFFFFF;
-    --canvas: #FAF4F7;
-    --shadow-sm: 0 1px 4px rgba(61, 36, 48, 0.08);
-    --shadow-md: 0 8px 28px rgba(184, 92, 122, 0.14);
-    --shadow-btn: 0 4px 16px rgba(158, 72, 102, 0.28);
-    --radius: 16px;
-    --radius-sm: 12px;
+    --canvas: #FFF5F5;
+    --grid-line: rgba(255, 118, 117, 0.11);
+    --border-soft: rgba(255, 118, 117, 0.18);
+    --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
+    --shadow-md: 0 4px 18px rgba(255, 118, 117, 0.1);
+    --shadow-btn: 0 2px 10px rgba(255, 118, 117, 0.28);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
     /* aliases — giữ tương thích class cũ */
-    --pink-50: var(--rose-50);
-    --pink-100: var(--rose-100);
-    --pink-200: var(--rose-200);
-    --pink-300: var(--rose-300);
-    --pink-400: var(--rose-400);
-    --pink-500: var(--rose-500);
-    --pink-600: var(--rose-600);
-    --pink-700: #853A52;
+    --pink-50: var(--coral-50);
+    --pink-100: var(--coral-100);
+    --pink-200: var(--coral-200);
+    --pink-300: var(--coral-300);
+    --pink-400: var(--coral-400);
+    --pink-500: var(--coral-500);
+    --pink-600: var(--coral-600);
+    --pink-700: var(--coral-700);
+    --sidebar-bg: linear-gradient(180deg, #C04E4D 0%, #A83F3E 52%, #8C3332 100%);
+    --sidebar-text: #FFFFFF;
+    --sidebar-muted: rgba(255, 255, 255, 0.72);
+    --sidebar-item-bg: rgba(255, 255, 255, 0.08);
+    --sidebar-item-border: rgba(255, 255, 255, 0.14);
+    --sidebar-item-hover: rgba(255, 255, 255, 0.14);
+    --sidebar-item-active-bg: var(--coral-500);
+    --sidebar-item-active-text: #FFFFFF;
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
     --shadow-soft: var(--shadow-md);
+    --shadow-sidebar: 4px 0 22px rgba(140, 51, 50, 0.2);
 }
 
 html, body, [class*="css"] {
-    font-family: "Outfit", "Segoe UI", sans-serif !important;
+    font-family: "Inter", "Segoe UI", sans-serif !important;
+    -webkit-font-smoothing: antialiased;
 }
 
 .stApp {
     background-color: var(--canvas);
     background-image:
-        radial-gradient(circle at 12% 8%, rgba(184, 92, 122, 0.09) 0%, transparent 42%),
-        radial-gradient(circle at 88% 92%, rgba(201, 120, 149, 0.07) 0%, transparent 38%);
-    font-family: "Outfit", "Segoe UI", sans-serif;
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        radial-gradient(ellipse 55% 45% at 92% 8%, rgba(255, 118, 117, 0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 35% at 8% 95%, rgba(255, 177, 177, 0.08) 0%, transparent 65%);
+    background-size: 22px 22px, 22px 22px, 100% 100%, 100% 100%;
+    font-family: "Inter", "Segoe UI", sans-serif;
     color: var(--ink-muted);
 }
 
@@ -106,15 +130,43 @@ button[kind="header"] {
     transform: none !important;
     resize: none !important;
     transition: none !important;
-    background: var(--surface) !important;
-    border-right: none !important;
-    border-left: 4px solid var(--rose-400) !important;
-    box-shadow: var(--shadow-md) !important;
+    background: var(--sidebar-bg) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-left: none !important;
+    box-shadow: var(--shadow-sidebar) !important;
     cursor: default !important;
+    color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] > div:first-child {
     width: 100% !important;
-    padding: 1.25rem 1rem 1rem 1.1rem !important;
+    padding: 1.25rem 0.85rem 1rem 0.95rem !important;
+    background: transparent !important;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdown"] p,
+[data-testid="stSidebar"] [data-testid="stMarkdown"] li,
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] label p,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    color: var(--sidebar-muted) !important;
+}
+[data-testid="stSidebar"] .streamlit-expanderHeader {
+    background: var(--sidebar-item-bg) !important;
+    border: 1px solid var(--sidebar-item-border) !important;
+    color: var(--sidebar-text) !important;
+}
+[data-testid="stSidebar"] [data-testid="stAlert"] {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: var(--sidebar-text) !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+    background: var(--sidebar-item-bg) !important;
+    border: 1px solid var(--sidebar-item-border) !important;
+    color: var(--sidebar-text) !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: var(--sidebar-item-hover) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
 }
 [data-testid="stMain"] {
     flex: 0 0 80vw !important;
@@ -135,88 +187,114 @@ button[kind="header"] {
     pointer-events: none !important;
 }
 
-/* ── Sidebar menu ── */
+/* ── Sidebar menu (nền hồng phấn đậm) ── */
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h1,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h2,
-[data-testid="stSidebar"] [data-testid="stMarkdown"] h3 {
-    color: var(--ink) !important;
+[data-testid="stSidebar"] [data-testid="stMarkdown"] h3,
+[data-testid="stSidebar"] [data-testid="stMarkdown"] h4,
+[data-testid="stSidebar"] [data-testid="stMarkdown"] h5,
+[data-testid="stSidebar"] [data-testid="stMarkdown"] h6 {
+    color: var(--sidebar-text) !important;
     font-weight: 700 !important;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdown"] strong {
+    color: var(--sidebar-text) !important;
+}
+[data-testid="stSidebar"] hr {
+    border: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    margin: 0.65rem 0 !important;
+}
+[data-testid="stSidebar"] .stDownloadButton > button {
+    background: var(--sidebar-item-bg) !important;
+    border: 1px solid var(--sidebar-item-border) !important;
+    color: var(--sidebar-text) !important;
+    font-weight: 600 !important;
+}
+[data-testid="stSidebar"] .stDownloadButton > button:hover {
+    background: var(--sidebar-item-hover) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
 }
 [data-testid="stSidebar"] .stRadio > div {
-    gap: 0.35rem;
+    gap: 0.32rem;
 }
 [data-testid="stSidebar"] .stRadio label {
-    background: var(--rose-50) !important;
-    border: 1px solid var(--rose-100) !important;
-    border-radius: var(--radius-sm) !important;
-    padding: 0.6rem 0.9rem !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--radius-pill) !important;
+    padding: 0.58rem 0.82rem !important;
     font-weight: 500 !important;
-    font-size: 0.86rem !important;
+    font-size: 0.84rem !important;
     line-height: 1.35 !important;
     white-space: normal !important;
-    color: var(--ink-muted) !important;
+    color: var(--sidebar-text) !important;
     transition: background 0.15s, border-color 0.15s, color 0.15s !important;
     box-shadow: none !important;
 }
 [data-testid="stSidebar"] .stRadio label:hover {
-    border-color: var(--rose-300) !important;
-    background: var(--rose-100) !important;
-    color: var(--ink) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    background: var(--sidebar-item-hover) !important;
+    color: #fff !important;
 }
 [data-testid="stSidebar"] .stRadio label[data-checked="true"],
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
-    background: var(--rose-500) !important;
-    border-color: var(--rose-600) !important;
-    color: #fff !important;
+    background: var(--sidebar-item-active-bg) !important;
+    border-color: transparent !important;
+    color: var(--sidebar-item-active-text) !important;
     font-weight: 600 !important;
-    box-shadow: var(--shadow-btn) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
+    background: rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-pill);
+    padding: 0.28rem;
 }
 
-/* ── Hero ── */
+/* ── Hero (card trắng kiểu Vdesign) ── */
 .app-hero {
     background: var(--surface);
-    border: 1px solid var(--rose-100);
-    border-top: 3px solid var(--rose-400);
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius);
-    padding: 1.4rem 1.65rem 1.25rem;
+    padding: 1.5rem 1.75rem 1.3rem;
     margin-bottom: 1.1rem;
     box-shadow: var(--shadow-sm);
     position: relative;
 }
 .app-hero-badge {
     display: inline-block;
-    background: var(--rose-50);
-    color: var(--rose-500);
-    border: 1px solid var(--rose-200);
+    background: var(--coral-500);
+    color: #fff;
+    border: none;
     font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 0.25rem 0.7rem;
-    border-radius: 999px;
-    margin-bottom: 0.6rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: var(--radius-pill);
+    margin-bottom: 0.65rem;
 }
 .app-title {
-    margin: 0 0 0.4rem 0 !important;
-    font-size: 1.95rem !important;
+    margin: 0 0 0.45rem 0 !important;
+    font-size: 2rem !important;
     font-weight: 700 !important;
-    font-family: "Outfit", sans-serif !important;
+    font-family: "Inter", sans-serif !important;
     color: var(--ink) !important;
     -webkit-text-fill-color: var(--ink) !important;
     background: none !important;
-    line-height: 1.15 !important;
-    letter-spacing: -0.03em;
+    line-height: 1.2 !important;
+    letter-spacing: -0.025em;
 }
 .app-subtitle {
     margin: 0;
     color: var(--ink-muted);
-    font-size: 0.92rem;
-    line-height: 1.6;
+    font-size: 0.9rem;
+    line-height: 1.65;
     font-weight: 400;
 }
 .app-subtitle strong {
-    color: var(--rose-500);
+    color: var(--ink);
     font-weight: 600;
 }
 
@@ -224,13 +302,13 @@ button[kind="header"] {
 .main h3, .main h2 {
     color: var(--ink) !important;
     font-weight: 700 !important;
-    font-size: 1.05rem !important;
-    letter-spacing: -0.01em;
+    font-size: 1.08rem !important;
+    letter-spacing: -0.02em;
     border-left: none !important;
     padding-left: 0 !important;
-    padding-bottom: 0.45rem !important;
+    padding-bottom: 0.5rem !important;
     margin-top: 0.15rem !important;
-    border-bottom: 2px solid var(--rose-100) !important;
+    border-bottom: 1px solid var(--border-soft) !important;
 }
 .main h1:not(.app-title) {
     color: var(--ink);
@@ -239,34 +317,34 @@ button[kind="header"] {
 /* ── Step cards ── */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background: var(--surface) !important;
-    border: 1px solid var(--rose-100) !important;
+    border: 1px solid var(--border-soft) !important;
     border-radius: var(--radius) !important;
     box-shadow: var(--shadow-sm) !important;
     padding: 0.35rem 0.15rem !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-    border-color: var(--rose-200) !important;
+    border-color: var(--coral-200) !important;
     box-shadow: var(--shadow-md) !important;
 }
 
 /* ── Buttons ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"] {
-    background: var(--rose-500) !important;
+    background: var(--coral-500) !important;
     color: #fff !important;
     border: none !important;
-    border-radius: 999px !important;
+    border-radius: var(--radius-pill) !important;
     font-weight: 600 !important;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     padding: 0.55rem 1.4rem !important;
     box-shadow: var(--shadow-btn) !important;
     transition: background 0.15s, transform 0.15s, box-shadow 0.15s !important;
 }
 .stButton > button[kind="primary"]:hover:not(:disabled),
 .stDownloadButton > button[kind="primary"]:hover:not(:disabled) {
-    background: var(--rose-600) !important;
+    background: var(--coral-600) !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(158, 72, 102, 0.32) !important;
+    box-shadow: 0 4px 14px rgba(240, 90, 89, 0.35) !important;
 }
 .stButton > button[kind="primary"]:disabled {
     opacity: 0.5;
@@ -274,14 +352,15 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 .stButton > button[kind="secondary"] {
     background: var(--surface) !important;
-    color: var(--rose-500) !important;
-    border: 1.5px solid var(--rose-200) !important;
-    border-radius: 999px !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: var(--radius-pill) !important;
     font-weight: 600 !important;
 }
 .stButton > button[kind="secondary"]:hover {
-    background: var(--rose-50) !important;
-    border-color: var(--rose-400) !important;
+    background: var(--coral-50) !important;
+    border-color: var(--coral-300) !important;
+    color: var(--ink) !important;
 }
 
 /* ── Alerts ── */
@@ -289,8 +368,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     border-radius: var(--radius-sm) !important;
 }
 [data-testid="stAlertContainer"] div[role="alert"][data-baseweb="notification"] {
-    background-color: var(--rose-50);
-    border-color: var(--rose-200);
+    background-color: var(--coral-50);
+    border-color: var(--coral-200);
     color: var(--ink);
 }
 .stSuccess, [data-testid="stAlert"]:has(svg[aria-label="Success"]) {
@@ -315,33 +394,35 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .stTextInput input, .stNumberInput input, .stTextArea textarea,
 .stSelectbox [data-baseweb="select"] > div {
     border-radius: var(--radius-sm) !important;
-    border-color: var(--rose-200) !important;
+    border-color: var(--border-soft) !important;
     background: var(--surface) !important;
-    font-family: "Outfit", sans-serif !important;
+    font-family: "Inter", sans-serif !important;
+    color: var(--ink) !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
-    border-color: var(--rose-400) !important;
-    box-shadow: 0 0 0 3px rgba(201, 87, 122, 0.15) !important;
+    border-color: var(--coral-400) !important;
+    box-shadow: 0 0 0 3px rgba(255, 118, 117, 0.16) !important;
 }
 
-/* ── Tabs ── */
+/* ── Tabs (pill nav kiểu Vdesign) ── */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0.25rem;
-    background: var(--rose-50);
-    border-radius: 999px;
-    padding: 0.25rem;
-    border: 1px solid var(--rose-100);
+    gap: 0.2rem;
+    background: var(--surface);
+    border-radius: var(--radius-pill);
+    padding: 0.28rem;
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-sm);
 }
 .stTabs [data-baseweb="tab"] {
-    border-radius: 999px !important;
+    border-radius: var(--radius-pill) !important;
     color: var(--ink-muted) !important;
-    font-weight: 600 !important;
-    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    font-size: 0.86rem !important;
 }
 .stTabs [aria-selected="true"] {
-    background: var(--surface) !important;
-    color: var(--rose-500) !important;
-    box-shadow: var(--shadow-sm) !important;
+    background: var(--coral-500) !important;
+    color: #fff !important;
+    box-shadow: none !important;
 }
 
 .stRadio > div[role="radiogroup"][aria-label] {
@@ -350,20 +431,22 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 
 [data-testid="stDataFrame"], [data-testid="stDataEditor"] {
     border-radius: var(--radius-sm);
-    border: 1px solid var(--rose-100);
+    border: 1px solid var(--border-soft);
     overflow: hidden;
+    background: var(--surface);
 }
 
 .streamlit-expanderHeader {
-    background: var(--rose-50) !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border-soft) !important;
     border-radius: var(--radius-sm) !important;
     font-weight: 600 !important;
     color: var(--ink) !important;
 }
 
 .stProgress > div > div {
-    background: var(--rose-400) !important;
-    border-radius: 999px;
+    background: var(--coral-500) !important;
+    border-radius: var(--radius-pill);
 }
 
 .download-ready-banner {
@@ -379,10 +462,10 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     display: block;
     width: 100%;
     padding: 0.72rem 1rem;
-    border-radius: 999px;
-    border: 1px solid var(--rose-200);
-    background: var(--rose-50);
-    color: var(--rose-500);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    color: var(--coral-500);
     font-weight: 600;
     text-align: center;
 }
@@ -390,15 +473,23 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .val-missing { color: #BE123C; font-weight: 700; }
 .val-missing-count { color: #E11D48; }
 
+[data-testid="stPills"] {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-pill);
+    padding: 0.2rem;
+}
 [data-testid="stPills"] button {
-    border-radius: 999px !important;
-    border-color: var(--rose-200) !important;
-    font-weight: 600 !important;
+    border-radius: var(--radius-pill) !important;
+    border-color: transparent !important;
+    font-weight: 500 !important;
+    color: var(--ink-muted) !important;
 }
 [data-testid="stPills"] button[aria-pressed="true"] {
-    background: var(--rose-500) !important;
+    background: var(--coral-500) !important;
     color: white !important;
     border-color: transparent !important;
+    font-weight: 600 !important;
 }
 
 .stCaption, small {
@@ -441,8 +532,8 @@ footer, #MainMenu { visibility: hidden; }
 .crawl-limits-row {
     margin: 0.6rem 0 0.3rem;
     padding: 0.7rem 0.9rem 0.5rem;
-    background: var(--rose-50);
-    border: 1px solid var(--rose-100);
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius-sm);
 }
 .crawl-num-field {
@@ -458,7 +549,7 @@ footer, #MainMenu { visibility: hidden; }
     width: 1.2rem;
     height: 1.2rem;
     border-radius: 999px;
-    background: var(--rose-500);
+    background: var(--coral-500);
     color: #fff;
     font-size: 0.62rem;
     font-weight: 700;
@@ -500,7 +591,7 @@ footer, #MainMenu { visibility: hidden; }
 .gmc-title-bulk-wrap {
     margin: 0.45rem 0 0.25rem;
     padding: 0.45rem 0 0.15rem;
-    border-top: 1px dashed var(--rose-200);
+    border-top: 1px dashed var(--border-soft);
 }
 .gmc-title-bulk-wrap label p,
 .gmc-title-bulk-wrap [data-testid="stWidgetLabel"] p {
@@ -512,7 +603,7 @@ footer, #MainMenu { visibility: hidden; }
 .crawl-action-center {
     margin-top: 0.85rem;
     padding-top: 0.85rem;
-    border-top: 1px dashed var(--rose-200);
+    border-top: 1px dashed var(--border-soft);
 }
 .crawl-action-center [data-testid="stButton"] {
     display: flex;
@@ -528,13 +619,13 @@ footer, #MainMenu { visibility: hidden; }
     font-size: 0.78rem !important;
     border-radius: 999px !important;
     background: var(--surface) !important;
-    border: 1px solid var(--rose-200) !important;
+    border: 1px solid var(--border-soft) !important;
     color: var(--ink) !important;
     box-shadow: none !important;
 }
 .crawl-step1-wrap .crawl-side-tools [data-testid="stButton"] button:hover {
-    border-color: var(--rose-400) !important;
-    background: var(--rose-50) !important;
+    border-color: var(--coral-300) !important;
+    background: var(--coral-50) !important;
 }
 
 @media (max-width: 1100px) {
