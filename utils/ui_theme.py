@@ -47,14 +47,15 @@ PASTEL_PINK_CSS = """
     --pink-500: var(--coral-500);
     --pink-600: var(--coral-600);
     --pink-700: var(--coral-700);
-    --sidebar-bg: linear-gradient(180deg, #C04E4D 0%, #A83F3E 52%, #8C3332 100%);
+    --sidebar-bg: linear-gradient(180deg, #B04A49 0%, #9A4040 55%, #883838 100%);
     --sidebar-text: #FFFFFF;
-    --sidebar-muted: rgba(255, 255, 255, 0.72);
-    --sidebar-item-bg: rgba(255, 255, 255, 0.08);
-    --sidebar-item-border: rgba(255, 255, 255, 0.14);
-    --sidebar-item-hover: rgba(255, 255, 255, 0.14);
-    --sidebar-item-active-bg: var(--coral-500);
+    --sidebar-muted: rgba(255, 255, 255, 0.88);
+    --sidebar-item-bg: rgba(255, 255, 255, 0.07);
+    --sidebar-item-border: rgba(255, 255, 255, 0.28);
+    --sidebar-item-hover: rgba(255, 255, 255, 0.16);
+    --sidebar-item-active-bg: #FF7B7B;
     --sidebar-item-active-text: #FFFFFF;
+    --sidebar-item-active-shadow: 0 4px 16px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.22);
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
@@ -139,20 +140,31 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] > div:first-child {
     width: 100% !important;
-    padding: 1.25rem 0.85rem 1rem 0.95rem !important;
+    padding: 1.35rem 0.9rem 1.1rem 1rem !important;
     background: transparent !important;
 }
 [data-testid="stSidebar"] [data-testid="stMarkdown"] p,
-[data-testid="stSidebar"] [data-testid="stMarkdown"] li,
-[data-testid="stSidebar"] .stCaption,
-[data-testid="stSidebar"] label p,
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+[data-testid="stSidebar"] [data-testid="stMarkdown"] li {
     color: var(--sidebar-muted) !important;
 }
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    color: var(--sidebar-muted) !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+}
 [data-testid="stSidebar"] .streamlit-expanderHeader {
-    background: var(--sidebar-item-bg) !important;
-    border: 1px solid var(--sidebar-item-border) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
     color: var(--sidebar-text) !important;
+    font-weight: 600 !important;
+    font-size: 0.86rem !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.55rem 0.75rem !important;
+}
+[data-testid="stSidebar"] .streamlit-expanderHeader:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.42) !important;
 }
 [data-testid="stSidebar"] [data-testid="stAlert"] {
     background: rgba(255, 255, 255, 0.12) !important;
@@ -196,15 +208,17 @@ button[kind="header"] {
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h6 {
     color: var(--sidebar-text) !important;
     font-weight: 700 !important;
+    font-size: 1rem !important;
     letter-spacing: -0.01em;
+    margin-bottom: 0.15rem !important;
 }
 [data-testid="stSidebar"] [data-testid="stMarkdown"] strong {
     color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] hr {
     border: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-    margin: 0.65rem 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+    margin: 0.75rem 0 !important;
 }
 [data-testid="stSidebar"] .stDownloadButton > button {
     background: var(--sidebar-item-bg) !important;
@@ -217,39 +231,54 @@ button[kind="header"] {
     border-color: rgba(255, 255, 255, 0.28) !important;
 }
 [data-testid="stSidebar"] .stRadio > div {
-    gap: 0.32rem;
+    gap: 0.42rem;
+}
+[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    gap: 0.42rem !important;
+}
+/* Ẩn vòng tròn radio — chỉ dùng pill text cho rõ */
+[data-testid="stSidebar"] .stRadio [data-baseweb="radio"],
+[data-testid="stSidebar"] .stRadio label > div:first-child {
+    display: none !important;
 }
 [data-testid="stSidebar"] .stRadio label {
-    background: transparent !important;
-    border: 1px solid transparent !important;
+    background: var(--sidebar-item-bg) !important;
+    border: 1px solid var(--sidebar-item-border) !important;
     border-radius: var(--radius-pill) !important;
-    padding: 0.58rem 0.82rem !important;
+    padding: 0.62rem 0.9rem !important;
     font-weight: 500 !important;
-    font-size: 0.84rem !important;
-    line-height: 1.35 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
     white-space: normal !important;
-    color: var(--sidebar-text) !important;
-    transition: background 0.15s, border-color 0.15s, color 0.15s !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s !important;
     box-shadow: none !important;
+    min-height: 2.35rem;
+    display: flex !important;
+    align-items: center !important;
+}
+[data-testid="stSidebar"] .stRadio label p,
+[data-testid="stSidebar"] .stRadio label span,
+[data-testid="stSidebar"] .stRadio label div {
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
 }
 [data-testid="stSidebar"] .stRadio label:hover {
-    border-color: rgba(255, 255, 255, 0.28) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
     background: var(--sidebar-item-hover) !important;
     color: #fff !important;
 }
 [data-testid="stSidebar"] .stRadio label[data-checked="true"],
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
     background: var(--sidebar-item-active-bg) !important;
-    border-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
     color: var(--sidebar-item-active-text) !important;
-    font-weight: 600 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
-}
-[data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
-    background: rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-pill);
-    padding: 0.28rem;
+    font-weight: 700 !important;
+    box-shadow: var(--sidebar-item-active-shadow) !important;
 }
 
 /* ── Hero (card trắng kiểu Vdesign) ── */
