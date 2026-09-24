@@ -220,8 +220,27 @@ button[kind="header"] {
     background: var(--coral-400) !important;
     border-color: rgba(255, 255, 255, 0.45) !important;
 }
+[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+    background: var(--sidebar-item-bg) !important;
+    border: 1px solid var(--sidebar-item-border) !important;
+    color: var(--sidebar-text) !important;
+}
 [data-testid="stSidebar"] .stButton {
     margin-bottom: 0.35rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] label p,
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p {
+    color: var(--sidebar-muted) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.38) !important;
+    color: #fff !important;
+    border-radius: var(--radius-sm) !important;
+    min-height: 2.5rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg {
+    fill: #fff !important;
 }
 [data-testid="stMain"] .block-container {
     max-width: 100% !important;
@@ -711,11 +730,14 @@ footer, #MainMenu { visibility: hidden; }
         min-width: 6.5rem !important;
     }
 }
-/* ── Mobile / tablet: sidebar trên, main full width ── */
+/* ── Mobile / tablet: sidebar gọn trên, main luôn hiện ── */
 @media (max-width: 900px) {
     [data-testid="stAppViewContainer"] {
         flex-direction: column !important;
         flex-wrap: nowrap !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow-y: visible !important;
     }
     [data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"]),
     [data-testid="stAppViewContainer"] > .react-resizable:has([data-testid="stSidebar"]) {
@@ -723,6 +745,7 @@ footer, #MainMenu { visibility: hidden; }
         width: 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;
+        height: auto !important;
     }
     [data-testid="stSidebar"],
     [data-testid="stSidebar"][aria-expanded="true"],
@@ -731,14 +754,26 @@ footer, #MainMenu { visibility: hidden; }
         width: 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;
-        position: relative !important;
+        height: auto !important;
+        min-height: 0 !important;
+        position: static !important;
+        inset: auto !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        z-index: auto !important;
+        transform: none !important;
+        display: block !important;
+        visibility: visible !important;
         border-right: none !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
         box-shadow: 0 4px 18px rgba(var(--brand-rgb), 0.18) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
-        padding: 1rem 0.85rem 0.85rem !important;
+        padding: 0.85rem 0.85rem 0.75rem !important;
         max-height: none !important;
+        height: auto !important;
     }
     [data-testid="stSidebar"] .stButton > button {
         font-size: 0.8rem !important;
@@ -746,12 +781,27 @@ footer, #MainMenu { visibility: hidden; }
         min-height: 2.1rem !important;
         word-break: break-word !important;
     }
-    [data-testid="stMain"] {
+    [data-testid="stMain"],
+    section.main {
         flex: 1 1 auto !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin-left: 0 !important;
         padding-top: 0.35rem !important;
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 1 !important;
+    }
+    [data-testid="stMainBlockContainer"] {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
     }
     .block-container {
         padding-top: 0.75rem !important;
@@ -828,6 +878,8 @@ def inject_pastel_pink_theme() -> None:
                 });
                 if (win.innerWidth <= DESKTOP_MIN) {
                     clearSidebarLock(sidebar);
+                    /* Tránh overlay sidebar che main trên mobile */
+                    sidebar.setAttribute("aria-expanded", "false");
                     return;
                 }
                 sidebar.setAttribute("aria-expanded", "true");

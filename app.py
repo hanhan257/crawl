@@ -3505,22 +3505,17 @@ def render_workflow_selector() -> str:
     with st.sidebar:
         st.markdown("##### Chế độ làm việc")
         st.caption("Chọn nguồn dữ liệu")
-        current = st.session_state.get("workflow_mode", "crawl")
-        for key, label in WORKFLOW_MODES.items():
-            is_active = key == current
-            if st.button(
-                label,
-                key=f"sidebar_wf_{key}",
-                use_container_width=True,
-                type="primary" if is_active else "secondary",
-            ):
-                if not is_active:
-                    st.session_state.workflow_mode = key
-                    _on_workflow_mode_change()
-                    st.rerun()
+        mode = st.selectbox(
+            "Nguồn dữ liệu",
+            options=list(WORKFLOW_MODES.keys()),
+            format_func=lambda key: WORKFLOW_MODES[key],
+            key="workflow_mode",
+            label_visibility="collapsed",
+            on_change=_on_workflow_mode_change,
+        )
         st.divider()
         render_feed_history_panel(in_sidebar=True)
-        return st.session_state.get("workflow_mode", current)
+        return mode
 
 
 def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, str, str, str, bool]:
