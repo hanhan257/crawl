@@ -3505,17 +3505,42 @@ def render_workflow_selector() -> str:
     with st.sidebar:
         st.markdown("##### Chế độ làm việc")
         st.caption("Chọn nguồn dữ liệu")
-        mode = st.selectbox(
+        current = st.session_state.get("workflow_mode", "crawl")
+        keys = list(WORKFLOW_MODES.keys())
+
+        # Desktop — danh sách pill (ẩn trên mobile bằng CSS)
+        for key, label in WORKFLOW_MODES.items():
+            is_active = key == current
+            if st.button(
+                label,
+                key=f"sidebar_wf_{key}",
+                use_container_width=True,
+                type="primary" if is_active else "secondary",
+            ):
+                if not is_active:
+                    st.session_state.workflow_mode = key
+                    st.session_state.workflow_mode_mobile = key
+                    _on_workflow_mode_change()
+                    st.rerun()
+
+        # Mobile — dropdown gọn (ẩn trên desktop bằng CSS)
+        if st.session_state.get("workflow_mode_mobile") != current:
+            st.session_state.workflow_mode_mobile = current
+        picked = st.selectbox(
             "Nguồn dữ liệu",
-            options=list(WORKFLOW_MODES.keys()),
+            options=keys,
             format_func=lambda key: WORKFLOW_MODES[key],
-            key="workflow_mode",
+            key="workflow_mode_mobile",
             label_visibility="collapsed",
-            on_change=_on_workflow_mode_change,
         )
+        if picked != current:
+            st.session_state.workflow_mode = picked
+            _on_workflow_mode_change()
+            st.rerun()
+
         st.divider()
         render_feed_history_panel(in_sidebar=True)
-        return mode
+        return st.session_state.get("workflow_mode", current)
 
 
 def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, str, str, str, bool]:

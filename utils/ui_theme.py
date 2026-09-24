@@ -242,6 +242,14 @@ button[kind="header"] {
 [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg {
     fill: #fff !important;
 }
+
+/* Desktop: giữ pill buttons, ẩn dropdown mobile */
+@media (min-width: 901px) {
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
+        display: none !important;
+    }
+}
+
 [data-testid="stMain"] .block-container {
     max-width: 100% !important;
 }
@@ -774,6 +782,17 @@ footer, #MainMenu { visibility: hidden; }
         padding: 0.85rem 0.85rem 0.75rem !important;
         max-height: none !important;
         height: auto !important;
+    }
+    /* Mobile: dropdown thay pill menu, giữ nút trong Lịch sử feed */
+    [data-testid="stSidebar"] [data-testid="stButton"] {
+        display: none !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stButton"],
+    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stDownloadButton"] {
+        display: block !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
+        display: block !important;
     }
     [data-testid="stSidebar"] .stButton > button {
         font-size: 0.8rem !important;
