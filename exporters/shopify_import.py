@@ -148,10 +148,121 @@ def _color_metafield_value(swatches: list[dict[str, Any]], product: Product) -> 
 
 def _is_priced_variant(variant: dict[str, Any]) -> bool:
     if variant.get("_type") == COLOR_SWATCH_TYPE:
-        return True
+        return False
     if variant.get("name") and not variant.get("price"):
         return False
     return any(key in variant for key in ("price", "sku", "id", "title"))
+
+
+def _has_sku_matrix(variants: list[dict[str, Any]]) -> bool:
+    """Trendsi / Shopify: skuList có Size×Color — ưu tiên hơn color_swatch."""
+    for variant in variants:
+        if not _is_priced_variant(variant):
+            continue
+        if any(str(variant.get(f"option{i}") or "").strip() for i in (1, 2, 3)):
+            return True
+    return False
+
+
+_SIZE_OPTION_NAMES = frozenset({"size", "kích cỡ", "kich co"})
+_COLOR_OPTION_NAMES = frozenset({"color", "colour", "màu", "mau"})
+_SIZE_VALUE_RE = re.compile(
+    r"^(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL|5XL|\d+(?:\.\d+)?(?:cm|mm|in|\"|'')?)$",
+    re.I,
+)
+_SIZE_RANK = {
+    "XXS": 10,
+    "XS": 20,
+    "S": 30,
+    "M": 40,
+    "L": 50,
+    "XL": 60,
+    "XXL": 70,
+    "2XL": 75,
+    "XXXL": 80,
+    "3XL": 85,
+    "4XL": 90,
+    "5XL": 95,
+    "ONE SIZE": 100,
+    "OS": 100,
+    "FREE SIZE": 100,
+}
+
+
+def _looks_like_size(value: str) -> bool:
+    text = str(value or "").strip()
+    return bool(text) and bool(_SIZE_VALUE_RE.match(text))
+
+
+def _size_sort_key(value: str) -> tuple[int, str]:
+    text = str(value or "").strip()
+    upper = text.upper()
+    if upper in _SIZE_RANK:
+        return (_SIZE_RANK[upper], text.lower())
+    num_match = re.match(r"^(\d+(?:\.\d+)?)", text)
+    if num_match:
+        return (200 + int(float(num_match.group(1))), text.lower())
+    return (999, text.lower())
+
+
+def _option_axis_indices(
+    attr_defs: list[dict[str, Any]],
+    variant: dict[str, Any] | None,
+) -> tuple[int | None, int | None]:
+    names = _shopify_option_names(attr_defs, variant)
+    color_idx: int | None = None
+    size_idx: int | None = None
+    for index, name in enumerate(names[:3]):
+        normalized = str(name or "").strip().casefold()
+        if normalized in _COLOR_OPTION_NAMES:
+            color_idx = index
+        elif normalized in _SIZE_OPTION_NAMES:
+            size_idx = index
+    if size_idx is None and variant:
+        for index in range(3):
+            if _looks_like_size(str(variant.get(f"option{index + 1}") or "")):
+                size_idx = index
+                break
+    return color_idx, size_idx
+
+
+def _color_options_order(attr_defs: list[dict[str, Any]]) -> list[str]:
+    for attr in attr_defs:
+        if str(attr.get("name") or "").strip().casefold() in _COLOR_OPTION_NAMES:
+            options = attr.get("options") or []
+            return [str(option).strip() for option in options if str(option).strip()]
+    return []
+
+
+def _sort_priced_variants(
+    variants: list[dict[str, Any]],
+    attr_defs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if len(variants) <= 1:
+        return variants
+
+    sample = variants[0]
+    color_idx, size_idx = _option_axis_indices(attr_defs, sample)
+    color_order = _color_options_order(attr_defs)
+
+    def sort_key(variant: dict[str, Any]) -> tuple[Any, ...]:
+        parts: list[Any] = []
+        if color_idx is not None:
+            color = str(variant.get(f"option{color_idx + 1}") or "").strip()
+            if color in color_order:
+                parts.append(color_order.index(color))
+            else:
+                parts.append(999)
+            parts.append(color.casefold())
+        if size_idx is not None:
+            size = str(variant.get(f"option{size_idx + 1}") or "").strip()
+            parts.extend(_size_sort_key(size))
+        else:
+            for index in range(3):
+                parts.append(str(variant.get(f"option{index + 1}") or "").strip().casefold())
+        return tuple(parts)
+
+    return sorted(variants, key=sort_key)
 
 
 def _attribute_defs(variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -351,16 +462,20 @@ def product_to_shopify_rows(
 ) -> list[dict[str, str]]:
     product = apply_export_rules(product, rules)
     handle = _slugify_handle(product.title, product.id)
-    swatches = _color_swatches(product.variants or [])
-    if swatches:
+    variants = product.variants or []
+    swatches = _color_swatches(variants)
+    if swatches and not _has_sku_matrix(variants):
         return _shopify_rows_from_color_swatches(
             product, handle, swatches, include_url=include_url
         )
 
     tags = _join_tags(product.tags)
     category = ", ".join(product.categories) if product.categories else ""
-    priced_variants = [v for v in product.variants if _is_priced_variant(v)]
     attr_defs = _attribute_defs(product.variants)
+    priced_variants = _sort_priced_variants(
+        [v for v in product.variants if _is_priced_variant(v)],
+        attr_defs,
+    )
     fallback_options = _variant_options(product.variants)
     product_url = (product.url or "").strip() if include_url else ""
 

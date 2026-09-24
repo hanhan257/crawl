@@ -59,8 +59,9 @@ def validate_trendsi_url(url: str) -> dict[str, Any]:
             "ok": False,
             "crawl_ready": False,
             "message": (
-                "Link này không phải **Trendsi**. "
-                "Chọn chế độ **Crawl từ link** nếu crawl shop khác."
+                "Link này không phải **Trendsi** (trendsi.com). "
+                "Shop **Shopify** → chọn **Crawl Shopify → xuất file**. "
+                "Shop khác → **Crawl từ link**."
             ),
         }
 
@@ -97,6 +98,8 @@ def render_trendsi_crawl_panel(
     """Bước 1 — link Trendsi bên trái, cài đặt crawl bên phải."""
     st.markdown("### Bước 1 · Crawl Trendsi")
     st.caption(
+        "Chỉ crawl **trendsi.com** — link shop Shopify khác dùng chế độ **Crawl Shopify → xuất file**. "
+        "Bước 2 **CSV Shopify** chỉ là định dạng xuất data Trendsi, không crawl shop Shopify. "
         "Hỗ trợ **Trendsi**: trang chủ · `/brand?...` · `/classify/...` · "
         "`/products/detail?id=...`. Description gồm **Size & Fit** (HTML table) "
         "+ Product Details."

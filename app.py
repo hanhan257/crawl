@@ -112,6 +112,11 @@ from ui.dedupe_filter_panel import render_dedupe_filter_panel
 from ui.proxy_dedupe_panel import render_proxy_dedupe_panel
 from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
+from ui.shopify_workflow import (
+    SHOPIFY_EXPORT_FORMATS,
+    render_shopify_crawl_panel,
+    render_shopify_export_selector,
+)
 from ui.trendsi_workflow import (
     TRENDSI_EXPORT_FORMATS,
     render_trendsi_crawl_panel,
@@ -164,6 +169,7 @@ WORKFLOW_MODES = {
     "filter-dedupe": "Lọc trùng file feed (title/giá/cate…)",
     "crawl-gmc": "Crawl → file feed GMC",
     "redbubble": "Crawl Redbubble → xuất file",
+    "shopify": "Crawl Shopify → xuất file",
     "trendsi": "Crawl Trendsi → xuất file",
     "filter-proxy": "Lọc trùng proxy",
 }
@@ -332,6 +338,11 @@ def is_trendsi_workflow(mode: str | None = None) -> bool:
     return active == "trendsi"
 
 
+def is_shopify_workflow(mode: str | None = None) -> bool:
+    active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
+    return active == "shopify"
+
+
 def is_gmc_workflow(mode: str | None = None) -> bool:
     active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
     return active == "crawl-gmc"
@@ -389,6 +400,10 @@ def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
     current = st.session_state.get("export_format")
     if is_trendsi_workflow(active):
         allowed = TRENDSI_EXPORT_FORMATS
+    elif is_shopify_workflow(active):
+        allowed = SHOPIFY_EXPORT_FORMATS
+        if not current or current not in allowed:
+            st.session_state.export_format = "shopify-csv"
     elif is_redbubble_workflow(active):
         allowed = SHOP_EXPORT_FORMATS
     else:
@@ -2021,6 +2036,11 @@ def _render_data_status_banner() -> None:
                 "**Chưa có sản phẩm.** Dán link Trendsi `/brand?...` · `/classify/...` "
                 "hoặc chọn **Link mẫu**, rồi bấm **Crawl Trendsi**."
             )
+        elif is_shopify_workflow(mode):
+            st.warning(
+                "**Chưa có sản phẩm.** Dán link shop **Shopify** (trang chủ / collection / SP), "
+                "rồi bấm **Crawl Shopify** — Bước 2 mặc định **CSV import Shopify**."
+            )
         elif mode in ("crawl", "crawl-gmc"):
             st.warning(
                 "**Chưa có sản phẩm.** Ở **Bước 1** nhập link shop/category, "
@@ -2390,6 +2410,17 @@ def run_crawl_only(
                 st.session_state.last_info = None
                 st.session_state.last_error = str(
                     rb_check.get("message") or "Link Redbubble chưa hợp lệ."
+                )
+                return
+
+        if is_shopify_workflow():
+            from ui.shopify_workflow import validate_shopify_url
+
+            shopify_check = validate_shopify_url(crawl_url)
+            if not shopify_check.get("crawl_ready"):
+                st.session_state.last_info = None
+                st.session_state.last_error = str(
+                    shopify_check.get("message") or "Link Shopify chưa hợp lệ."
                 )
                 return
 
@@ -3655,6 +3686,7 @@ def main() -> None:
     gmc_mode = is_gmc_workflow(workflow_mode)
     rb_mode = is_redbubble_workflow(workflow_mode)
     trendsi_mode = is_trendsi_workflow(workflow_mode)
+    shopify_mode = is_shopify_workflow(workflow_mode)
     _ensure_export_format_for_workflow(workflow_mode)
 
     import inspect
@@ -3663,8 +3695,11 @@ def main() -> None:
         "gmc_mode": gmc_mode,
         "redbubble_mode": rb_mode,
     }
-    if "trendsi_mode" in inspect.signature(render_app_hero).parameters:
+    hero_sig = inspect.signature(render_app_hero).parameters
+    if "trendsi_mode" in hero_sig:
         hero_kwargs["trendsi_mode"] = trendsi_mode
+    if "shopify_mode" in hero_sig:
+        hero_kwargs["shopify_mode"] = shopify_mode
     render_app_hero(**hero_kwargs)
 
     url = ""
@@ -3688,6 +3723,16 @@ def main() -> None:
     elif workflow_mode == "trendsi":
         with st.container(border=True):
             url, limit, pages, crawl_clicked = render_trendsi_crawl_panel(
+                render_url_preview=render_url_preview,
+                refresh_crawl_messages=_refresh_crawl_messages,
+                on_crawl_url_change=_on_crawl_url_change,
+                clear_image_cache=_clear_image_cache,
+                run_crawl=run_crawl_only,
+                update_crawl_ui=_update_crawl_live_ui,
+            )
+    elif workflow_mode == "shopify":
+        with st.container(border=True):
+            url, limit, pages, crawl_clicked = render_shopify_crawl_panel(
                 render_url_preview=render_url_preview,
                 refresh_crawl_messages=_refresh_crawl_messages,
                 on_crawl_url_change=_on_crawl_url_change,
@@ -3725,6 +3770,8 @@ def main() -> None:
             export_format = render_redbubble_export_selector()
         elif trendsi_mode:
             export_format = render_trendsi_export_selector()
+        elif shopify_mode:
+            export_format = render_shopify_export_selector()
         elif workflow_mode == "filter-title":
             st.markdown("### Bước 2 · Xuất file (tuỳ chọn)")
             st.caption(
