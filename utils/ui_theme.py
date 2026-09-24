@@ -779,26 +779,68 @@ footer, #MainMenu { visibility: hidden; }
         box-shadow: 0 4px 18px rgba(var(--brand-rgb), 0.18) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
-        padding: 0.85rem 0.85rem 0.75rem !important;
+        padding: 0.45rem 0.7rem 0.4rem !important;
         max-height: none !important;
         height: auto !important;
+        gap: 0.2rem !important;
     }
-    /* Mobile: dropdown thay pill menu, giữ nút trong Lịch sử feed */
-    [data-testid="stSidebar"] [data-testid="stButton"] {
+    /* Ẩn hẳn khối pill desktop — tránh tốn chiều cao dù display:none trên nút */
+    [data-testid="stSidebar"] > div:first-child > [data-testid="stVerticalBlock"]:has([data-testid="stButton"]):not(:has([data-testid="stExpander"])) {
         display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stSidebar"] > div:first-child > [data-testid="stVerticalBlock"] {
+        gap: 0.2rem !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stMarkdown"] h5 {
+        font-size: 0.88rem !important;
+        margin: 0 0 0.1rem 0 !important;
+        line-height: 1.2 !important;
+    }
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+        font-size: 0.72rem !important;
+        margin-bottom: 0.15rem !important;
+        line-height: 1.3 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
+        display: block !important;
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+        min-height: 2rem !important;
+        font-size: 0.78rem !important;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+    }
+    [data-testid="stSidebar"] hr {
+        margin: 0.3rem 0 !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderHeader {
+        padding: 0.38rem 0.55rem !important;
+        font-size: 0.78rem !important;
+        min-height: 0 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stAlert"] {
+        padding: 0.35rem 0.45rem !important;
+        font-size: 0.72rem !important;
+        line-height: 1.35 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stCaption {
+        font-size: 0.7rem !important;
     }
     [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stButton"],
     [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stDownloadButton"] {
         display: block !important;
     }
-    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
-        display: block !important;
-    }
-    [data-testid="stSidebar"] .stButton > button {
-        font-size: 0.8rem !important;
-        padding: 0.5rem 0.75rem !important;
-        min-height: 2.1rem !important;
-        word-break: break-word !important;
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stButton > button {
+        font-size: 0.75rem !important;
+        padding: 0.35rem 0.55rem !important;
+        min-height: 1.85rem !important;
     }
     [data-testid="stMain"],
     section.main {
@@ -828,16 +870,22 @@ footer, #MainMenu { visibility: hidden; }
         padding-right: 0.85rem !important;
     }
     .app-hero {
-        padding: 1rem 1.05rem 0.9rem;
-        margin-bottom: 0.75rem;
+        padding: 0.65rem 0.8rem 0.6rem;
+        margin-bottom: 0.5rem;
+    }
+    .app-hero-badge {
+        font-size: 0.6rem !important;
+        padding: 0.18rem 0.5rem !important;
+        margin-bottom: 0.35rem !important;
     }
     .app-title {
-        font-size: 1.42rem !important;
-        line-height: 1.25 !important;
+        font-size: 1.2rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.25rem !important;
     }
     .app-subtitle {
-        font-size: 0.82rem;
-        line-height: 1.55;
+        font-size: 0.75rem;
+        line-height: 1.45;
     }
     .main h3, .main h2 {
         font-size: 0.98rem !important;
