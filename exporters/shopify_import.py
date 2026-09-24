@@ -167,7 +167,9 @@ def _has_sku_matrix(variants: list[dict[str, Any]]) -> bool:
 _SIZE_OPTION_NAMES = frozenset({"size", "kích cỡ", "kich co"})
 _COLOR_OPTION_NAMES = frozenset({"color", "colour", "màu", "mau"})
 _SIZE_VALUE_RE = re.compile(
-    r"^(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL|5XL|\d+(?:\.\d+)?(?:cm|mm|in|\"|'')?)$",
+    r"^(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL|5XL|"
+    r"ONE SIZE|ONE-SIZE|OS|FREE SIZE|"
+    r"\d+(?:\.\d+)?(?:cm|mm|in|\"|'')?)$",
     re.I,
 )
 _SIZE_RANK = {
@@ -224,6 +226,60 @@ def _option_axis_indices(
                 size_idx = index
                 break
     return color_idx, size_idx
+
+
+def _size_attr_value(attr_defs: list[dict[str, Any]]) -> str:
+    """Lấy Size từ attr_defs — jewelry thường chỉ có One Size."""
+    for attr in attr_defs:
+        if str(attr.get("name") or "").strip().casefold() not in _SIZE_OPTION_NAMES:
+            continue
+        options = [str(option).strip() for option in (attr.get("options") or []) if str(option).strip()]
+        if len(options) == 1:
+            return options[0]
+        parts = [part.strip() for part in str(attr.get("value") or "").split(",") if part.strip()]
+        if len(parts) == 1:
+            return parts[0]
+    return ""
+
+
+def _size_option_slot(
+    attr_defs: list[dict[str, Any]],
+    variant: dict[str, Any] | None,
+) -> int:
+    names = _shopify_option_names(attr_defs, variant)
+    for index, name in enumerate(names[:3]):
+        if str(name or "").strip().casefold() in _SIZE_OPTION_NAMES:
+            return index + 1
+    return 2
+
+
+def _apply_size_option(
+    row: dict[str, str],
+    attr_defs: list[dict[str, Any]],
+    variant: dict[str, Any] | None,
+    *,
+    first_variant: bool,
+) -> None:
+    """Gắn Size (vd. One Size) nếu swatch/SKU thiếu option Size."""
+    slot = _size_option_slot(attr_defs, variant)
+    if str(row.get(f"Option{slot} Value") or "").strip():
+        return
+
+    size_val = ""
+    names = _shopify_option_names(attr_defs, variant)
+    for index, name in enumerate(names[:3]):
+        if str(name or "").strip().casefold() in _SIZE_OPTION_NAMES:
+            size_val = str(variant.get(f"option{index + 1}") or "").strip() if variant else ""
+            slot = index + 1
+            break
+    if not size_val:
+        size_val = _size_attr_value(attr_defs)
+    if not size_val:
+        return
+
+    if first_variant:
+        row[f"Option{slot} Name"] = "Size"
+    row[f"Option{slot} Value"] = size_val
 
 
 def _color_options_order(attr_defs: list[dict[str, Any]]) -> list[str]:
@@ -400,8 +456,10 @@ def _shopify_rows_from_color_swatches(
     swatches: list[dict[str, Any]],
     *,
     include_url: bool,
+    attr_defs: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, str]]:
     color_meta = _color_metafield_value(swatches, product)
+    attr_defs = attr_defs or _attribute_defs(product.variants or [])
     rows: list[dict[str, str]] = []
     used_images: set[str] = set()
 
@@ -421,6 +479,7 @@ def _shopify_rows_from_color_swatches(
         if index == 0:
             row["Option1 Name"] = "Color"
         row["Option1 Value"] = color
+        _apply_size_option(row, attr_defs, swatch, first_variant=index == 0)
         row.update(_variant_common_fields(swatch, product))
 
         image_url = str(swatch.get("image_url") or "").strip()
@@ -464,14 +523,18 @@ def product_to_shopify_rows(
     handle = _slugify_handle(product.title, product.id)
     variants = product.variants or []
     swatches = _color_swatches(variants)
+    attr_defs = _attribute_defs(variants)
     if swatches and not _has_sku_matrix(variants):
         return _shopify_rows_from_color_swatches(
-            product, handle, swatches, include_url=include_url
+            product,
+            handle,
+            swatches,
+            include_url=include_url,
+            attr_defs=attr_defs,
         )
 
     tags = _join_tags(product.tags)
     category = ", ".join(product.categories) if product.categories else ""
-    attr_defs = _attribute_defs(product.variants)
     priced_variants = _sort_priced_variants(
         [v for v in product.variants if _is_priced_variant(v)],
         attr_defs,
@@ -520,6 +583,7 @@ def product_to_shopify_rows(
                     first_variant=index == 0,
                 )
             )
+            _apply_size_option(row, attr_defs, variant, first_variant=index == 0)
             row.update(_variant_common_fields(variant, product))
             if variant.get("image_url"):
                 row["Variant Image"] = str(variant["image_url"])
