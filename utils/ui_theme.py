@@ -117,31 +117,47 @@ button[kind="header"] {
     padding-right: 1.75rem;
 }
 
-/* ── Layout cố định 20 / 80 ── */
-[data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"]),
-[data-testid="stAppViewContainer"] > .react-resizable:has([data-testid="stSidebar"]) {
-    flex: 0 0 20vw !important;
-    min-width: 20vw !important;
-    max-width: 20vw !important;
-    width: 20vw !important;
-    resize: none !important;
-}
+/* ── Sidebar chung (desktop + mobile) ── */
 [data-testid="stSidebar"],
 [data-testid="stSidebar"][aria-expanded="true"],
 [data-testid="stSidebar"][aria-expanded="false"] {
-    flex: 0 0 20vw !important;
-    min-width: 20vw !important;
-    max-width: 20vw !important;
-    width: 20vw !important;
     transform: none !important;
     resize: none !important;
     transition: none !important;
     background: var(--sidebar-bg) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-left: none !important;
     box-shadow: var(--shadow-sidebar) !important;
     cursor: default !important;
     color: var(--sidebar-text) !important;
+}
+
+/* ── Desktop: layout cố định 20 / 80 ── */
+@media (min-width: 901px) {
+    [data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"]),
+    [data-testid="stAppViewContainer"] > .react-resizable:has([data-testid="stSidebar"]) {
+        flex: 0 0 20vw !important;
+        min-width: 20vw !important;
+        max-width: 20vw !important;
+        width: 20vw !important;
+        resize: none !important;
+    }
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"][aria-expanded="true"],
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        flex: 0 0 20vw !important;
+        min-width: 20vw !important;
+        max-width: 20vw !important;
+        width: 20vw !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    [data-testid="stMain"] {
+        flex: 0 0 80vw !important;
+        min-width: 80vw !important;
+        width: 80vw !important;
+        max-width: 80vw !important;
+        padding-top: 0.5rem !important;
+        background: transparent !important;
+    }
 }
 [data-testid="stSidebar"] > div:first-child {
     width: 100% !important;
@@ -206,14 +222,6 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stButton {
     margin-bottom: 0.35rem !important;
-}
-[data-testid="stMain"] {
-    flex: 0 0 80vw !important;
-    min-width: 80vw !important;
-    width: 80vw !important;
-    max-width: 80vw !important;
-    padding-top: 0.5rem !important;
-    background: transparent !important;
 }
 [data-testid="stMain"] .block-container {
     max-width: 100% !important;
@@ -362,7 +370,7 @@ button[kind="header"] {
     font-weight: 400;
 }
 .app-subtitle strong {
-    color: var(--ink);
+    color: var(--brand);
     font-weight: 600;
 }
 
@@ -703,24 +711,90 @@ footer, #MainMenu { visibility: hidden; }
         min-width: 6.5rem !important;
     }
 }
+/* ── Mobile / tablet: sidebar trên, main full width ── */
 @media (max-width: 900px) {
+    [data-testid="stAppViewContainer"] {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+    }
+    [data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"]),
+    [data-testid="stAppViewContainer"] > .react-resizable:has([data-testid="stSidebar"]) {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
     [data-testid="stSidebar"],
     [data-testid="stSidebar"][aria-expanded="true"],
     [data-testid="stSidebar"][aria-expanded="false"] {
-        flex: 0 0 20vw !important;
-        min-width: 20vw !important;
-        max-width: 20vw !important;
-        width: 20vw !important;
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        position: relative !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 4px 18px rgba(var(--brand-rgb), 0.18) !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding: 1rem 0.85rem 0.85rem !important;
+        max-height: none !important;
+    }
+    [data-testid="stSidebar"] .stButton > button {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem !important;
+        min-height: 2.1rem !important;
+        word-break: break-word !important;
     }
     [data-testid="stMain"] {
-        flex: 0 0 80vw !important;
-        min-width: 80vw !important;
-        width: 80vw !important;
-        max-width: 80vw !important;
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        padding-top: 0.35rem !important;
+    }
+    .block-container {
+        padding-top: 0.75rem !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+    .app-hero {
+        padding: 1rem 1.05rem 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    .app-title {
+        font-size: 1.42rem !important;
+        line-height: 1.25 !important;
+    }
+    .app-subtitle {
+        font-size: 0.82rem;
+        line-height: 1.55;
+    }
+    .main h3, .main h2 {
+        font-size: 0.98rem !important;
+    }
+    .crawl-step1-wrap [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    .crawl-step1-wrap [data-testid="column"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
     }
     .crawl-action-center [data-testid="stButton"] button {
         min-width: 100%;
         max-width: 100%;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 0.25rem 0.1rem !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        flex-wrap: wrap !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    [data-testid="stPills"] {
+        flex-wrap: wrap !important;
     }
 }
 </style>
@@ -734,10 +808,28 @@ def inject_pastel_pink_theme() -> None:
         <script>
         (function () {
             const doc = window.parent.document;
+            const win = window.parent;
+            const DESKTOP_MIN = 901;
+            const clearSidebarLock = (sidebar) => {
+                [sidebar.closest(".react-resizable"), sidebar].filter(Boolean).forEach((el) => {
+                    el.style.removeProperty("width");
+                    el.style.removeProperty("min-width");
+                    el.style.removeProperty("max-width");
+                    el.style.removeProperty("flex");
+                });
+            };
             const lock = () => {
-                try { window.parent.localStorage.removeItem("sidebarWidth"); } catch (e) {}
+                try { win.localStorage.removeItem("sidebarWidth"); } catch (e) {}
                 const sidebar = doc.querySelector('[data-testid="stSidebar"]');
                 if (!sidebar) return;
+                doc.querySelectorAll(".react-resizable-handle").forEach((handle) => {
+                    handle.style.display = "none";
+                    handle.style.pointerEvents = "none";
+                });
+                if (win.innerWidth <= DESKTOP_MIN) {
+                    clearSidebarLock(sidebar);
+                    return;
+                }
                 sidebar.setAttribute("aria-expanded", "true");
                 [sidebar.closest(".react-resizable"), sidebar].filter(Boolean).forEach((el) => {
                     el.style.setProperty("width", "20vw", "important");
@@ -745,12 +837,9 @@ def inject_pastel_pink_theme() -> None:
                     el.style.setProperty("max-width", "20vw", "important");
                     el.style.setProperty("flex", "0 0 20vw", "important");
                 });
-                doc.querySelectorAll(".react-resizable-handle").forEach((handle) => {
-                    handle.style.display = "none";
-                    handle.style.pointerEvents = "none";
-                });
             };
             lock();
+            win.addEventListener("resize", lock, { passive: true });
             doc.addEventListener("mouseup", lock, true);
             doc.addEventListener("touchend", lock, true);
             window.setInterval(lock, 1000);
