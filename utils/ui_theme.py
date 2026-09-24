@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app_brand import APP_NAME, APP_TAGLINE, APP_VERSION
+from app_brand import APP_NAME, APP_TAGLINE, APP_VERSION, app_build_id
 
 PASTEL_PINK_CSS = """
 <style>
@@ -650,7 +650,7 @@ def render_app_hero(
             "Tùy chỉnh → Xem trước → "
             "<strong>Xuất Woo / Shopify / Feed web</strong>"
         )
-        badge = f"v{APP_VERSION}"
+        badge = f"v{APP_VERSION} · {app_build_id()}"
 
     st.markdown(
         f"""
