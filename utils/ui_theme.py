@@ -11,14 +11,19 @@ PASTEL_PINK_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
+    /* Brand tone — #FF7675 */
+    --brand: #FF7675;
+    --brand-rgb: 255, 118, 117;
     --coral-50: #FFF5F5;
-    --coral-100: #FFE8E8;
-    --coral-200: #FFD1D1;
-    --coral-300: #FFB4B4;
-    --coral-400: #FF8A8A;
-    --coral-500: #FF7675;
-    --coral-600: #F05A59;
-    --coral-700: #D94443;
+    --coral-100: #FFE3E3;
+    --coral-200: #FFCACA;
+    --coral-300: #FFABAA;
+    --coral-400: #FF9190;
+    --coral-500: var(--brand);
+    --coral-600: #F05F5E;
+    --coral-700: #E04F4E;
+    --coral-800: #C94645;
+    --coral-900: #B33D3C;
     --rose-50: var(--coral-50);
     --rose-100: var(--coral-100);
     --rose-200: var(--coral-200);
@@ -30,11 +35,11 @@ PASTEL_PINK_CSS = """
     --ink-muted: #9CA3AF;
     --surface: #FFFFFF;
     --canvas: #FFF5F5;
-    --grid-line: rgba(255, 118, 117, 0.11);
-    --border-soft: rgba(255, 118, 117, 0.18);
+    --grid-line: rgba(var(--brand-rgb), 0.12);
+    --border-soft: rgba(var(--brand-rgb), 0.22);
     --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
-    --shadow-md: 0 4px 18px rgba(255, 118, 117, 0.1);
-    --shadow-btn: 0 2px 10px rgba(255, 118, 117, 0.28);
+    --shadow-md: 0 4px 18px rgba(var(--brand-rgb), 0.12);
+    --shadow-btn: 0 2px 10px rgba(var(--brand-rgb), 0.32);
     --radius: 14px;
     --radius-sm: 10px;
     --radius-pill: 999px;
@@ -47,20 +52,20 @@ PASTEL_PINK_CSS = """
     --pink-500: var(--coral-500);
     --pink-600: var(--coral-600);
     --pink-700: var(--coral-700);
-    --sidebar-bg: linear-gradient(180deg, #B04A49 0%, #9A4040 55%, #883838 100%);
+    --sidebar-bg: linear-gradient(180deg, var(--coral-700) 0%, var(--coral-800) 52%, var(--coral-900) 100%);
     --sidebar-text: #FFFFFF;
     --sidebar-muted: rgba(255, 255, 255, 0.88);
-    --sidebar-item-bg: rgba(255, 255, 255, 0.07);
-    --sidebar-item-border: rgba(255, 255, 255, 0.28);
-    --sidebar-item-hover: rgba(255, 255, 255, 0.16);
-    --sidebar-item-active-bg: #FF7B7B;
+    --sidebar-item-bg: rgba(var(--brand-rgb), 0.12);
+    --sidebar-item-border: rgba(var(--brand-rgb), 0.35);
+    --sidebar-item-hover: rgba(var(--brand-rgb), 0.22);
+    --sidebar-item-active-bg: var(--brand);
     --sidebar-item-active-text: #FFFFFF;
-    --sidebar-item-active-shadow: 0 4px 16px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.22);
+    --sidebar-item-active-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.45), 0 0 0 1px rgba(255, 255, 255, 0.22);
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
     --shadow-soft: var(--shadow-md);
-    --shadow-sidebar: 4px 0 22px rgba(140, 51, 50, 0.2);
+    --shadow-sidebar: 4px 0 22px rgba(var(--brand-rgb), 0.28);
 }
 
 html, body, [class*="css"] {
@@ -73,8 +78,8 @@ html, body, [class*="css"] {
     background-image:
         linear-gradient(var(--grid-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-        radial-gradient(ellipse 55% 45% at 92% 8%, rgba(255, 118, 117, 0.07) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 35% at 8% 95%, rgba(255, 177, 177, 0.08) 0%, transparent 65%);
+        radial-gradient(ellipse 55% 45% at 92% 8%, rgba(var(--brand-rgb), 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 35% at 8% 95%, rgba(var(--brand-rgb), 0.06) 0%, transparent 65%);
     background-size: 22px 22px, 22px 22px, 100% 100%, 100% 100%;
     font-family: "Inter", "Segoe UI", sans-serif;
     color: var(--ink-muted);
@@ -196,7 +201,7 @@ button[kind="header"] {
     border-color: rgba(255, 255, 255, 0.28) !important;
 }
 [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-    background: #FF6E6E !important;
+    background: var(--coral-400) !important;
     border-color: rgba(255, 255, 255, 0.45) !important;
 }
 [data-testid="stSidebar"] .stButton {
@@ -327,7 +332,7 @@ button[kind="header"] {
 }
 .app-hero-badge {
     display: inline-block;
-    background: var(--coral-500);
+    background: var(--brand);
     color: #fff;
     border: none;
     font-size: 0.68rem;
@@ -393,7 +398,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* ── Buttons ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"] {
-    background: var(--coral-500) !important;
+    background: var(--brand) !important;
     color: #fff !important;
     border: none !important;
     border-radius: var(--radius-pill) !important;
@@ -407,7 +412,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .stDownloadButton > button[kind="primary"]:hover:not(:disabled) {
     background: var(--coral-600) !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(240, 90, 89, 0.35) !important;
+    box-shadow: 0 4px 14px rgba(var(--brand-rgb), 0.38) !important;
 }
 .stButton > button[kind="primary"]:disabled {
     opacity: 0.5;
@@ -464,7 +469,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 .stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
     border-color: var(--coral-400) !important;
-    box-shadow: 0 0 0 3px rgba(255, 118, 117, 0.16) !important;
+    box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.18) !important;
 }
 
 /* ── Tabs (pill nav kiểu Vdesign) ── */
@@ -483,7 +488,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     font-size: 0.86rem !important;
 }
 .stTabs [aria-selected="true"] {
-    background: var(--coral-500) !important;
+    background: var(--brand) !important;
     color: #fff !important;
     box-shadow: none !important;
 }
@@ -508,7 +513,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 
 .stProgress > div > div {
-    background: var(--coral-500) !important;
+    background: var(--brand) !important;
     border-radius: var(--radius-pill);
 }
 
@@ -528,7 +533,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     border-radius: var(--radius-pill);
     border: 1px solid var(--border-soft);
     background: var(--surface);
-    color: var(--coral-500);
+    color: var(--brand);
     font-weight: 600;
     text-align: center;
 }
@@ -549,7 +554,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: var(--ink-muted) !important;
 }
 [data-testid="stPills"] button[aria-pressed="true"] {
-    background: var(--coral-500) !important;
+    background: var(--brand) !important;
     color: white !important;
     border-color: transparent !important;
     font-weight: 600 !important;
@@ -612,7 +617,7 @@ footer, #MainMenu { visibility: hidden; }
     width: 1.2rem;
     height: 1.2rem;
     border-radius: 999px;
-    background: var(--coral-500);
+    background: var(--brand);
     color: #fff;
     font-size: 0.62rem;
     font-weight: 700;
