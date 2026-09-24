@@ -11,20 +11,21 @@ PASTEL_PINK_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-    --rose-50: #FDF8FA;
-    --rose-100: #F5E6EC;
-    --rose-200: #E8C4D0;
-    --rose-300: #D49AAD;
-    --rose-400: #C9577A;
-    --rose-500: #A84363;
-    --rose-600: #8B3452;
-    --ink: #2D1F28;
-    --ink-muted: #7A6270;
+    --rose-50: #FFF0FC;
+    --rose-100: #FFD6F5;
+    --rose-200: #FFAEEC;
+    --rose-300: #FF6EC7;
+    --rose-400: #FF1493;
+    --rose-500: #FF10F0;
+    --rose-600: #E000CC;
+    --ink: #2A0A24;
+    --ink-muted: #8A4578;
     --surface: #FFFFFF;
-    --canvas: #FAF7F9;
-    --shadow-sm: 0 1px 3px rgba(45, 31, 40, 0.07);
-    --shadow-md: 0 10px 40px rgba(168, 67, 99, 0.11);
-    --shadow-btn: 0 4px 14px rgba(168, 67, 99, 0.28);
+    --canvas: #FFF5FD;
+    --shadow-sm: 0 1px 4px rgba(255, 16, 240, 0.14);
+    --shadow-md: 0 8px 32px rgba(255, 20, 147, 0.2);
+    --shadow-btn: 0 4px 20px rgba(255, 16, 240, 0.48);
+    --neon-glow: 0 0 14px rgba(255, 16, 240, 0.35);
     --radius: 16px;
     --radius-sm: 12px;
     /* aliases — giữ tương thích class cũ */
@@ -35,7 +36,7 @@ PASTEL_PINK_CSS = """
     --pink-400: var(--rose-400);
     --pink-500: var(--rose-500);
     --pink-600: var(--rose-600);
-    --pink-700: #6E2840;
+    --pink-700: #C400B8;
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
@@ -49,8 +50,8 @@ html, body, [class*="css"] {
 .stApp {
     background-color: var(--canvas);
     background-image:
-        radial-gradient(circle at 12% 8%, rgba(201, 87, 122, 0.07) 0%, transparent 42%),
-        radial-gradient(circle at 88% 92%, rgba(168, 67, 99, 0.05) 0%, transparent 38%);
+        radial-gradient(circle at 12% 8%, rgba(255, 16, 240, 0.1) 0%, transparent 42%),
+        radial-gradient(circle at 88% 92%, rgba(255, 20, 147, 0.08) 0%, transparent 38%);
     font-family: "Outfit", "Segoe UI", sans-serif;
     color: var(--ink-muted);
 }
@@ -87,28 +88,28 @@ button[kind="header"] {
     padding-right: 1.75rem;
 }
 
-/* ── Layout cố định 30 / 70 ── */
+/* ── Layout cố định 20 / 80 ── */
 [data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"]),
 [data-testid="stAppViewContainer"] > .react-resizable:has([data-testid="stSidebar"]) {
-    flex: 0 0 30vw !important;
-    min-width: 30vw !important;
-    max-width: 30vw !important;
-    width: 30vw !important;
+    flex: 0 0 20vw !important;
+    min-width: 20vw !important;
+    max-width: 20vw !important;
+    width: 20vw !important;
     resize: none !important;
 }
 [data-testid="stSidebar"],
 [data-testid="stSidebar"][aria-expanded="true"],
 [data-testid="stSidebar"][aria-expanded="false"] {
-    flex: 0 0 30vw !important;
-    min-width: 30vw !important;
-    max-width: 30vw !important;
-    width: 30vw !important;
+    flex: 0 0 20vw !important;
+    min-width: 20vw !important;
+    max-width: 20vw !important;
+    width: 20vw !important;
     transform: none !important;
     resize: none !important;
     transition: none !important;
     background: var(--surface) !important;
     border-right: none !important;
-    border-left: 4px solid var(--rose-400) !important;
+    border-left: 4px solid var(--rose-500) !important;
     box-shadow: var(--shadow-md) !important;
     cursor: default !important;
 }
@@ -117,10 +118,10 @@ button[kind="header"] {
     padding: 1.25rem 1rem 1rem 1.1rem !important;
 }
 [data-testid="stMain"] {
-    flex: 0 0 70vw !important;
-    min-width: 70vw !important;
-    width: 70vw !important;
-    max-width: 70vw !important;
+    flex: 0 0 80vw !important;
+    min-width: 80vw !important;
+    width: 80vw !important;
+    max-width: 80vw !important;
     padding-top: 0.5rem !important;
     background: transparent !important;
 }
@@ -166,18 +167,18 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stRadio label[data-checked="true"],
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
-    background: var(--rose-500) !important;
+    background: linear-gradient(135deg, var(--rose-400), var(--rose-500)) !important;
     border-color: var(--rose-500) !important;
     color: #fff !important;
     font-weight: 600 !important;
-    box-shadow: var(--shadow-btn) !important;
+    box-shadow: var(--shadow-btn), var(--neon-glow) !important;
 }
 
 /* ── Hero ── */
 .app-hero {
     background: var(--surface);
     border: 1px solid var(--rose-100);
-    border-top: 3px solid var(--rose-400);
+    border-top: 3px solid var(--rose-500);
     border-radius: var(--radius);
     padding: 1.4rem 1.65rem 1.25rem;
     margin-bottom: 1.1rem;
@@ -252,7 +253,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* ── Buttons ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"] {
-    background: var(--rose-500) !important;
+    background: linear-gradient(135deg, var(--rose-400), var(--rose-500)) !important;
     color: #fff !important;
     border: none !important;
     border-radius: 999px !important;
@@ -548,16 +549,16 @@ footer, #MainMenu { visibility: hidden; }
     [data-testid="stSidebar"],
     [data-testid="stSidebar"][aria-expanded="true"],
     [data-testid="stSidebar"][aria-expanded="false"] {
-        flex: 0 0 30vw !important;
-        min-width: 30vw !important;
-        max-width: 30vw !important;
-        width: 30vw !important;
+        flex: 0 0 20vw !important;
+        min-width: 20vw !important;
+        max-width: 20vw !important;
+        width: 20vw !important;
     }
     [data-testid="stMain"] {
-        flex: 0 0 70vw !important;
-        min-width: 70vw !important;
-        width: 70vw !important;
-        max-width: 70vw !important;
+        flex: 0 0 80vw !important;
+        min-width: 80vw !important;
+        width: 80vw !important;
+        max-width: 80vw !important;
     }
     .crawl-action-center [data-testid="stButton"] button {
         min-width: 100%;
@@ -581,10 +582,10 @@ def inject_pastel_pink_theme() -> None:
                 if (!sidebar) return;
                 sidebar.setAttribute("aria-expanded", "true");
                 [sidebar.closest(".react-resizable"), sidebar].filter(Boolean).forEach((el) => {
-                    el.style.setProperty("width", "30vw", "important");
-                    el.style.setProperty("min-width", "30vw", "important");
-                    el.style.setProperty("max-width", "30vw", "important");
-                    el.style.setProperty("flex", "0 0 30vw", "important");
+                    el.style.setProperty("width", "20vw", "important");
+                    el.style.setProperty("min-width", "20vw", "important");
+                    el.style.setProperty("max-width", "20vw", "important");
+                    el.style.setProperty("flex", "0 0 20vw", "important");
                 });
                 doc.querySelectorAll(".react-resizable-handle").forEach((handle) => {
                     handle.style.display = "none";
