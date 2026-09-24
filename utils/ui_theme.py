@@ -175,10 +175,32 @@ button[kind="header"] {
     background: var(--sidebar-item-bg) !important;
     border: 1px solid var(--sidebar-item-border) !important;
     color: var(--sidebar-text) !important;
+    border-radius: var(--radius-pill) !important;
+    font-size: 0.84rem !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+    min-height: 2.35rem !important;
+    text-align: left !important;
+    padding: 0.55rem 0.85rem !important;
+}
+[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: var(--sidebar-item-active-bg) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    box-shadow: var(--sidebar-item-active-shadow) !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
     background: var(--sidebar-item-hover) !important;
     border-color: rgba(255, 255, 255, 0.28) !important;
+}
+[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+    background: #FF6E6E !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+[data-testid="stSidebar"] .stButton {
+    margin-bottom: 0.35rem !important;
 }
 [data-testid="stMain"] {
     flex: 0 0 80vw !important;
@@ -230,32 +252,24 @@ button[kind="header"] {
     background: var(--sidebar-item-hover) !important;
     border-color: rgba(255, 255, 255, 0.28) !important;
 }
-[data-testid="stSidebar"] .stRadio > div {
-    gap: 0.42rem;
+/* Sidebar workflow menu — chỉ style label trong radiogroup, không đụng widget label */
+[data-testid="stSidebar"] .stRadio > [data-testid="stWidgetLabel"] {
+    display: none !important;
 }
 [data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.4rem !important;
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
-    gap: 0.42rem !important;
 }
-/* Ẩn vòng tròn radio — giữ nguyên text label */
-[data-testid="stSidebar"] .stRadio [data-baseweb="radio"] {
-    display: none !important;
-}
-[data-testid="stSidebar"] .stRadio input[type="radio"] {
-    position: absolute !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    margin: 0 !important;
-    pointer-events: none !important;
-}
-[data-testid="stSidebar"] .stRadio label {
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
     background: var(--sidebar-item-bg) !important;
     border: 1px solid var(--sidebar-item-border) !important;
     border-radius: var(--radius-pill) !important;
-    padding: 0.62rem 0.9rem !important;
+    padding: 0.55rem 0.85rem !important;
+    margin: 0 !important;
     font-weight: 500 !important;
     font-size: 0.875rem !important;
     line-height: 1.4 !important;
@@ -263,29 +277,42 @@ button[kind="header"] {
     color: rgba(255, 255, 255, 0.95) !important;
     transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s !important;
     box-shadow: none !important;
-    min-height: 2.35rem;
-    display: flex !important;
-    align-items: center !important;
+    cursor: pointer !important;
 }
-[data-testid="stSidebar"] .stRadio label p,
-[data-testid="stSidebar"] .stRadio label span,
-[data-testid="stSidebar"] .stRadio label div {
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label p,
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label span,
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] [data-testid="stMarkdownContainer"] p {
     color: inherit !important;
     font-size: inherit !important;
     font-weight: inherit !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
-[data-testid="stSidebar"] .stRadio label:hover {
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
     border-color: rgba(255, 255, 255, 0.45) !important;
     background: var(--sidebar-item-hover) !important;
     color: #fff !important;
 }
-[data-testid="stSidebar"] .stRadio label[data-checked="true"],
-[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) {
     background: var(--sidebar-item-active-bg) !important;
     border-color: rgba(255, 255, 255, 0.35) !important;
     color: var(--sidebar-item-active-text) !important;
     font-weight: 700 !important;
     box-shadow: var(--sidebar-item-active-shadow) !important;
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] [data-baseweb="radio"] {
+    margin-right: 0.45rem !important;
+    flex-shrink: 0 !important;
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] [data-baseweb="radio"] > div {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) [data-baseweb="radio"] > div {
+    background: #fff !important;
+    border-color: #fff !important;
 }
 
 /* ── Hero (card trắng kiểu Vdesign) ── */
