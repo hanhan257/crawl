@@ -34,12 +34,12 @@ PASTEL_PINK_CSS = """
     --ink: #1A1A1A;
     --ink-muted: #9CA3AF;
     --surface: #FFFFFF;
-    --canvas: #FFF5F5;
-    --grid-line: rgba(var(--brand-rgb), 0.12);
-    --border-soft: rgba(var(--brand-rgb), 0.22);
-    --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
-    --shadow-md: 0 4px 18px rgba(var(--brand-rgb), 0.12);
-    --shadow-btn: 0 2px 10px rgba(var(--brand-rgb), 0.32);
+    --canvas: #FFFBFB;
+    --grid-line: rgba(var(--brand-rgb), 0.07);
+    --border-soft: rgba(var(--brand-rgb), 0.16);
+    --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.03);
+    --shadow-md: 0 4px 16px rgba(var(--brand-rgb), 0.08);
+    --shadow-btn: 0 2px 8px rgba(var(--brand-rgb), 0.22);
     --radius: 14px;
     --radius-sm: 10px;
     --radius-pill: 999px;
@@ -52,20 +52,20 @@ PASTEL_PINK_CSS = """
     --pink-500: var(--coral-500);
     --pink-600: var(--coral-600);
     --pink-700: var(--coral-700);
-    --sidebar-bg: linear-gradient(180deg, var(--coral-700) 0%, var(--coral-800) 52%, var(--coral-900) 100%);
-    --sidebar-text: #FFFFFF;
-    --sidebar-muted: rgba(255, 255, 255, 0.88);
-    --sidebar-item-bg: rgba(var(--brand-rgb), 0.12);
-    --sidebar-item-border: rgba(var(--brand-rgb), 0.35);
-    --sidebar-item-hover: rgba(var(--brand-rgb), 0.22);
+    --sidebar-bg: linear-gradient(180deg, #FFFCFC 0%, #FFF6F6 52%, #FFEFEF 100%);
+    --sidebar-text: #4A3535;
+    --sidebar-muted: #8F7575;
+    --sidebar-item-bg: #FFFFFF;
+    --sidebar-item-border: rgba(var(--brand-rgb), 0.24);
+    --sidebar-item-hover: rgba(var(--brand-rgb), 0.07);
     --sidebar-item-active-bg: var(--brand);
     --sidebar-item-active-text: #FFFFFF;
-    --sidebar-item-active-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.45), 0 0 0 1px rgba(255, 255, 255, 0.22);
+    --sidebar-item-active-shadow: 0 3px 12px rgba(var(--brand-rgb), 0.26);
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
     --shadow-soft: var(--shadow-md);
-    --shadow-sidebar: 4px 0 22px rgba(var(--brand-rgb), 0.28);
+    --shadow-sidebar: 2px 0 14px rgba(var(--brand-rgb), 0.07);
 }
 
 html, body, [class*="css"] {
@@ -148,7 +148,7 @@ button[kind="header"] {
         min-width: 20vw !important;
         max-width: 20vw !important;
         width: 20vw !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-right: 1px solid var(--border-soft) !important;
     }
     [data-testid="stMain"] {
         flex: 0 0 80vw !important;
@@ -175,8 +175,8 @@ button[kind="header"] {
     font-weight: 500 !important;
 }
 [data-testid="stSidebar"] .streamlit-expanderHeader {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border-soft) !important;
     color: var(--sidebar-text) !important;
     font-weight: 600 !important;
     font-size: 0.86rem !important;
@@ -184,13 +184,13 @@ button[kind="header"] {
     padding: 0.55rem 0.75rem !important;
 }
 [data-testid="stSidebar"] .streamlit-expanderHeader:hover {
-    background: rgba(255, 255, 255, 0.16) !important;
-    border-color: rgba(255, 255, 255, 0.42) !important;
+    background: var(--coral-50) !important;
+    border-color: var(--coral-200) !important;
 }
 [data-testid="stSidebar"] [data-testid="stAlert"] {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
-    color: var(--sidebar-text) !important;
+    background: var(--coral-50) !important;
+    border-color: var(--coral-200) !important;
+    color: var(--ink) !important;
 }
 [data-testid="stSidebar"] .stButton > button {
     background: var(--sidebar-item-bg) !important;
@@ -207,18 +207,18 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stButton > button[kind="primary"] {
     background: var(--sidebar-item-active-bg) !important;
-    border-color: rgba(255, 255, 255, 0.35) !important;
+    border-color: transparent !important;
     color: #fff !important;
     font-weight: 700 !important;
     box-shadow: var(--sidebar-item-active-shadow) !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
     background: var(--sidebar-item-hover) !important;
-    border-color: rgba(255, 255, 255, 0.28) !important;
+    border-color: var(--coral-300) !important;
 }
 [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-    background: var(--coral-400) !important;
-    border-color: rgba(255, 255, 255, 0.45) !important;
+    background: var(--coral-600) !important;
+    border-color: transparent !important;
 }
 [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
     background: var(--sidebar-item-bg) !important;
@@ -233,14 +233,14 @@ button[kind="header"] {
     color: var(--sidebar-muted) !important;
 }
 [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] > div {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(var(--brand-rgb), 0.38) !important;
-    color: #fff !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border-soft) !important;
+    color: var(--sidebar-text) !important;
     border-radius: var(--radius-sm) !important;
     min-height: 2.5rem !important;
 }
 [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg {
-    fill: #fff !important;
+    fill: var(--brand) !important;
 }
 
 /* Desktop: giữ pill buttons, ẩn dropdown mobile */
@@ -261,7 +261,7 @@ button[kind="header"] {
     pointer-events: none !important;
 }
 
-/* ── Sidebar menu (nền hồng phấn đậm) ── */
+/* ── Sidebar menu (nền hồng phấn nhẹ #FF7675) ── */
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h1,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h2,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h3,
@@ -279,7 +279,7 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] hr {
     border: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+    border-top: 1px solid var(--border-soft) !important;
     margin: 0.75rem 0 !important;
 }
 [data-testid="stSidebar"] .stDownloadButton > button {
@@ -290,7 +290,7 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stDownloadButton > button:hover {
     background: var(--sidebar-item-hover) !important;
-    border-color: rgba(255, 255, 255, 0.28) !important;
+    border-color: var(--coral-300) !important;
 }
 /* Sidebar workflow menu — chỉ style label trong radiogroup, không đụng widget label */
 [data-testid="stSidebar"] .stRadio > [data-testid="stWidgetLabel"] {
@@ -314,7 +314,7 @@ button[kind="header"] {
     font-size: 0.875rem !important;
     line-height: 1.4 !important;
     white-space: normal !important;
-    color: rgba(255, 255, 255, 0.95) !important;
+    color: var(--sidebar-text) !important;
     transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s !important;
     box-shadow: none !important;
     cursor: pointer !important;
@@ -331,13 +331,13 @@ button[kind="header"] {
     opacity: 1 !important;
 }
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
-    border-color: rgba(255, 255, 255, 0.45) !important;
+    border-color: var(--coral-300) !important;
     background: var(--sidebar-item-hover) !important;
-    color: #fff !important;
+    color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) {
     background: var(--sidebar-item-active-bg) !important;
-    border-color: rgba(255, 255, 255, 0.35) !important;
+    border-color: transparent !important;
     color: var(--sidebar-item-active-text) !important;
     font-weight: 700 !important;
     box-shadow: var(--sidebar-item-active-shadow) !important;
@@ -348,7 +348,7 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] [data-baseweb="radio"] > div {
     background: transparent !important;
-    border-color: rgba(255, 255, 255, 0.55) !important;
+    border-color: var(--coral-300) !important;
 }
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) [data-baseweb="radio"] > div {
     background: #fff !important;
@@ -775,8 +775,8 @@ footer, #MainMenu { visibility: hidden; }
         display: block !important;
         visibility: visible !important;
         border-right: none !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 4px 18px rgba(var(--brand-rgb), 0.18) !important;
+        border-bottom: 1px solid var(--border-soft) !important;
+        box-shadow: 0 2px 10px rgba(var(--brand-rgb), 0.08) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
         padding: 0.45rem 0.7rem 0.4rem !important;
