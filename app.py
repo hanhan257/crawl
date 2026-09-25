@@ -2526,13 +2526,18 @@ def run_crawl_only(
                     if crawl_platform == "generic-web":
                         label = f"Đang xử lý {current}/{total} · {matched} SP"
                     elif crawl_platform == "shopbase":
-                        if total >= 300:
+                        phase = st.session_state.get("_shopbase_progress_phase") or "list"
+                        if phase == "description":
                             label = (
                                 f"Mô tả {current}/{total} · {matched} SP · {workers} luồng"
                             )
-                        else:
+                        elif phase == "pages":
                             label = (
                                 f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                            )
+                        else:
+                            label = (
+                                f"Danh sách {current}/{total} · {matched} SP · {workers} luồng"
                             )
                     elif crawl_platform == "trendsi":
                         label = (
@@ -2563,15 +2568,19 @@ def run_crawl_only(
                             f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
                         )
                     elif crawl_platform == "shopbase" and expected_total and expected_total >= 500:
+                        phase = st.session_state.get("_shopbase_progress_phase") or "list"
+                        wants_desc = crawl_fields_from_session(st.session_state).wants_description()
                         est_min = max(
-                            2,
-                            int(expected_total / max(workers, 1) / 60) + 2,
+                            1,
+                            int(expected_total / max(workers, 1) / 80) + (2 if wants_desc else 0),
                         )
+                        if phase == "description" or wants_desc:
+                            detail = "danh sách + mô tả"
+                        else:
+                            detail = "chỉ danh sách catalog — không lấy mô tả"
                         progress_text.caption(
                             f"ShopBase — ~**{est_min} phút** cho **{expected_total:,}** SP "
-                            f"(danh sách + mô tả song song · {workers} luồng).".replace(
-                                ",", "."
-                            )
+                            f"({detail} · {workers} luồng).".replace(",", ".")
                         )
                     elif expected_total:
                         progress_text.caption(

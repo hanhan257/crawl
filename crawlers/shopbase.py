@@ -77,6 +77,7 @@ class ShopBaseCrawler(BaseCrawler):
         self.crawl_fields = None
         self.partial_callback: Callable[[list[Product]], None] | None = None
         self.last_products: list[Product] = []
+        self.progress_phase = "list"
 
     def _emit_partial(self, products: list[Product]) -> None:
         self.last_products = list(products)
@@ -443,6 +444,7 @@ class ShopBaseCrawler(BaseCrawler):
         page_items: dict[int, list[dict[str, Any]]] = {
             1: [item for item in (first.get("items") or []) if isinstance(item, dict)],
         }
+        self.progress_phase = "pages"
         if progress_callback:
             progress_callback(1, total_pages, len(page_items[1]))
 
@@ -573,6 +575,7 @@ class ShopBaseCrawler(BaseCrawler):
             products: list[Product] = []
             total = len(items)
             map_total = max(total, 1)
+            self.progress_phase = "list"
             for index, item in enumerate(items):
                 product = self._map_catalog_item(
                     item,
@@ -588,6 +591,7 @@ class ShopBaseCrawler(BaseCrawler):
                     progress_callback(processed, map_total, len(products))
             self._emit_partial(products)
             if self._wants_description():
+                self.progress_phase = "description"
                 self._enrich_descriptions_parallel(
                     products,
                     max_workers=max_workers,

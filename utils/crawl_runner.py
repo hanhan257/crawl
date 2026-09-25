@@ -400,6 +400,23 @@ def run_auto_crawl(
         if partial_callback is not None:
             crawler.partial_callback = partial_callback
 
+        def _shopbase_progress(current: int, total: int, matched: int) -> None:
+            if progress_callback is None:
+                return
+            try:
+                import streamlit as st
+
+                st.session_state["_shopbase_progress_phase"] = getattr(
+                    crawler, "progress_phase", "list"
+                )
+            except Exception:
+                pass
+            progress_callback(current, total, matched)
+
+        progress_callback_sb = (
+            _shopbase_progress if progress_callback is not None else None
+        )
+
         try:
 
             if target.crawl_type == "product" and target.handle:
@@ -418,7 +435,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    progress_callback=progress_callback,
+                    progress_callback=progress_callback_sb,
 
                     max_workers=workers,
 
@@ -432,7 +449,7 @@ def run_auto_crawl(
 
                     max_pages=max_pages,
 
-                    progress_callback=progress_callback,
+                    progress_callback=progress_callback_sb,
 
                     max_workers=workers,
 
