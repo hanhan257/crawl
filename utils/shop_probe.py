@@ -744,10 +744,7 @@ def _probe_shopbase(
                 crawler.count_sitemap_products,
                 collection_handle=target.handle,
             )
-            categories_future = executor.submit(
-                crawler.probe_categories,
-                include_counts=True,
-            )
+            categories_future = executor.submit(crawler.probe_categories)
             total = total_future.result()
             categories_raw, _ = categories_future.result()
         categories = [
@@ -773,10 +770,7 @@ def _probe_shopbase(
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         total_future = executor.submit(crawler.count_sitemap_products)
-        categories_future = executor.submit(
-            crawler.probe_categories,
-            include_counts=True,
-        )
+        categories_future = executor.submit(crawler.probe_categories)
         total = total_future.result()
         categories_raw, _ = categories_future.result()
 
