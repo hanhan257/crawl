@@ -520,6 +520,23 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: #BE123C !important;
     font-weight: 600;
 }
+.stInfo,
+[data-testid="stAlert"]:has(svg[aria-label="Info"]) {
+    background: rgba(var(--brand-rgb), 0.1) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
+    color: #5C3838 !important;
+}
+.stInfo p,
+[data-testid="stAlert"]:has(svg[aria-label="Info"]) p,
+[data-testid="stAlert"]:has(svg[aria-label="Info"]) [data-testid="stMarkdownContainer"] {
+    color: #5C3838 !important;
+    font-weight: 600 !important;
+    font-size: 0.86rem !important;
+}
+.stInfo strong,
+[data-testid="stAlert"]:has(svg[aria-label="Info"]) strong {
+    color: var(--brand) !important;
+}
 
 /* ── Inputs ── */
 .stTextInput input, .stNumberInput input, .stTextArea textarea,
@@ -575,9 +592,51 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: var(--ink) !important;
 }
 
+/* ── Thanh tiến trình crawl / xuất file ── */
+[data-testid="stProgress"] {
+    margin: 0.2rem 0 0.45rem !important;
+}
+[data-testid="stProgressLabel"] {
+    margin-bottom: 0.35rem !important;
+}
+[data-testid="stProgressLabel"] p,
+[data-testid="stProgressLabel"] [data-testid="stMarkdownContainer"] p {
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0.32rem 0.7rem !important;
+    background: var(--surface) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #5C3838 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+[data-testid="stProgress"] > div {
+    background: var(--coral-100) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.22) !important;
+    border-radius: var(--radius-pill) !important;
+    height: 0.62rem !important;
+    overflow: hidden !important;
+    box-shadow: inset 0 1px 2px rgba(var(--brand-rgb), 0.1) !important;
+}
+[data-testid="stProgress"] > div > div,
 .stProgress > div > div {
-    background: var(--brand) !important;
-    border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--brand) 0%, var(--coral-400) 100%) !important;
+    border-radius: var(--radius-pill) !important;
+    min-height: 100% !important;
+}
+[data-testid="stMain"] [data-testid="stProgress"] + div .stCaption p,
+[data-testid="stMain"] [data-testid="stProgress"] ~ div .stCaption p {
+    color: #6D4E4E !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+}
+[data-testid="stMain"] [data-testid="stProgress"] + div .stCaption strong,
+[data-testid="stMain"] [data-testid="stProgress"] ~ div .stCaption strong {
+    color: var(--brand) !important;
+    font-weight: 700 !important;
 }
 
 .download-ready-banner {
