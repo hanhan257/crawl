@@ -214,9 +214,9 @@ button[kind="header"] {
     background: #FFFFFF !important;
     border-color: var(--brand) !important;
 }
-[data-testid="stSidebar"] [data-testid="stAlert"] {
+[data-testid="stSidebar"] [data-testid="stAlertContainer"] {
     background: rgba(255, 255, 255, 0.88) !important;
-    border-color: rgba(var(--brand-rgb), 0.28) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
     color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] .stButton > button {
@@ -494,48 +494,39 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: var(--ink) !important;
 }
 
-/* ── Alerts ── */
-[data-testid="stAlert"] {
+/* ── Alerts (Streamlit ≥1.40: stAlertContainer + stAlertContent*) ── */
+[data-testid="stAlertContainer"] {
     border-radius: var(--radius-sm) !important;
 }
-[data-testid="stAlertContainer"] div[role="alert"][data-baseweb="notification"] {
-    background-color: var(--coral-50);
-    border-color: var(--coral-200);
-    color: var(--ink);
-}
-.stSuccess, [data-testid="stAlert"]:has(svg[aria-label="Success"]) {
-    background: #F0FDF4 !important;
-    border-color: #86EFAC !important;
-    color: #166534 !important;
-    font-weight: 600;
-}
-.stWarning {
-    background: #FFFBEB !important;
-    border-color: #FCD34D !important;
-    color: #92400E !important;
-}
-.stError {
-    background: #FFF1F2 !important;
-    border-color: #FDA4AF !important;
-    color: #BE123C !important;
-    font-weight: 600;
-}
-.stInfo,
-[data-testid="stAlert"]:has(svg[aria-label="Info"]) {
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentInfo"]) {
     background: rgba(var(--brand-rgb), 0.1) !important;
     border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
     color: #5C3838 !important;
 }
-.stInfo p,
-[data-testid="stAlert"]:has(svg[aria-label="Info"]) p,
-[data-testid="stAlert"]:has(svg[aria-label="Info"]) [data-testid="stMarkdownContainer"] {
+[data-testid="stAlertContentInfo"] p,
+[data-testid="stAlertContentInfo"] [data-testid="stMarkdownContainer"] p {
     color: #5C3838 !important;
     font-weight: 600 !important;
     font-size: 0.86rem !important;
 }
-.stInfo strong,
-[data-testid="stAlert"]:has(svg[aria-label="Info"]) strong {
+[data-testid="stAlertContentInfo"] strong {
     color: var(--brand) !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
+    background: #F0FDF4 !important;
+    border: 1px solid #86EFAC !important;
+    color: #166534 !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {
+    background: #FFFBEB !important;
+    border: 1px solid #FCD34D !important;
+    color: #92400E !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]) {
+    background: #FFF1F2 !important;
+    border: 1px solid #FDA4AF !important;
+    color: #BE123C !important;
+    font-weight: 600;
 }
 
 /* ── Inputs ── */
@@ -592,15 +583,18 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: var(--ink) !important;
 }
 
-/* ── Thanh tiến trình crawl / xuất file ── */
+/* ── Thanh tiến trình crawl / xuất file (Streamlit ≥1.40) ── */
 [data-testid="stProgress"] {
     margin: 0.2rem 0 0.45rem !important;
 }
-[data-testid="stProgressLabel"] {
+/* Nhãn phía trên — child đầu, KHÔNG phải track */
+[data-testid="stProgress"] > div:first-child {
     margin-bottom: 0.35rem !important;
+    padding-bottom: 0 !important;
+    line-height: normal !important;
 }
-[data-testid="stProgressLabel"] p,
-[data-testid="stProgressLabel"] [data-testid="stMarkdownContainer"] p {
+[data-testid="stProgress"] > div:first-child p,
+[data-testid="stProgress"] > div:first-child [data-testid="stMarkdownContainer"] p {
     display: inline-block !important;
     margin: 0 !important;
     padding: 0.32rem 0.7rem !important;
@@ -613,19 +607,20 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     line-height: 1.35 !important;
     box-shadow: var(--shadow-sm) !important;
 }
-[data-testid="stProgress"] > div {
+/* Track + fill — chỉ stProgressBarTrack */
+[data-testid="stProgressBarTrack"] {
     background: var(--coral-100) !important;
-    border: 1px solid rgba(var(--brand-rgb), 0.22) !important;
+    border: 1px solid rgba(var(--brand-rgb), 0.2) !important;
     border-radius: var(--radius-pill) !important;
-    height: 0.62rem !important;
+    height: 0.48rem !important;
+    min-height: 0.48rem !important;
     overflow: hidden !important;
-    box-shadow: inset 0 1px 2px rgba(var(--brand-rgb), 0.1) !important;
+    box-shadow: inset 0 1px 2px rgba(var(--brand-rgb), 0.08) !important;
 }
-[data-testid="stProgress"] > div > div,
-.stProgress > div > div {
+[data-testid="stProgressBarTrack"] > div {
     background: linear-gradient(90deg, var(--brand) 0%, var(--coral-400) 100%) !important;
     border-radius: var(--radius-pill) !important;
-    min-height: 100% !important;
+    height: 100% !important;
 }
 [data-testid="stMain"] [data-testid="stProgress"] + div .stCaption p,
 [data-testid="stMain"] [data-testid="stProgress"] ~ div .stCaption p {
@@ -917,7 +912,7 @@ footer, #MainMenu { visibility: hidden; }
         font-size: 0.78rem !important;
         min-height: 0 !important;
     }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stAlert"] {
+    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stAlertContainer"] {
         padding: 0.35rem 0.45rem !important;
         font-size: 0.72rem !important;
         line-height: 1.35 !important;
