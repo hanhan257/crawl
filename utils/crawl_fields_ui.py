@@ -15,13 +15,13 @@ def _set_all_crawl_field_flags(value: bool) -> None:
 def _on_crawl_fields_all_change() -> None:
     if st.session_state.get("crawl_fields_all"):
         _set_all_crawl_field_flags(True)
+    _sync_crawl_include_url()
 
 
-def _on_crawl_field_change() -> None:
-    all_on = all(
-        st.session_state.get(f"crawl_field_{key}", True) for key in ALL_CRAWL_FIELD_KEYS
-    )
-    st.session_state.crawl_fields_all = all_on
+def _sync_crawl_include_url() -> None:
+    if st.session_state.get("crawl_fields_all", True):
+        st.session_state.crawl_include_product_url = True
+        return
     st.session_state.crawl_include_product_url = bool(
         st.session_state.get("crawl_field_url", True)
     )
@@ -31,7 +31,7 @@ def init_crawl_field_session_defaults() -> None:
     for key in ALL_CRAWL_FIELD_KEYS:
         st.session_state.setdefault(f"crawl_field_{key}", True)
     st.session_state.setdefault("crawl_fields_all", True)
-    _on_crawl_field_change()
+    st.session_state.setdefault("crawl_include_product_url", True)
 
 
 def render_crawl_fields_selector() -> None:
@@ -47,14 +47,13 @@ def render_crawl_fields_selector() -> None:
         help="Bật tất cả: Title, Link ảnh, Link SP, Description, Category.",
     )
 
+    all_mode = bool(st.session_state.get("crawl_fields_all"))
     cols = st.columns(len(ALL_CRAWL_FIELD_KEYS))
     for col, key in zip(cols, ALL_CRAWL_FIELD_KEYS):
         with col:
             st.checkbox(
                 CRAWL_FIELD_LABELS[key],
                 key=f"crawl_field_{key}",
-                on_change=_on_crawl_field_change,
-                disabled=bool(st.session_state.get("crawl_fields_all")),
+                on_change=_sync_crawl_include_url,
+                disabled=all_mode,
             )
-
-    _on_crawl_field_change()
