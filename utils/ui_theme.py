@@ -52,20 +52,23 @@ PASTEL_PINK_CSS = """
     --pink-500: var(--coral-500);
     --pink-600: var(--coral-600);
     --pink-700: var(--coral-700);
-    --sidebar-bg: linear-gradient(180deg, #FFFCFC 0%, #FFF6F6 52%, #FFEFEF 100%);
-    --sidebar-text: #4A3535;
-    --sidebar-muted: #8F7575;
-    --sidebar-item-bg: #FFFFFF;
-    --sidebar-item-border: rgba(var(--brand-rgb), 0.24);
-    --sidebar-item-hover: rgba(var(--brand-rgb), 0.07);
+    --sidebar-panel: #FFA1A1;
+    --sidebar-panel-rgb: 255, 161, 161;
+    --sidebar-bg: linear-gradient(180deg, #FFB0B0 0%, #FFA1A1 55%, #FF9898 100%);
+    --sidebar-text: #3D2828;
+    --sidebar-muted: #6D4E4E;
+    --sidebar-item-bg: rgba(255, 255, 255, 0.78);
+    --sidebar-item-border: rgba(255, 255, 255, 0.85);
+    --sidebar-item-hover: rgba(255, 255, 255, 0.94);
     --sidebar-item-active-bg: var(--brand);
     --sidebar-item-active-text: #FFFFFF;
-    --sidebar-item-active-shadow: 0 3px 12px rgba(var(--brand-rgb), 0.26);
+    --sidebar-item-active-shadow: 0 3px 14px rgba(224, 79, 78, 0.32);
+    --sidebar-divider: rgba(255, 255, 255, 0.45);
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
     --shadow-soft: var(--shadow-md);
-    --shadow-sidebar: 2px 0 14px rgba(var(--brand-rgb), 0.07);
+    --shadow-sidebar: 2px 0 16px rgba(var(--sidebar-panel-rgb), 0.35);
 }
 
 html, body, [class*="css"] {
@@ -148,7 +151,7 @@ button[kind="header"] {
         min-width: 20vw !important;
         max-width: 20vw !important;
         width: 20vw !important;
-        border-right: 1px solid var(--border-soft) !important;
+        border-right: 1px solid rgba(var(--sidebar-panel-rgb), 0.55) !important;
     }
     [data-testid="stMain"] {
         flex: 0 0 80vw !important;
@@ -162,7 +165,7 @@ button[kind="header"] {
 [data-testid="stSidebar"] > div:first-child {
     width: 100% !important;
     padding: 1.35rem 0.9rem 1.1rem 1rem !important;
-    background: transparent !important;
+    background: var(--sidebar-panel) !important;
 }
 [data-testid="stSidebar"] [data-testid="stMarkdown"] p,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] li {
@@ -184,13 +187,13 @@ button[kind="header"] {
     padding: 0.55rem 0.75rem !important;
 }
 [data-testid="stSidebar"] .streamlit-expanderHeader:hover {
-    background: var(--coral-50) !important;
-    border-color: var(--coral-200) !important;
+    background: #FFFFFF !important;
+    border-color: var(--brand) !important;
 }
 [data-testid="stSidebar"] [data-testid="stAlert"] {
-    background: var(--coral-50) !important;
-    border-color: var(--coral-200) !important;
-    color: var(--ink) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    border-color: rgba(var(--brand-rgb), 0.28) !important;
+    color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] .stButton > button {
     background: var(--sidebar-item-bg) !important;
@@ -214,7 +217,8 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stButton > button:hover {
     background: var(--sidebar-item-hover) !important;
-    border-color: var(--coral-300) !important;
+    border-color: #FFFFFF !important;
+    color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
     background: var(--coral-600) !important;
@@ -279,7 +283,7 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] hr {
     border: none !important;
-    border-top: 1px solid var(--border-soft) !important;
+    border-top: 1px solid var(--sidebar-divider) !important;
     margin: 0.75rem 0 !important;
 }
 [data-testid="stSidebar"] .stDownloadButton > button {
@@ -290,7 +294,7 @@ button[kind="header"] {
 }
 [data-testid="stSidebar"] .stDownloadButton > button:hover {
     background: var(--sidebar-item-hover) !important;
-    border-color: var(--coral-300) !important;
+    border-color: #FFFFFF !important;
 }
 /* Sidebar workflow menu — chỉ style label trong radiogroup, không đụng widget label */
 [data-testid="stSidebar"] .stRadio > [data-testid="stWidgetLabel"] {
@@ -775,8 +779,8 @@ footer, #MainMenu { visibility: hidden; }
         display: block !important;
         visibility: visible !important;
         border-right: none !important;
-        border-bottom: 1px solid var(--border-soft) !important;
-        box-shadow: 0 2px 10px rgba(var(--brand-rgb), 0.08) !important;
+        border-bottom: 1px solid rgba(var(--sidebar-panel-rgb), 0.55) !important;
+        box-shadow: 0 2px 12px rgba(var(--sidebar-panel-rgb), 0.28) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
         padding: 0.45rem 0.7rem 0.4rem !important;
