@@ -74,6 +74,20 @@ class ShopBaseCrawler(BaseCrawler):
         self._catalog_session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._shop_name_cache: str | None = None
         self._catalog_supported: bool | None = None
+        self.crawl_fields = None
+        self.partial_callback: Callable[[list[Product]], None] | None = None
+        self.last_products: list[Product] = []
+
+    def _emit_partial(self, products: list[Product]) -> None:
+        self.last_products = list(products)
+        if self.partial_callback is not None and products:
+            self.partial_callback(self.last_products)
+
+    def _wants_description(self) -> bool:
+        fields = self.crawl_fields
+        if fields is None:
+            return True
+        return fields.wants_description()
 
     @staticmethod
     def _normalize_site_url(site_url: str) -> str:
@@ -572,11 +586,14 @@ class ShopBaseCrawler(BaseCrawler):
                     processed == total or processed % 50 == 0
                 ):
                     progress_callback(processed, map_total, len(products))
-            self._enrich_descriptions_parallel(
-                products,
-                max_workers=max_workers,
-                progress_callback=progress_callback,
-            )
+            self._emit_partial(products)
+            if self._wants_description():
+                self._enrich_descriptions_parallel(
+                    products,
+                    max_workers=max_workers,
+                    progress_callback=progress_callback,
+                )
+                self._emit_partial(products)
             if progress_callback and total:
                 progress_callback(total, total, len(products))
             return products
@@ -782,11 +799,14 @@ class ShopBaseCrawler(BaseCrawler):
         if not handle or not title:
             return None
 
-        description = self._resolve_shopbase_description(
-            data,
-            handle,
-            skip_page_fallback=skip_page_fallback,
-        )
+        if self._wants_description():
+            description = self._resolve_shopbase_description(
+                data,
+                handle,
+                skip_page_fallback=skip_page_fallback,
+            )
+        else:
+            description = None
 
         price = self._parse_price(data.get("price") or data.get("min_price"))
         if price is None and data.get("variants"):

@@ -100,6 +100,7 @@ from utils.product_editor import (
 )
 from utils.shop_probe import build_category_crawl_url, probe_shop_stats, shop_brand_from_url
 from utils.ui_theme import inject_pastel_pink_theme, render_app_hero
+from models.crawl_fields import crawl_fields_from_session
 from ui.crawl_step1_layout import (
     close_crawl_step1_wrap,
     open_crawl_step1_wrap,
@@ -108,6 +109,7 @@ from ui.crawl_step1_layout import (
     render_crawl_include_product_url,
     render_crawl_limits_row,
 )
+from utils.crawl_fields_ui import init_crawl_field_session_defaults, render_crawl_fields_selector
 from ui.dedupe_filter_panel import render_dedupe_filter_panel
 from ui.proxy_dedupe_panel import render_proxy_dedupe_panel
 from ui.proxy_panel import render_proxy_panel
@@ -248,6 +250,12 @@ def init_session() -> None:
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
         "crawl_description_format": "html",
         "crawl_include_product_url": True,
+        "crawl_fields_all": True,
+        "crawl_field_title": True,
+        "crawl_field_images": True,
+        "crawl_field_url": True,
+        "crawl_field_description": True,
+        "crawl_field_categories": True,
         "crawl_via_sitemap": False,
         "crawl_report_json": None,
         "crawl_report_csv": None,
@@ -286,6 +294,7 @@ def init_session() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    init_crawl_field_session_defaults()
     # Mặc định 500 luồng; giữ giá trị user đã chỉnh trong session.
     if "crawl_workers" not in st.session_state or st.session_state.get(
         "_crawl_workers_default_v500"
@@ -2025,6 +2034,9 @@ def _render_data_status_banner() -> None:
     products = st.session_state.products_raw
     mode = st.session_state.get("workflow_mode", "crawl")
 
+    if products is None and _current_crawl_error():
+        return
+
     if products is None:
         if is_redbubble_workflow(mode):
             st.warning(
@@ -2044,7 +2056,8 @@ def _render_data_status_banner() -> None:
         elif mode in ("crawl", "crawl-gmc"):
             st.warning(
                 "**Chưa có sản phẩm.** Ở **Bước 1** nhập link shop/category, "
-                "rồi bấm **Crawl dữ liệu**."
+                "chọn **Tất cả shop** (ShopBase), rồi bấm **Crawl dữ liệu**. "
+                "ShopBase ~10k SP: nên **24–64 luồng** hoặc bỏ tick **Description** để crawl nhanh."
             )
         return
 
@@ -2582,6 +2595,14 @@ def run_crawl_only(
             st.session_state.products_raw = deepcopy(partial_products)
             st.session_state.crawl_matched_count = len(partial_products)
 
+        crawl_fields = crawl_fields_from_session(st.session_state)
+        if crawl_platform == "shopbase" and crawl_fields.wants_description() and workers > 64:
+            workers = 64
+            st.session_state.last_info = (
+                f"ShopBase + Description: tự giới hạn **{workers} luồng** "
+                "(tránh timeout/thiếu SP). Bỏ tick **Description** để crawl catalog nhanh hơn."
+            )
+
         crawl_kwargs = dict(
             url=crawl_url,
             credentials=creds,
@@ -2595,6 +2616,7 @@ def run_crawl_only(
                 st.session_state.get("crawl_description_format") or "html"
             ),
             partial_callback=partial_callback,
+            crawl_fields=crawl_fields,
         )
         started_at = datetime.now(timezone.utc)
         if rb_platform:
@@ -2647,8 +2669,10 @@ def run_crawl_only(
                 f"{missing_note}"
             )
         else:
+            field_note = ", ".join(crawl_fields.labels()) if crawl_fields else ""
             st.session_state.last_info = (
                 f"Crawl xong **{len(products)}** sản phẩm · {preview.get('message', '')} · "
+                f"Trường: **{field_note}** · "
                 f"{report.summary()} · {report_note}{missing_note}"
             )
         st.session_state.imported_products_all = None
@@ -3650,8 +3674,9 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
             "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
         )
     render_crawl_limits_row(include_workers=True)
-    render_crawl_description_format()
-    render_crawl_include_product_url()
+    render_crawl_fields_selector()
+    if crawl_fields_from_session(st.session_state).wants_description():
+        render_crawl_description_format()
 
     limit = int(st.session_state.get("crawl_limit", 0))
     pages = int(st.session_state.get("crawl_pages", 0))

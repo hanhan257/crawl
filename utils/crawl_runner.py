@@ -48,6 +48,22 @@ def _apply_crawl_description_format(products: list, description_format: str) -> 
     return products
 
 
+def _finalize_crawl_products(
+    products: list,
+    *,
+    description_format: str,
+    crawl_fields=None,
+) -> list:
+    """Lọc trường theo lựa chọn user + format mô tả."""
+    if crawl_fields is not None and crawl_fields.wants_description():
+        products = _apply_crawl_description_format(products, description_format)
+    elif crawl_fields is None:
+        products = _apply_crawl_description_format(products, description_format)
+    if crawl_fields is not None:
+        products = crawl_fields.apply_to_products(products)
+    return products
+
+
 def run_auto_crawl(
 
     url: str,
@@ -69,6 +85,8 @@ def run_auto_crawl(
     description_format: str = "html",
 
     partial_callback: PartialProductsCallback | None = None,
+
+    crawl_fields=None,
 
 ) -> tuple[list, DetectedTarget]:
 
@@ -164,7 +182,11 @@ def run_auto_crawl(
                     "Site hay chặn IP (429) — bật **Proxy**, luồng **4–8**, "
                     "hoặc dán link artist/collection cụ thể."
                 )
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
     if target.platform == "redbubble":
 
@@ -196,7 +218,11 @@ def run_auto_crawl(
 
             raise CrawlError("Redbubble: không crawl được sản phẩm nào từ link này.")
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -351,7 +377,11 @@ def run_auto_crawl(
                     "Shopify: không crawl được sản phẩm nào. Store có thể tắt public API."
                 )
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -366,6 +396,9 @@ def run_auto_crawl(
             proxy_url=effective_proxy,
 
         )
+        crawler.crawl_fields = crawl_fields
+        if partial_callback is not None:
+            crawler.partial_callback = partial_callback
 
         try:
 
@@ -432,7 +465,11 @@ def run_auto_crawl(
                         )
             raise CrawlError("ShopBase: không crawl được sản phẩm nào từ link này.")
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -470,7 +507,11 @@ def run_auto_crawl(
         if not products:
             raise CrawlError("Teemill: không crawl được sản phẩm nào từ link này.")
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -562,7 +603,11 @@ def run_auto_crawl(
                 "Thử **Luồng crawl = 8**, tắt **Proxy**, hoặc crawl lại sau vài phút."
             )
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -634,7 +679,11 @@ def run_auto_crawl(
                 "Thử category khác hoặc giảm **Luồng crawl** / tắt Proxy."
             )
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -741,7 +790,11 @@ def run_auto_crawl(
 
             raise CrawlError("WooCommerce: không crawl được sản phẩm nào từ link này.")
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 
@@ -863,7 +916,11 @@ def run_auto_crawl(
 
             )
 
-        return _apply_crawl_description_format(products, description_format), target
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
 
 
 

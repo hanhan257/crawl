@@ -100,13 +100,12 @@ def render_crawl_description_format() -> None:
 
 
 def render_crawl_include_product_url() -> None:
-    """Tùy chọn lấy cột link sản phẩm nguồn (Shopify/Woo/Trendsi…)."""
+    """Giữ cho workflow Shopify/Trendsi/Redbubble — chỉ link SP."""
     st.checkbox(
         "Lấy cột link sản phẩm",
         key="crawl_include_product_url",
         help=(
-            "Bật (mặc định) để giữ **URL sản phẩm nguồn** "
-            "(vd. `https://gullprint.com/product/...`) trong bảng sửa và file xuất. "
+            "Bật (mặc định) để giữ **URL sản phẩm nguồn** trong bảng sửa và file xuất. "
             "Tắt nếu không cần cột link."
         ),
     )
