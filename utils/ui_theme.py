@@ -167,6 +167,30 @@ button[kind="header"] {
     padding: 1.35rem 0.9rem 1.1rem 1rem !important;
     background: var(--sidebar-panel) !important;
 }
+.sidebar-mode-header {
+    margin: 0 0 0.65rem 0;
+    padding: 0 0 0.55rem 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.42);
+}
+.sidebar-mode-title {
+    margin: 0 0 0.2rem 0 !important;
+    padding: 0 !important;
+    color: #FFFFFF !important;
+    font-size: 1.12rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.25 !important;
+    text-shadow: 0 1px 2px rgba(90, 35, 35, 0.2) !important;
+}
+.sidebar-mode-subtitle {
+    margin: 0 !important;
+    padding: 0 !important;
+    color: rgba(255, 255, 255, 0.96) !important;
+    font-size: 0.86rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.01em !important;
+}
 [data-testid="stSidebar"] [data-testid="stMarkdown"] p,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] li {
     color: var(--sidebar-muted) !important;
@@ -800,10 +824,15 @@ footer, #MainMenu { visibility: hidden; }
     [data-testid="stSidebar"] > div:first-child > [data-testid="stVerticalBlock"] {
         gap: 0.2rem !important;
     }
-    [data-testid="stSidebar"] [data-testid="stMarkdown"] h5 {
-        font-size: 0.88rem !important;
-        margin: 0 0 0.1rem 0 !important;
-        line-height: 1.2 !important;
+    .sidebar-mode-header {
+        margin-bottom: 0.45rem !important;
+        padding-bottom: 0.4rem !important;
+    }
+    .sidebar-mode-title {
+        font-size: 0.98rem !important;
+    }
+    .sidebar-mode-subtitle {
+        font-size: 0.78rem !important;
     }
     [data-testid="stSidebar"] .stCaption,
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {

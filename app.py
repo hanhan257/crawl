@@ -3503,8 +3503,15 @@ def render_export_actions(
 
 def render_workflow_selector() -> str:
     with st.sidebar:
-        st.markdown("##### Chế độ làm việc")
-        st.caption("Chọn nguồn dữ liệu")
+        st.markdown(
+            """
+            <div class="sidebar-mode-header">
+                <p class="sidebar-mode-title">Chế độ làm việc</p>
+                <p class="sidebar-mode-subtitle">Chọn nguồn dữ liệu</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         current = st.session_state.get("workflow_mode", "crawl")
         keys = list(WORKFLOW_MODES.keys())
 
