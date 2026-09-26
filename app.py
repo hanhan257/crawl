@@ -2515,6 +2515,19 @@ def run_crawl_only(
         else:
             st.session_state.crawl_shopify_hydrogen = False
 
+        crawl_fields = crawl_fields_from_session(st.session_state)
+        wants_shopbase_desc = (
+            crawl_platform == "shopbase" and crawl_fields.wants_description()
+        )
+        if wants_shopbase_desc and workers > 64:
+            workers = 64
+            st.session_state.last_info = (
+                f"ShopBase + Description: tự giới hạn **{workers} luồng** "
+                "(tránh timeout/thiếu SP). Bỏ tick **Description** để crawl catalog nhanh hơn."
+            )
+        if crawl_platform == "shopbase":
+            st.session_state["_shopbase_progress_phase"] = "pages"
+
         if target_preview and crawl_platform != "redbubble":
             progress_bar = st.progress(0.0, text="Đang chuẩn bị crawl…")
             progress_text = st.empty()
@@ -2527,17 +2540,17 @@ def run_crawl_only(
                         label = f"Đang xử lý {current}/{total} · {matched} SP"
                     elif crawl_platform == "shopbase":
                         phase = st.session_state.get("_shopbase_progress_phase") or "list"
-                        if phase == "description":
+                        if wants_shopbase_desc and phase == "description":
                             label = (
                                 f"Mô tả {current}/{total} · {matched} SP · {workers} luồng"
                             )
-                        elif phase == "pages":
+                        elif phase == "list":
                             label = (
-                                f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                                f"Danh sách {current}/{total} · {matched} SP · {workers} luồng"
                             )
                         else:
                             label = (
-                                f"Danh sách {current}/{total} · {matched} SP · {workers} luồng"
+                                f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                             )
                     elif crawl_platform == "trendsi":
                         label = (
@@ -2568,13 +2581,12 @@ def run_crawl_only(
                             f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
                         )
                     elif crawl_platform == "shopbase" and expected_total and expected_total >= 500:
-                        phase = st.session_state.get("_shopbase_progress_phase") or "list"
-                        wants_desc = crawl_fields_from_session(st.session_state).wants_description()
                         est_min = max(
                             1,
-                            int(expected_total / max(workers, 1) / 80) + (2 if wants_desc else 0),
+                            int(expected_total / max(workers, 1) / 80)
+                            + (2 if wants_shopbase_desc else 0),
                         )
-                        if phase == "description" or wants_desc:
+                        if wants_shopbase_desc:
                             detail = "danh sách + mô tả"
                         else:
                             detail = "chỉ danh sách catalog — không lấy mô tả"
@@ -2603,14 +2615,6 @@ def run_crawl_only(
             # Checkpoint giữa chừng — lỗi/dừng vẫn còn data để xuất file.
             st.session_state.products_raw = deepcopy(partial_products)
             st.session_state.crawl_matched_count = len(partial_products)
-
-        crawl_fields = crawl_fields_from_session(st.session_state)
-        if crawl_platform == "shopbase" and crawl_fields.wants_description() and workers > 64:
-            workers = 64
-            st.session_state.last_info = (
-                f"ShopBase + Description: tự giới hạn **{workers} luồng** "
-                "(tránh timeout/thiếu SP). Bỏ tick **Description** để crawl catalog nhanh hơn."
-            )
 
         crawl_kwargs = dict(
             url=crawl_url,
