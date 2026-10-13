@@ -48,6 +48,7 @@ CRAWL_HINTS = {
     ("fineartamerica", "product"): "Link /featured/...html → lấy 1 artwork",
     ("shopbase", "shop"): "Link trang chủ ShopBase (vd. nebsport.com) → crawl API catalog (~10k SP)",
     ("shopbase", "category"): "Link /collections/... → crawl collection (Football, Baseball…)",
+    ("shopbase", "search"): "Link /search?q=từ-khóa → crawl SP khớp tìm kiếm qua catalog API",
     ("shopbase", "product"): "Link /products/... → lấy 1 SP + mô tả HTML",
     ("woocommerce", "shop"): (
         "Trang chủ hoặc /shop → Store API (tự giới hạn ~24 luồng). "

@@ -455,6 +455,22 @@ def run_auto_crawl(
 
                 )
 
+            elif target.crawl_type == "search" and target.query:
+
+                products = crawler.crawl_search(
+
+                    target.query,
+
+                    limit=limit,
+
+                    max_pages=max_pages,
+
+                    progress_callback=progress_callback_sb,
+
+                    max_workers=workers,
+
+                )
+
             else:
 
                 raise CrawlError(f"ShopBase: chưa hỗ trợ loại link '{target.crawl_type}'")

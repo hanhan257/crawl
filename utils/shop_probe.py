@@ -738,6 +738,19 @@ def _probe_shopbase(
             url_category_slug=url_category or target.handle,
         )
 
+    if target.crawl_type == "search" and target.query:
+        total = crawler.count_search_results(target.query)
+        return ShopProbeResult(
+            ok=True,
+            platform="shopbase",
+            crawl_type="search",
+            base_url=base_url,
+            message=f"**{total}** SP · tìm kiếm `{target.query}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=target.query,
+        )
+
     if target.crawl_type == "category" and target.handle:
         with ThreadPoolExecutor(max_workers=2) as executor:
             total_future = executor.submit(

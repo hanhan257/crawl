@@ -144,6 +144,33 @@ class ShopBaseCrawler(BaseCrawler):
             default_category=default_category,
         )
 
+    def crawl_search(
+        self,
+        query: str,
+        *,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 1,
+    ) -> list[Product]:
+        search = query.strip()
+        if not search:
+            raise ValueError("Thiếu từ khóa tìm kiếm.")
+        return self._crawl_catalog(
+            limit=limit,
+            max_pages=max_pages,
+            query=search,
+            progress_callback=progress_callback,
+            max_workers=max_workers,
+            default_category=search,
+        )
+
+    def count_search_results(self, query: str) -> int:
+        search = query.strip()
+        if not search or not self._catalog_api_available():
+            return 0
+        return self._catalog_reported_count(query=search)
+
     def crawl_product(self, handle: str) -> Product | None:
         handle = handle.strip().strip("/")
         product = self._product_from_detail_api(handle)
@@ -345,6 +372,7 @@ class ShopBaseCrawler(BaseCrawler):
         page: int,
         *,
         collection_handle: str | None = None,
+        query: str | None = None,
         session: requests.Session | None = None,
     ) -> dict[str, Any] | None:
         params: dict[str, Any] = {
@@ -353,6 +381,9 @@ class ShopBaseCrawler(BaseCrawler):
         }
         if collection_handle:
             params["collection_handle"] = collection_handle
+        search = (query or "").strip()
+        if search:
+            params["q"] = search
         http = session or self._catalog_session
         try:
             resp = http.get(
@@ -392,8 +423,17 @@ class ShopBaseCrawler(BaseCrawler):
                 break
         return None
 
-    def _catalog_reported_count(self, collection_handle: str | None = None) -> int:
-        result = self._fetch_catalog_page(1, collection_handle=collection_handle)
+    def _catalog_reported_count(
+        self,
+        collection_handle: str | None = None,
+        *,
+        query: str | None = None,
+    ) -> int:
+        result = self._fetch_catalog_page(
+            1,
+            collection_handle=collection_handle,
+            query=query,
+        )
         if not result:
             return 0
         count = result.get("count")
@@ -408,8 +448,14 @@ class ShopBaseCrawler(BaseCrawler):
         self,
         collection_handle: str | None = None,
         max_pages: int | None = None,
+        *,
+        query: str | None = None,
     ) -> tuple[dict[str, Any] | None, int]:
-        first = self._fetch_catalog_page(1, collection_handle=collection_handle)
+        first = self._fetch_catalog_page(
+            1,
+            collection_handle=collection_handle,
+            query=query,
+        )
         if not first:
             return None, 0
         items = first.get("items") or []
@@ -429,6 +475,7 @@ class ShopBaseCrawler(BaseCrawler):
         self,
         *,
         collection_handle: str | None = None,
+        query: str | None = None,
         max_pages: int | None = None,
         limit: int | None = None,
         max_workers: int = 8,
@@ -437,6 +484,7 @@ class ShopBaseCrawler(BaseCrawler):
         first, total_pages = self._catalog_total_pages(
             collection_handle,
             max_pages,
+            query=query,
         )
         if not first:
             return []
@@ -467,6 +515,9 @@ class ShopBaseCrawler(BaseCrawler):
             }
             if collection_handle:
                 params["collection_handle"] = collection_handle
+            search = (query or "").strip()
+            if search:
+                params["q"] = search
             for attempt in range(3):
                 try:
                     resp = session_for_thread().get(
@@ -515,6 +566,7 @@ class ShopBaseCrawler(BaseCrawler):
             result = self._fetch_catalog_page(
                 page_num,
                 collection_handle=collection_handle,
+                query=query,
             )
             if result:
                 page_items[page_num] = [
@@ -559,6 +611,7 @@ class ShopBaseCrawler(BaseCrawler):
         limit: int | None = None,
         max_pages: int | None = None,
         collection_handle: str | None = None,
+        query: str | None = None,
         progress_callback: CrawlProgressCallback | None = None,
         max_workers: int = 1,
         default_category: str = "",
@@ -567,6 +620,7 @@ class ShopBaseCrawler(BaseCrawler):
             self._shop_name()
             items = self._list_catalog_items(
                 collection_handle=collection_handle,
+                query=query,
                 max_pages=max_pages,
                 limit=limit,
                 max_workers=max_workers,
@@ -601,6 +655,9 @@ class ShopBaseCrawler(BaseCrawler):
             if progress_callback and total:
                 progress_callback(total, total, len(products))
             return products
+
+        if (query or "").strip():
+            return []
 
         urls = self._discover_product_urls(max_sitemaps=max_pages)
         if limit is not None:
