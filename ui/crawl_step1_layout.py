@@ -59,7 +59,7 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
             (
                 3,
                 "Luồng crawl",
-                "crawl_workers",
+                "crawl_workers_n",
                 {
                     "min_value": 1,
                     "max_value": worker_max,

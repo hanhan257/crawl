@@ -161,7 +161,7 @@ GMC_CONDITION_OPTIONS = ["", "new", "refurbished", "used"]
 GENERAL_EXPORT_FORMATS = ["woocommerce-csv", "shopify-csv", "web-feed-csv"]
 SHOP_EXPORT_FORMATS = GENERAL_EXPORT_FORMATS + ["gmc-feed-csv"]
 DEFAULT_EXPORT_WORKERS = min(32, max(16, (os.cpu_count() or 4) * 2))
-DEFAULT_CRAWL_WORKERS = 500
+DEFAULT_CRAWL_WORKERS = 64
 
 WORKFLOW_MODES = {
     "crawl": "Crawl từ link (Shopify / Woo / ShopBase / FAA / web)",
@@ -295,18 +295,12 @@ def init_session() -> None:
         if key not in st.session_state:
             st.session_state[key] = value
     init_crawl_field_session_defaults()
-    # Mặc định 500 luồng; giữ giá trị user đã chỉnh trong session.
-    if "crawl_workers" not in st.session_state or st.session_state.get(
-        "_crawl_workers_default_v500"
-    ) is not True:
-        # Nâng mặc định cũ (16–32) lên 500 một lần khi mở app bản mới.
-        current = int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS) or 0)
-        if current <= 32:
-            st.session_state.crawl_workers = DEFAULT_CRAWL_WORKERS
-        st.session_state._crawl_workers_default_v500 = True
+    # Ô cũ key=crawl_workers đã dính 500 trong session trình duyệt — dùng key mới.
+    if "crawl_workers_n" not in st.session_state:
+        st.session_state.crawl_workers_n = DEFAULT_CRAWL_WORKERS
     st.session_state.crawl_workers = min(
         500,
-        max(1, int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))),
+        max(1, int(st.session_state.get("crawl_workers_n", DEFAULT_CRAWL_WORKERS))),
     )
 
     if not st.session_state.get("_export_pick_required_v1"):

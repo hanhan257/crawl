@@ -9,11 +9,10 @@ T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
 API_LIST_MAX_WORKERS = 500
-# Woo Store API dễ 429 — tool mặc định 500 luồng nhưng Woo chỉ nên ~24.
+# Woo Store API dễ 429 — giữ thấp hơn luồng UI.
 API_LIST_WOO_MAX_WORKERS = 24
-# Woo/Shopify list API dễ 429 nếu bắn hàng trăm page cùng lúc.
-API_LIST_WAVE_SIZE = 48
-API_LIST_WOO_WAVE_SIZE = 16
+# Đợt fetch bám theo luồng user chọn. 500 cùng lúc dễ timeout/thiếu trang.
+API_LIST_WAVE_SIZE = 64
 EMPTY_PAGE_RETRY_ROUNDS = 3
 SEQUENTIAL_BACKFILL_DELAY = 0.35
 
@@ -115,10 +114,8 @@ def _sequential_backfill_holes(
 
 
 def _effective_wave_size(workers: int, end_page: int | None) -> int:
-    wave = max(1, min(workers, API_LIST_WAVE_SIZE))
-    if end_page and end_page > 100:
-        wave = min(wave, API_LIST_WOO_WAVE_SIZE)
-    return wave
+    del end_page
+    return max(1, min(workers, API_LIST_WAVE_SIZE))
 
 
 def fetch_pages_in_waves(
@@ -255,9 +252,9 @@ def fetch_pages_in_waves(
         pages_left = _remaining_pages(limit, per_page, len(_merge_page_batches(page_batches)))
         if pages_left is not None:
             wave_size = min(wave_size, pages_left)
-        # Chưa biết tổng trang — chỉ lấy từng trang; tránh 500 request page 2..501 cùng lúc.
+        # Chưa biết tổng trang — vẫn lấy một đợt, không rơi về 1 luồng.
         if end_page is None:
-            wave_size = 1
+            wave_size = max(1, min(wave_size, API_LIST_WAVE_SIZE))
 
         wave_pages = list(range(next_page, next_page + wave_size))
         if max_pages:
