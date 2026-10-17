@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(
+def _cached_probe_shop(  # v2: collection đếm storefront, không lấy sitemap cả shop
     url: str,
     woo_key: str,
     woo_secret: str,
@@ -2331,6 +2331,16 @@ def render_crawl_report_downloads() -> None:
             st.caption("Cột **url** = link sản phẩm")
 
 
+def _pill_matches_category(target, category_slug: str) -> bool:
+    current = str(
+        getattr(target, "category_slug", None) or getattr(target, "handle", None) or ""
+    ).strip().strip("/").lower()
+    picked = (category_slug or "").strip().strip("/").lower()
+    if not current or not picked or picked == "tất cả":
+        return False
+    return current == picked or current.endswith("/" + picked)
+
+
 def run_crawl_only(
     url: str,
     limit: int,
@@ -2445,19 +2455,29 @@ def run_crawl_only(
                 # Link /classify/... hoặc /brand đã đúng category — không rebuild
                 # (trước đây build_category_crawl_url trả homepage → ra SP quần áo mặc định).
                 pass
-            elif target.platform == "woocommerce" and target.crawl_type in {
-                "shop",
-                "product",
-                "category",
-            }:
-                # Giữ nguyên link user dán (homepage /shop /product /home-living/mug…).
+            elif target.platform in {"woocommerce", "teemill"} and target.crawl_type == "product":
                 pass
-            elif target.platform == "teemill" and target.crawl_type in {
-                "shop",
-                "product",
-                "category",
-            }:
+            elif (
+                target.platform in {"woocommerce", "teemill", "shopify", "shopbase"}
+                and target.crawl_type == "category"
+                and _pill_matches_category(target, category_slug)
+            ):
+                # Link danh mục/collection user dán là phạm vi crawl.
                 pass
+            elif target.platform == "woocommerce" and target.crawl_type == "shop":
+                crawl_url = build_category_crawl_url(
+                    target.base_url or crawl_url,
+                    target.platform,
+                    category_slug,
+                )
+                preview = describe_url(crawl_url)
+            elif target.platform == "teemill" and target.crawl_type == "shop":
+                crawl_url = build_category_crawl_url(
+                    target.base_url or crawl_url,
+                    target.platform,
+                    category_slug,
+                )
+                preview = describe_url(crawl_url)
             elif target.platform == "generic-web":
                 if getattr(target, "crawl_type", "") == "shop":
                     category_filter = category_slug
@@ -3147,6 +3167,10 @@ def render_url_preview(
                     status.write(f"Đã đếm **{probe['total_products']}** SP trên Redbubble.")
                 else:
                     status.write("Redbubble: dùng link /shop hoặc /i/... để crawl.")
+            elif probe.get("crawl_type") == "category" and probe.get("total_products") is not None:
+                status.write(
+                    f"Đã đếm **{probe['total_products']}** SP trong danh mục này."
+                )
             elif probe.get("total_products") is not None:
                 status.write(
                     f"Đã đếm **{probe['total_products']}** SP"
@@ -3211,6 +3235,12 @@ def render_url_preview(
                 )
         elif platform == "trendsi" and probe.get("crawl_type") == "brand":
             st.caption("Brand Trendsi — crawl đúng link `/brand?...`, không lấy cả catalog.")
+        elif platform == "shopify" and probe.get("crawl_type") == "category":
+            total = probe.get("total_products")
+            if total is not None:
+                st.caption(
+                    f"Crawl đúng collection này (~**{int(total):,}** SP).".replace(",", ".")
+                )
         elif platform == "shopify" and probe.get("crawl_type") == "shop":
             probe_msg = str(probe.get("message") or "")
             if "Hydrogen" in probe_msg:

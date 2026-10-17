@@ -41,7 +41,7 @@ class CrawlReport:
     def summary(self) -> str:
         parts = [f"**{self.products_crawled:,}** SP".replace(",", ".")]
         if self.expected_total is not None:
-            parts.append(f"dự kiến shop ~{self.expected_total:,}".replace(",", "."))
+            parts.append(f"dự kiến ~{self.expected_total:,}".replace(",", "."))
         parts.append(f"{self.duration_seconds:.1f}s")
         if self.workers > 1:
             parts.append(f"{self.workers} luồng")

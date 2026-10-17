@@ -873,7 +873,37 @@ def _probe_shopify(
             url_category_slug=target.query,
         )
 
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type="product",
+            base_url=crawler.shop_url,
+            message="**1** SP · link sản phẩm",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
     categories = _shopify_list_collections(crawler)
+
+    # Link /collections/{handle} chỉ đếm SP trong collection đó.
+    # Sitemap cả shop (vd. 6648) không được gắn vào collection.
+    if target.crawl_type == "category" and url_category and url_category != "all":
+        total, title = _shopify_collection_product_count(crawler, url_category)
+        _upsert_shopify_collection(categories, url_category, title, total)
+        count_text = f"**{total}**" if total is not None else "**?**"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type="category",
+            base_url=crawler.shop_url,
+            message=f"{count_text} SP · danh mục **{title}**",
+            total_products=total,
+            categories=categories,
+            url_category_slug=url_category,
+        )
+
     total = _shopify_product_count(crawler)
 
     if total is None and categories:
@@ -1141,6 +1171,64 @@ def _shopify_list_collections(crawler) -> list[ShopCategoryInfo]:
 
     categories.sort(key=lambda item: (-(item.count or 0), item.name.lower()))
     return categories
+
+
+def _upsert_shopify_collection(
+    categories: list[ShopCategoryInfo],
+    handle: str,
+    title: str,
+    count: int | None,
+) -> None:
+    """Đưa collection của link user dán lên đầu, count = SP storefront."""
+    for item in categories:
+        if item.slug == handle:
+            item.name = title or item.name
+            item.count = count
+            categories.remove(item)
+            categories.insert(0, item)
+            return
+    categories.insert(
+        0,
+        ShopCategoryInfo(slug=handle, name=title or handle, count=count),
+    )
+
+
+def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None, str]:
+    """Đếm SP đang bán trong 1 collection, không đếm sitemap cả shop."""
+    title = handle
+    admin_count: int | None = None
+    try:
+        meta = crawler.session.get(
+            f"{crawler.shop_url}/collections/{handle}.json",
+            timeout=30,
+        )
+        if meta.status_code == 200:
+            collection = meta.json().get("collection") or {}
+            title = str(collection.get("title") or handle).strip() or handle
+            raw_count = collection.get("products_count")
+            if raw_count is not None:
+                admin_count = int(raw_count)
+    except (requests.RequestException, ValueError, TypeError):
+        admin_count = None
+
+    try:
+        response = crawler.session.get(
+            f"{crawler.shop_url}/collections/{handle}/products.json",
+            params={"limit": 250, "page": 1},
+            timeout=40,
+        )
+        if response.status_code == 200:
+            batch = response.json().get("products") or []
+            if isinstance(batch, list) and len(batch) < 250:
+                return len(batch), title
+            if admin_count is not None and admin_count >= len(batch):
+                return admin_count, title
+            if isinstance(batch, list):
+                return len(batch), title
+    except (requests.RequestException, ValueError, TypeError):
+        pass
+
+    return admin_count, title
 
 
 def _shopify_product_count(crawler) -> int | None:
