@@ -54,7 +54,7 @@ CRAWL_HINTS = {
         "Trang chủ hoặc /shop → Store API (tự giới hạn ~24 luồng). "
         "Shop lớn (>10k SP): để **Luồng crawl** mặc định hoặc 16–24; tắt Proxy nếu lỗi."
     ),
-    ("woocommerce", "category"): "Link product-category → lấy SP trong danh mục",
+    ("woocommerce", "category"): "Link danh mục (product-category hoặc ?filter_category=) → chỉ lấy SP trong danh mục đó",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
     ("teemill", "shop"): "Trang chủ Teemill → crawl toàn bộ shop qua Omnis API",

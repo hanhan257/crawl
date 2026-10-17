@@ -439,29 +439,59 @@ class WooCommerceCrawler(BaseCrawler):
             pass
         return f"{self.site_url}/product-category/{cleaned}/"
 
+    @staticmethod
+    def _category_id_from_list(data: Any, category_slug: str) -> int | None:
+        want = (category_slug or "").strip().strip("/").split("/")[-1].lower()
+        if not want or not isinstance(data, list):
+            return None
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            item_slug = str(item.get("slug") or "").strip().lower()
+            if item_slug == want and item.get("id") is not None:
+                return int(item["id"])
+        if want.isdigit():
+            for item in data:
+                if isinstance(item, dict) and str(item.get("id")) == want:
+                    return int(item["id"])
+        return None
+
     def _resolve_category_id(self, category_slug: str) -> int | None:
+        slug = (category_slug or "").strip().strip("/")
+        if not slug:
+            return None
+        if slug.split("/")[-1].isdigit() and "/" not in slug:
+            return int(slug)
+
         if self.use_public_api:
-            response = self.session.get(
-                f"{self.site_url}/wp-json/wc/store/v1/products/categories",
-                params={"slug": category_slug},
-                timeout=30,
-            )
-            if response.status_code == 200:
+            for page in range(1, 11):
+                response = self.session.get(
+                    f"{self.site_url}/wp-json/wc/store/v1/products/categories",
+                    params={"per_page": 100, "page": page},
+                    timeout=30,
+                )
+                if response.status_code != 200:
+                    break
                 data = response.json()
-                if data:
-                    return int(data[0]["id"])
+                if not isinstance(data, list) or not data:
+                    break
+                matched = self._category_id_from_list(data, slug)
+                if matched is not None:
+                    return matched
+                if len(data) < 100:
+                    break
 
         if self.consumer_key and self.consumer_secret:
             response = self.session.get(
                 f"{self.site_url}/wp-json/wc/v3/products/categories",
-                params={"slug": category_slug},
+                params={"slug": slug.split("/")[-1]},
                 auth=(self.consumer_key, self.consumer_secret),
                 timeout=30,
             )
             if response.status_code == 200:
-                data = response.json()
-                if data:
-                    return int(data[0]["id"])
+                matched = self._category_id_from_list(response.json(), slug)
+                if matched is not None:
+                    return matched
 
         return None
 

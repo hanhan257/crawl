@@ -5,7 +5,7 @@ Push lên nhánh **main** → Actions SSH vào VPS → `git pull` + restart Stre
 ## 1. Trên VPS — git qua SSH (không cần dán PAT mỗi lần)
 
 ```bash
-ssh root@206.189.82.178
+ssh root@64.225.56.106
 
 # Tạo deploy key (chỉ đọc repo)
 ssh-keygen -t ed25519 -C "crawl-vps" -f ~/.ssh/crawl_github -N ""
@@ -58,7 +58,7 @@ chmod 600 ~/.ssh/authorized_keys
 
 | Secret | Giá trị |
 |--------|---------|
-| `VPS_HOST` | `206.189.82.178` |
+| `VPS_HOST` | `64.225.56.106` |
 | `VPS_USER` | `root` |
 | `VPS_SSH_KEY` | toàn bộ nội dung file private `crawl_actions` (gồm dòng BEGIN/END) |
 | `VPS_APP_DIR` | `/root/crawl` (tuỳ chọn, mặc định `/root/crawl`) |

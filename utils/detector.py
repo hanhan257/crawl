@@ -720,6 +720,26 @@ def _detect_redbubble(url: str, path: str) -> DetectedTarget:
     )
 
 
+def _woo_filter_category_slug(url: str) -> str | None:
+    """WoodMart / Woo layered nav: /shop/?filter_category=football-jersey."""
+    query = parse_qs(urlparse(url).query)
+    for key in (
+        "filter_category",
+        "filter_product_cat",
+        "filter_product-cat",
+        "product_cat",
+        "product-cat",
+    ):
+        raw = (query.get(key) or [None])[0]
+        if not raw:
+            continue
+        slug = unquote_plus(str(raw)).strip().strip("/")
+        if not slug:
+            continue
+        return slug.split(",")[0].strip()
+    return None
+
+
 def _extract_search_query(url: str) -> str | None:
     parsed = urlparse(url)
     raw = parse_qs(parsed.query).get("s", [None])[0]
@@ -842,6 +862,17 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
             url=url,
             base_url=base_url,
             category_slug=category_match.group(1).strip("/"),
+        )
+
+    filter_slug = _woo_filter_category_slug(url)
+    if filter_slug:
+        return DetectedTarget(
+            platform="woocommerce",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            category_slug=filter_slug,
+            handle=filter_slug,
         )
 
     if path.rstrip("/") in ("/shop", "/products"):

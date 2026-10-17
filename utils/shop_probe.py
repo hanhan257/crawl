@@ -633,12 +633,21 @@ def _probe_woocommerce(
     if total is None and categories:
         total = sum(c.count or 0 for c in categories) or None
 
+    message = _stats_message(total, len(categories))
+    if target.crawl_type == "category" and url_category:
+        want = url_category.strip().strip("/").split("/")[-1].lower()
+        matched = next((c for c in categories if c.slug.lower() == want), None)
+        if matched is not None:
+            total = matched.count
+            count_text = f"**{matched.count}**" if matched.count is not None else "**?**"
+            message = f"{count_text} SP · danh mục **{matched.name}**"
+
     return ShopProbeResult(
         ok=True,
         platform="woocommerce",
         crawl_type=target.crawl_type,
         base_url=crawler.site_url,
-        message=_stats_message(total, len(categories)),
+        message=message,
         total_products=total,
         categories=categories,
         url_category_slug=url_category,
