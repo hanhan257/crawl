@@ -628,19 +628,28 @@ def _probe_woocommerce(
         )
 
     categories = _woo_list_categories(crawler)
+
+    # Link danh mục không được lấy tổng cả shop khi không khớp slug.
+    if target.crawl_type == "category" and url_category:
+        total, cat_name = _woo_category_total(crawler, categories, url_category)
+        count_text = f"**{total}**" if total is not None else "**?**"
+        return ShopProbeResult(
+            ok=True,
+            platform="woocommerce",
+            crawl_type="category",
+            base_url=crawler.site_url,
+            message=f"{count_text} SP · danh mục **{cat_name}**",
+            total_products=total,
+            categories=categories,
+            url_category_slug=url_category,
+        )
+
     total = _woo_product_count(crawler)
 
     if total is None and categories:
         total = sum(c.count or 0 for c in categories) or None
 
     message = _stats_message(total, len(categories))
-    if target.crawl_type == "category" and url_category:
-        want = url_category.strip().strip("/").split("/")[-1].lower()
-        matched = next((c for c in categories if c.slug.lower() == want), None)
-        if matched is not None:
-            total = matched.count
-            count_text = f"**{matched.count}**" if matched.count is not None else "**?**"
-            message = f"{count_text} SP · danh mục **{matched.name}**"
 
     return ShopProbeResult(
         ok=True,
@@ -999,6 +1008,45 @@ def _woo_list_categories(crawler) -> list[ShopCategoryInfo]:
     return categories
 
 
+def _woo_category_total(crawler, categories: list[ShopCategoryInfo], url_category: str) -> tuple[int | None, str]:
+    """Số SP của đúng danh mục. Không trả về tổng cả shop."""
+    want = url_category.strip().strip("/").split("/")[-1].lower()
+    name = want or url_category
+    matched = next((c for c in categories if c.slug.lower() == want), None)
+    if matched is not None:
+        return matched.count, matched.name or name
+
+    category_id = None
+    try:
+        category_id = crawler._resolve_category_id(url_category)
+    except (requests.RequestException, ValueError, TypeError):
+        category_id = None
+    if category_id is None:
+        return None, name
+
+    try:
+        if crawler.use_public_api:
+            response = crawler.session.get(
+                f"{crawler.site_url}/wp-json/wc/store/v1/products",
+                params={"category": category_id, "per_page": 1},
+                timeout=30,
+            )
+        else:
+            response = crawler.session.get(
+                f"{crawler.site_url}/wp-json/wc/v3/products",
+                params={"category": category_id, "per_page": 1, "status": "publish"},
+                auth=(crawler.consumer_key, crawler.consumer_secret),
+                timeout=30,
+            )
+        if response.status_code == 200:
+            raw = response.headers.get("X-WP-Total") or response.headers.get("x-wp-total")
+            if raw is not None:
+                return int(raw), name
+    except (requests.RequestException, ValueError, TypeError):
+        pass
+    return None, name
+
+
 def _woo_search_count(crawler, query: str) -> int | None:
     total = _woo_search_count_from_html(crawler, query)
     if total is not None:
@@ -1252,32 +1300,52 @@ def _shopify_collection_graphql_count(
 ) -> tuple[int | None, str | None]:
     """Đếm id trong collection. Payload nhỏ, cùng cửa với /products.json."""
     query = """
-    query($handle: String!) {
+    query($handle: String!, $cursor: String) {
       collection(handle: $handle) {
         title
-        products(first: 250) { edges { node { id } } }
+        products(first: 250, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          edges { node { id } }
+        }
       }
     }
     """
+    cursor = None
+    total = 0
+    title: str | None = None
     try:
-        response = session.post(
-            f"{shop_url.rstrip('/')}/api/2024-10/graphql.json",
-            json={"query": query, "variables": {"handle": handle}},
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-            timeout=15,
-        )
-        if response.status_code != 200:
-            return None, None
-        collection = ((response.json().get("data") or {}).get("collection")) or {}
-        if not collection:
-            return None, None
-        title = str(collection.get("title") or "").strip() or None
-        edges = ((collection.get("products") or {}).get("edges")) or []
-        if isinstance(edges, list) and len(edges) < 250:
-            return len(edges), title
-        return None, title
+        for _ in range(16):
+            response = session.post(
+                f"{shop_url.rstrip('/')}/api/2024-10/graphql.json",
+                json={
+                    "query": query,
+                    "variables": {"handle": handle, "cursor": cursor},
+                },
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+                timeout=15,
+            )
+            if response.status_code != 200:
+                return None, title
+            collection = ((response.json().get("data") or {}).get("collection")) or {}
+            if not collection:
+                return None, None
+            found = str(collection.get("title") or "").strip()
+            if found:
+                title = found
+            products = collection.get("products") or {}
+            edges = products.get("edges") or []
+            if not isinstance(edges, list):
+                return None, title
+            total += len(edges)
+            page_info = products.get("pageInfo") or {}
+            if not page_info.get("hasNextPage"):
+                return total, title
+            cursor = page_info.get("endCursor")
+            if not cursor:
+                return total, title
     except (requests.RequestException, ValueError, TypeError):
-        return None, None
+        return None, title
+    return None, title
 
 
 def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int | None:
