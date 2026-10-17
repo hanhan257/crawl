@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v2: collection đếm storefront, không lấy sitemap cả shop
+def _cached_probe_shop(  # v3: đếm collection trước, fallback trang HTML
     url: str,
     woo_key: str,
     woo_secret: str,

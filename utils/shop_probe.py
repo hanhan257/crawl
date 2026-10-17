@@ -885,12 +885,11 @@ def _probe_shopify(
             url_category_slug=url_category or target.handle,
         )
 
-    categories = _shopify_list_collections(crawler)
-
-    # Link /collections/{handle} chỉ đếm SP trong collection đó.
-    # Sitemap cả shop (vd. 6648) không được gắn vào collection.
+    # Đếm collection trước khi liệt kê cả shop — list collections dễ 429
+    # và làm mất số SP của đúng collection user dán.
     if target.crawl_type == "category" and url_category and url_category != "all":
         total, title = _shopify_collection_product_count(crawler, url_category)
+        categories = _shopify_list_collections(crawler)
         _upsert_shopify_collection(categories, url_category, title, total)
         count_text = f"**{total}**" if total is not None else "**?**"
         return ShopProbeResult(
@@ -904,6 +903,7 @@ def _probe_shopify(
             url_category_slug=url_category,
         )
 
+    categories = _shopify_list_collections(crawler)
     total = _shopify_product_count(crawler)
 
     if total is None and categories:
@@ -1194,41 +1194,83 @@ def _upsert_shopify_collection(
 
 
 def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None, str]:
-    """Đếm SP đang bán trong 1 collection, không đếm sitemap cả shop."""
+    """Đếm SP storefront của 1 collection. Sitemap cả shop không được dùng."""
+    from utils.http_session import create_http_session
+
+    sessions = [crawler.session]
+    rotator = getattr(crawler, "proxy_rotator", None)
+    if rotator is not None and rotator.has_proxy:
+        direct = create_http_session(None)
+        user_agent = crawler.session.headers.get("User-Agent")
+        if user_agent:
+            direct.headers["User-Agent"] = user_agent
+        sessions.append(direct)
+
     title = handle
     admin_count: int | None = None
-    try:
-        meta = crawler.session.get(
-            f"{crawler.shop_url}/collections/{handle}.json",
-            timeout=30,
-        )
-        if meta.status_code == 200:
-            collection = meta.json().get("collection") or {}
-            title = str(collection.get("title") or handle).strip() or handle
-            raw_count = collection.get("products_count")
-            if raw_count is not None:
-                admin_count = int(raw_count)
-    except (requests.RequestException, ValueError, TypeError):
-        admin_count = None
+    html_count: int | None = None
 
-    try:
-        response = crawler.session.get(
-            f"{crawler.shop_url}/collections/{handle}/products.json",
-            params={"limit": 250, "page": 1},
-            timeout=40,
-        )
-        if response.status_code == 200:
-            batch = response.json().get("products") or []
-            if isinstance(batch, list) and len(batch) < 250:
-                return len(batch), title
-            if admin_count is not None and admin_count >= len(batch):
-                return admin_count, title
-            if isinstance(batch, list):
-                return len(batch), title
-    except (requests.RequestException, ValueError, TypeError):
-        pass
+    for session in sessions:
+        try:
+            meta = session.get(
+                f"{crawler.shop_url}/collections/{handle}.json",
+                timeout=20,
+            )
+            if meta.status_code == 200:
+                collection = meta.json().get("collection") or {}
+                title = str(collection.get("title") or title).strip() or title
+                raw_count = collection.get("products_count")
+                if raw_count is not None:
+                    admin_count = int(raw_count)
+        except (requests.RequestException, ValueError, TypeError):
+            pass
 
+        if html_count is None:
+            html_count = _shopify_collection_html_count(session, crawler.shop_url, handle)
+        if html_count is not None:
+            return html_count, title
+
+        try:
+            response = session.get(
+                f"{crawler.shop_url}/collections/{handle}/products.json",
+                params={"limit": 250, "page": 1},
+                timeout=45,
+            )
+            if response.status_code == 200:
+                batch = response.json().get("products") or []
+                if isinstance(batch, list) and len(batch) < 250:
+                    return len(batch), title
+                if admin_count is not None and admin_count >= len(batch):
+                    return admin_count, title
+                if isinstance(batch, list) and batch:
+                    return len(batch), title
+        except (requests.RequestException, ValueError, TypeError):
+            pass
+
+        if admin_count is not None:
+            break
+
+    if html_count is not None:
+        return html_count, title
     return admin_count, title
+
+
+def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int | None:
+    """Số trên trang collection, vd. '186 products'."""
+    try:
+        response = session.get(
+            f"{shop_url.rstrip('/')}/collections/{handle}",
+            timeout=25,
+        )
+        if response.status_code != 200 or not response.text:
+            return None
+        counts = [
+            int(raw.replace(",", ""))
+            for raw in re.findall(r"(\d[\d,]*)\s+products\b", response.text, re.I)
+        ]
+        return max(counts) if counts else None
+    except (requests.RequestException, ValueError, TypeError):
+        return None
 
 
 def _shopify_product_count(crawler) -> int | None:
