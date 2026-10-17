@@ -857,6 +857,7 @@ def _probe_shopify(
         shop_url=base_url,
         access_token=token,
         use_public_api=not token,
+        proxy_url=credentials.proxy_url or None,
     )
 
     if target.crawl_type == "search" and target.query:
@@ -1197,14 +1198,17 @@ def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None,
     """Đếm SP storefront của 1 collection. Sitemap cả shop không được dùng."""
     from utils.http_session import create_http_session
 
-    sessions = [crawler.session]
+    user_agent = crawler.session.headers.get("User-Agent") or ""
+    sessions: list = []
     rotator = getattr(crawler, "proxy_rotator", None)
     if rotator is not None and rotator.has_proxy:
-        direct = create_http_session(None)
-        user_agent = crawler.session.headers.get("User-Agent")
-        if user_agent:
-            direct.headers["User-Agent"] = user_agent
-        sessions.append(direct)
+        for _ in range(min(3, rotator.count)):
+            proxied = create_http_session(rotator.current())
+            if user_agent:
+                proxied.headers["User-Agent"] = user_agent
+            sessions.append(proxied)
+            rotator.rotate()
+    sessions.append(crawler.session)
 
     title = handle
     admin_count: int | None = None
@@ -1214,7 +1218,7 @@ def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None,
         try:
             meta = session.get(
                 f"{crawler.shop_url}/collections/{handle}.json",
-                timeout=20,
+                timeout=8,
             )
             if meta.status_code == 200:
                 collection = meta.json().get("collection") or {}
@@ -1260,7 +1264,7 @@ def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int |
     try:
         response = session.get(
             f"{shop_url.rstrip('/')}/collections/{handle}",
-            timeout=25,
+            timeout=12,
         )
         if response.status_code != 200 or not response.text:
             return None
