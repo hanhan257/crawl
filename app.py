@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v4: đếm collection qua proxy của phiên, rồi direct
+def _cached_probe_shop(  # v5: đếm collection bằng GraphQL trực tiếp
     url: str,
     woo_key: str,
     woo_secret: str,

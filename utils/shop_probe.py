@@ -1199,22 +1199,29 @@ def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None,
     from utils.http_session import create_http_session
 
     user_agent = crawler.session.headers.get("User-Agent") or ""
-    sessions: list = []
+    direct = create_http_session(None)
+    if user_agent:
+        direct.headers["User-Agent"] = user_agent
+    sessions = [direct]
     rotator = getattr(crawler, "proxy_rotator", None)
     if rotator is not None and rotator.has_proxy:
-        for _ in range(min(3, rotator.count)):
-            proxied = create_http_session(rotator.current())
-            if user_agent:
-                proxied.headers["User-Agent"] = user_agent
-            sessions.append(proxied)
-            rotator.rotate()
-    sessions.append(crawler.session)
+        proxied = create_http_session(rotator.current())
+        if user_agent:
+            proxied.headers["User-Agent"] = user_agent
+        sessions.append(proxied)
 
     title = handle
     admin_count: int | None = None
-    html_count: int | None = None
 
     for session in sessions:
+        gql_count, gql_title = _shopify_collection_graphql_count(
+            session, crawler.shop_url, handle
+        )
+        if gql_title:
+            title = gql_title
+        if gql_count is not None:
+            return gql_count, title
+
         try:
             meta = session.get(
                 f"{crawler.shop_url}/collections/{handle}.json",
@@ -1229,34 +1236,48 @@ def _shopify_collection_product_count(crawler, handle: str) -> tuple[int | None,
         except (requests.RequestException, ValueError, TypeError):
             pass
 
-        if html_count is None:
-            html_count = _shopify_collection_html_count(session, crawler.shop_url, handle)
+        html_count = _shopify_collection_html_count(session, crawler.shop_url, handle)
         if html_count is not None:
             return html_count, title
-
-        try:
-            response = session.get(
-                f"{crawler.shop_url}/collections/{handle}/products.json",
-                params={"limit": 250, "page": 1},
-                timeout=45,
-            )
-            if response.status_code == 200:
-                batch = response.json().get("products") or []
-                if isinstance(batch, list) and len(batch) < 250:
-                    return len(batch), title
-                if admin_count is not None and admin_count >= len(batch):
-                    return admin_count, title
-                if isinstance(batch, list) and batch:
-                    return len(batch), title
-        except (requests.RequestException, ValueError, TypeError):
-            pass
-
         if admin_count is not None:
-            break
+            return admin_count, title
 
-    if html_count is not None:
-        return html_count, title
-    return admin_count, title
+    return None, title
+
+
+def _shopify_collection_graphql_count(
+    session,
+    shop_url: str,
+    handle: str,
+) -> tuple[int | None, str | None]:
+    """Đếm id trong collection. Payload nhỏ, cùng cửa với /products.json."""
+    query = """
+    query($handle: String!) {
+      collection(handle: $handle) {
+        title
+        products(first: 250) { edges { node { id } } }
+      }
+    }
+    """
+    try:
+        response = session.post(
+            f"{shop_url.rstrip('/')}/api/2024-10/graphql.json",
+            json={"query": query, "variables": {"handle": handle}},
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            timeout=15,
+        )
+        if response.status_code != 200:
+            return None, None
+        collection = ((response.json().get("data") or {}).get("collection")) or {}
+        if not collection:
+            return None, None
+        title = str(collection.get("title") or "").strip() or None
+        edges = ((collection.get("products") or {}).get("edges")) or []
+        if isinstance(edges, list) and len(edges) < 250:
+            return len(edges), title
+        return None, title
+    except (requests.RequestException, ValueError, TypeError):
+        return None, None
 
 
 def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int | None:
