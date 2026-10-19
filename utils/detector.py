@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+import time
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from dataclasses import dataclass, replace
 from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
 
 import requests
@@ -37,6 +38,10 @@ DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+# Nhận diện chỉ cần 1 response nhỏ — không chờ timeout crawl (15s nối + 90s đọc).
+_SNIFF_TIMEOUT = 4
+_RESOLVE_CACHE: dict[str, tuple[float, DetectedTarget]] = {}
+_RESOLVE_TTL = 600.0
 
 
 @dataclass
@@ -104,19 +109,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
     normalized = normalize_url(url)
 
     def fresh_session() -> requests.Session:
+        # Nhận diện đi thẳng. Proxy chỉ dùng khi sóng direct không ra nền tảng.
         s = requests.Session()
         s.headers["User-Agent"] = DEFAULT_USER_AGENT
-        if session is not None:
-            s.headers.update(session.headers)
-            if session.proxies:
-                s.proxies.update(session.proxies)
         return s
 
     def check_shopify() -> str | None:
-        session = fresh_session()
+        sniff = fresh_session()
         # meta.json có myshopify_domain → Shopify thật (kể cả khi /products.json bị 429).
         try:
-            meta_resp = session.get(f"{base}/meta.json", timeout=10)
+            meta_resp = sniff.get(f"{base}/meta.json", timeout=_SNIFF_TIMEOUT)
             if meta_resp.status_code == 200:
                 meta = meta_resp.json()
                 if isinstance(meta, dict) and meta.get("myshopify_domain"):
@@ -124,8 +126,8 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except (requests.RequestException, ValueError):
             pass
         try:
-            shopify_resp = session.get(
-                f"{base}/products.json", params={"limit": 1}, timeout=10
+            shopify_resp = sniff.get(
+                f"{base}/products.json", params={"limit": 1}, timeout=_SNIFF_TIMEOUT
             )
             if shopify_resp.status_code == 200:
                 data = shopify_resp.json()
@@ -135,7 +137,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         # cart.js thường vẫn 200 khi homepage/meta/products.json bị 429 (vd. printyourwear).
         try:
-            cart_resp = session.get(f"{base}/cart.js", timeout=10)
+            cart_resp = sniff.get(f"{base}/cart.js", timeout=_SNIFF_TIMEOUT)
             if cart_resp.status_code == 200:
                 data = cart_resp.json()
                 if (
@@ -153,7 +155,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             woo_store = fresh_session().get(
                 f"{base}/wp-json/wc/store/v1/products",
                 params={"per_page": 1},
-                timeout=10,
+                timeout=_SNIFF_TIMEOUT,
             )
             if woo_store.status_code == 200:
                 data = woo_store.json()
@@ -167,7 +169,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             data, status, _headers = curl_get_json_list(
                 f"{base}/wp-json/wc/store/v1/products",
                 params={"per_page": 1},
-                timeout=15,
+                timeout=6,
             )
             if status == 200 and isinstance(data, list):
                 return "woocommerce"
@@ -177,7 +179,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_wp_json() -> str | None:
         try:
-            wp_json = fresh_session().get(f"{base}/wp-json/", timeout=10)
+            wp_json = fresh_session().get(f"{base}/wp-json/", timeout=_SNIFF_TIMEOUT)
             if wp_json.status_code == 200:
                 data = wp_json.json()
                 routes = str(data.get("routes", {}))
@@ -189,37 +191,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_shopbase() -> str | None:
         try:
-            session = fresh_session()
-            # Shopify thật (kể cả rate-limit products.json) → không phải ShopBase.
-            try:
-                meta_resp = session.get(f"{base}/meta.json", timeout=8)
-                if meta_resp.status_code == 200:
-                    meta = meta_resp.json()
-                    if isinstance(meta, dict) and meta.get("myshopify_domain"):
-                        return None
-            except (requests.RequestException, ValueError):
-                pass
-            products_json = session.get(
-                f"{base}/products.json",
-                params={"limit": 1},
-                timeout=8,
-            )
-            if products_json.status_code == 200:
-                return None
-            # Chỉ nhận ShopBase khi có catalog API thật — không dùng sitemap_products
-            # (Shopify cũng dùng tên sitemap_products_*.xml → dễ nhận nhầm).
-            catalog = session.get(
+            # Một request. Shopify thắng ở check_shopify nếu meta/products.json khớp.
+            catalog = fresh_session().get(
                 f"{base}/api/catalog/next/products.json",
                 params={"limit": 1, "page": 1},
-                timeout=8,
+                timeout=_SNIFF_TIMEOUT,
             )
             if catalog.status_code == 200:
                 payload = catalog.json()
                 if isinstance(payload.get("result"), dict):
                     return "shopbase"
-            page = session.get(base, timeout=8)
-            if page.status_code == 200 and "shopbase" in page.text.lower():
-                return "shopbase"
         except (requests.RequestException, ValueError):
             pass
         return None
@@ -240,7 +221,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
     def check_generic() -> str | None:
         try:
             session = fresh_session()
-            home = session.get(base, timeout=10)
+            home = session.get(base, timeout=_SNIFF_TIMEOUT)
             if home.status_code == 200:
                 text = home.text
                 if "cdn.shopify.com" in text and (
@@ -263,7 +244,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_html_signals() -> str | None:
         try:
-            page = fresh_session().get(normalized, timeout=10)
+            page = fresh_session().get(normalized, timeout=_SNIFF_TIMEOUT)
             if page.status_code == 200:
                 text = page.text.lower()
                 if "cdn.shopify.com" in text or "shopify.shop" in text:
@@ -274,31 +255,77 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
-    priority_checks = (
-        check_shopify,
-        check_shopbase,
-        check_woo_store,
-        check_wp_json,
-        check_teemill,
-        check_magento,
-    )
-    for fn in priority_checks:
-        platform = fn()
-        if platform:
-            return platform
+    def _first_platform(fns: tuple) -> str | None:
+        """Chạy song song. Trả về ngay khi check ưu tiên hơn đã xong và khớp."""
+        if not fns:
+            return None
+        found: dict[int, str] = {}
+        executor = ThreadPoolExecutor(max_workers=len(fns))
+        try:
+            futures = {executor.submit(fn): index for index, fn in enumerate(fns)}
+            pending = set(futures)
+            while pending:
+                done, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    try:
+                        platform = future.result()
+                    except Exception:
+                        platform = None
+                    if platform:
+                        found[futures[future]] = platform
+                if not found:
+                    continue
+                best = min(found)
+                if all(futures[future] > best for future in pending):
+                    return found[best]
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+        if not found:
+            return None
+        return found[min(found)]
 
-    checks = (check_generic, check_html_signals)
-    with ThreadPoolExecutor(max_workers=len(checks)) as executor:
-        futures = [executor.submit(fn) for fn in checks]
-        for future in as_completed(futures):
-            platform = future.result()
-            if platform:
-                return platform
-    # Proxy hay bị shop chặn → thử nhận diện direct.
+    path_lower = (parsed.path or "").lower()
+    shopify_shaped = (
+        "sitemap" in path_lower
+        or "/collections/" in path_lower
+        or "/products/" in path_lower
+    )
+    # Link Shopify rõ (sitemap / collection / product): chỉ hỏi meta.json trước.
+    if shopify_shaped:
+        quick = check_shopify()
+        if quick:
+            return quick
+
+    platform = _first_platform((check_shopify, check_shopbase, check_woo_store))
+    if platform:
+        return platform
+
+    platform = _first_platform(
+        (check_wp_json, check_teemill, check_magento, check_generic, check_html_signals)
+    )
+    if platform:
+        return platform
+
+    # Direct không ra — thử đúng 1 proxy, không chạy lại cả chuỗi timeout.
     if session is not None and session.proxies:
-        direct = probe_platform(url, session=None)
-        if direct:
-            return direct
+        try:
+            meta_resp = session.get(f"{base}/meta.json", timeout=_SNIFF_TIMEOUT)
+            if meta_resp.status_code == 200:
+                meta = meta_resp.json()
+                if isinstance(meta, dict) and meta.get("myshopify_domain"):
+                    return "shopify"
+        except (requests.RequestException, ValueError):
+            pass
+        try:
+            woo_store = session.get(
+                f"{base}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=_SNIFF_TIMEOUT,
+            )
+            if woo_store.status_code == 200 and isinstance(woo_store.json(), list):
+                return "woocommerce"
+        except (requests.RequestException, ValueError):
+            pass
 
     # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
     try:
@@ -307,7 +334,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         data, status, _headers = curl_get_json_list(
             f"{base}/wp-json/wc/store/v1/products",
             params={"per_page": 1},
-            timeout=20,
+            timeout=6,
         )
         if status == 200 and isinstance(data, list):
             return "woocommerce"
@@ -317,6 +344,18 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
 
 def resolve_url(url: str, session: requests.Session | None = None) -> DetectedTarget:
+    normalized = normalize_url(url)
+    if session is None:
+        cached = _RESOLVE_CACHE.get(normalized)
+        if cached and time.monotonic() - cached[0] < _RESOLVE_TTL:
+            return replace(cached[1])
+    target = _resolve_url_uncached(url, session=session)
+    if session is None:
+        _RESOLVE_CACHE[normalized] = (time.monotonic(), replace(target))
+    return target
+
+
+def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> DetectedTarget:
     normalized = normalize_url(url)
 
     try:

@@ -609,6 +609,7 @@ def _probe_woocommerce(
         use_public_api=not (key and secret),
         proxy_url=credentials.proxy_url or None,
     )
+    _use_direct_session(crawler)
 
     if crawler.use_public_api and not (key and secret):
         crawler._store_api_probe_ok()
@@ -855,29 +856,6 @@ def _probe_shopify(
 
     host = urlparse(base_url).netloc
     token = credentials.shopify_token_for(host)
-    is_hydrogen = (
-        not token
-        and target.crawl_type == "shop"
-        and ShopifyHydrogenCrawler.is_hydrogen_store(base_url)
-    )
-
-    if is_hydrogen:
-        athlete_count = ShopifyHydrogenCrawler.estimate_athlete_count(base_url)
-        total = None
-        if athlete_count is not None:
-            message = f"**{athlete_count}** athletes · Shopify Hydrogen"
-        else:
-            message = "**?** athletes · Shopify Hydrogen (catalog lớn)"
-        return ShopProbeResult(
-            ok=True,
-            platform="shopify",
-            crawl_type=target.crawl_type,
-            base_url=base_url.rstrip("/"),
-            message=message,
-            total_products=total,
-            categories=[],
-            url_category_slug=url_category,
-        )
 
     crawler = ShopifyCrawler(
         shop_url=base_url,
@@ -885,6 +863,7 @@ def _probe_shopify(
         use_public_api=not token,
         proxy_url=credentials.proxy_url or None,
     )
+    _use_direct_session(crawler)
 
     if target.crawl_type == "search" and target.query:
         total = crawler.count_search_results(target.query)
@@ -932,9 +911,24 @@ def _probe_shopify(
 
     # Đếm collection trước khi liệt kê cả shop — list collections dễ 429
     # và làm mất số SP của đúng collection user dán.
+    from concurrent.futures import ThreadPoolExecutor
+
     if target.crawl_type == "category" and url_category and url_category != "all":
-        total, title = _shopify_collection_product_count(crawler, url_category)
-        categories = _shopify_list_collections(crawler)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            count_future = executor.submit(
+                _shopify_collection_product_count, crawler, url_category
+            )
+            list_future = executor.submit(_shopify_list_collections, crawler)
+            total, title = count_future.result()
+            categories = list_future.result()
+        if total is None and not categories and _use_one_proxy(crawler):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                count_future = executor.submit(
+                    _shopify_collection_product_count, crawler, url_category
+                )
+                list_future = executor.submit(_shopify_list_collections, crawler)
+                total, title = count_future.result()
+                categories = list_future.result()
         _upsert_shopify_collection(categories, url_category, title, total)
         count_text = f"**{total}**" if total is not None else "**?**"
         return ShopProbeResult(
@@ -948,8 +942,41 @@ def _probe_shopify(
             url_category_slug=url_category,
         )
 
-    categories = _shopify_list_collections(crawler)
-    total = _shopify_product_count(crawler)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        list_future = executor.submit(_shopify_list_collections, crawler)
+        total_future = executor.submit(_shopify_product_count, crawler)
+        categories = list_future.result()
+        total = total_future.result()
+
+    if total is None and not categories and _use_one_proxy(crawler):
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            list_future = executor.submit(_shopify_list_collections, crawler)
+            total_future = executor.submit(_shopify_product_count, crawler)
+            categories = list_future.result()
+            total = total_future.result()
+
+    if (
+        total is None
+        and not categories
+        and not token
+        and target.crawl_type == "shop"
+        and ShopifyHydrogenCrawler.is_hydrogen_store(base_url)
+    ):
+        athlete_count = ShopifyHydrogenCrawler.estimate_athlete_count(base_url)
+        if athlete_count is not None:
+            message = f"**{athlete_count}** athletes · Shopify Hydrogen"
+        else:
+            message = "**?** athletes · Shopify Hydrogen (catalog lớn)"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type=target.crawl_type,
+            base_url=base_url.rstrip("/"),
+            message=message,
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
 
     if total is None and categories:
         total = sum(c.count or 0 for c in categories) or None
@@ -988,20 +1015,20 @@ def _woo_list_categories(crawler) -> list[ShopCategoryInfo]:
         categories.append(ShopCategoryInfo(slug=slug, name=display, count=count))
 
     page = 1
-    while page <= 20:
+    while page <= 4:
         try:
             if crawler.use_public_api:
                 response = crawler.session.get(
                     f"{crawler.site_url}/wp-json/wc/store/v1/products/categories",
                     params={"per_page": 100, "page": page},
-                    timeout=30,
+                    timeout=8,
                 )
             else:
                 response = crawler.session.get(
                     f"{crawler.site_url}/wp-json/wc/v3/products/categories",
                     params={"per_page": 100, "page": page},
                     auth=(crawler.consumer_key, crawler.consumer_secret),
-                    timeout=30,
+                    timeout=8,
                 )
             if response.status_code != 200:
                 break
@@ -1135,7 +1162,7 @@ def _woo_product_count(crawler) -> int | None:
                 f"{crawler.site_url}/wp-json/wc/v3/products",
                 params={"per_page": 1, "status": "publish"},
                 auth=(crawler.consumer_key, crawler.consumer_secret),
-                timeout=30,
+                timeout=8,
             )
             if response.status_code == 200:
                 total = response.headers.get("X-WP-Total")
@@ -1150,7 +1177,7 @@ def _woo_product_count(crawler) -> int | None:
                 response = curl_get(
                     f"{crawler.site_url}/wp-json/wc/store/v1/products",
                     params={"per_page": 1},
-                    timeout=30,
+                    timeout=8,
                 )
                 if response is not None and response.status_code == 200:
                     total = response.headers.get("X-WP-Total") or response.headers.get(
@@ -1162,7 +1189,7 @@ def _woo_product_count(crawler) -> int | None:
                 response = crawler.session.get(
                     f"{crawler.site_url}/wp-json/wc/store/v1/products",
                     params={"per_page": 1},
-                    timeout=30,
+                    timeout=8,
                 )
                 if response.status_code == 200:
                     total = response.headers.get("X-WP-Total") or response.headers.get(
@@ -1221,16 +1248,42 @@ def _woo_count_from_shop_html(crawler) -> int | None:
         return None
 
 
+def _use_direct_session(crawler) -> None:
+    """Nhận diện đi thẳng. Proxy giữ trong rotator để thử một lần nếu direct fail."""
+    from utils.http_session import create_http_session
+
+    user_agent = ""
+    session = getattr(crawler, "session", None)
+    if session is not None:
+        user_agent = session.headers.get("User-Agent") or ""
+    crawler.session = create_http_session(None)
+    if user_agent:
+        crawler.session.headers["User-Agent"] = user_agent
+
+
+def _use_one_proxy(crawler) -> bool:
+    from utils.http_session import create_http_session
+
+    rotator = getattr(crawler, "proxy_rotator", None)
+    if rotator is None or not rotator.has_proxy:
+        return False
+    user_agent = crawler.session.headers.get("User-Agent") or ""
+    crawler.session = create_http_session(rotator.current())
+    if user_agent:
+        crawler.session.headers["User-Agent"] = user_agent
+    return True
+
+
 def _shopify_list_collections(crawler) -> list[ShopCategoryInfo]:
     categories: list[ShopCategoryInfo] = []
     page = 1
 
-    while page <= 10:
+    while page <= 2:
         try:
             response = crawler.session.get(
                 f"{crawler.shop_url}/collections.json",
                 params={"limit": 250, "page": page},
-                timeout=30,
+                timeout=8,
             )
             if response.status_code != 200:
                 break
@@ -1349,7 +1402,7 @@ def _shopify_collection_graphql_count(
     total = 0
     title: str | None = None
     try:
-        for _ in range(16):
+        for _ in range(4):
             response = session.post(
                 f"{shop_url.rstrip('/')}/api/2024-10/graphql.json",
                 json={
@@ -1357,7 +1410,7 @@ def _shopify_collection_graphql_count(
                     "variables": {"handle": handle, "cursor": cursor},
                 },
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
-                timeout=15,
+                timeout=8,
             )
             if response.status_code != 200:
                 return None, title
@@ -1388,7 +1441,7 @@ def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int |
     try:
         response = session.get(
             f"{shop_url.rstrip('/')}/collections/{handle}",
-            timeout=12,
+            timeout=8,
         )
         if response.status_code != 200 or not response.text:
             return None
@@ -1407,7 +1460,7 @@ def _shopify_product_count(crawler) -> int | None:
             response = crawler.session.get(
                 f"{crawler.shop_url}/admin/api/{crawler.api_version}/products/count.json",
                 headers={"X-Shopify-Access-Token": crawler.access_token},
-                timeout=30,
+                timeout=8,
             )
             if response.status_code == 200:
                 return int(response.json().get("count", 0))
@@ -1415,7 +1468,7 @@ def _shopify_product_count(crawler) -> int | None:
         response = crawler.session.get(
             f"{crawler.shop_url}/products.json",
             params={"limit": 250, "page": 1},
-            timeout=30,
+            timeout=8,
         )
         if response.status_code == 200:
             batch = response.json().get("products", [])
@@ -1430,7 +1483,7 @@ def _shopify_product_count(crawler) -> int | None:
         if sitemap_total is not None:
             return sitemap_total
         if hasattr(crawler, "_graphql_available") and crawler._graphql_available():
-            return _shopify_graphql_product_count(crawler)
+            return _shopify_graphql_product_count(crawler, max_pages=2)
     except (requests.RequestException, ValueError, TypeError):
         pass
     return None
@@ -1460,7 +1513,7 @@ def _shopify_one_sitemap_product_count(crawler, sitemap_url: str) -> int | None:
     ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     for http in sessions:
         try:
-            response = http.get(sitemap_url, timeout=25)
+            response = http.get(sitemap_url, timeout=8)
             if response.status_code != 200 or not response.content:
                 continue
             root = ET.fromstring(response.content)
@@ -1490,7 +1543,7 @@ def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> 
     from xml.etree import ElementTree as ET
 
     try:
-        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=30)
+        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=8)
         if index.status_code != 200:
             return None
 
@@ -1503,17 +1556,31 @@ def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> 
         ]
         if not smaps:
             return None
-        total = 0
-        for smap_url in smaps:
-            resp = session.get(smap_url, timeout=40)
-            if resp.status_code != 200:
-                continue
-            sm_root = ET.fromstring(resp.content)
-            total += sum(
+
+        def _count_file(smap_url: str) -> int:
+            local = requests.Session()
+            local.headers.update(session.headers)
+            local.proxies.update(session.proxies)
+            try:
+                resp = local.get(smap_url, timeout=8)
+                if resp.status_code != 200:
+                    return 0
+                sm_root = ET.fromstring(resp.content)
+            except (requests.RequestException, ET.ParseError):
+                return 0
+            finally:
+                local.close()
+            return sum(
                 1
                 for el in sm_root.findall(".//sm:loc", ns)
                 if el.text and "/products/" in el.text
             )
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        workers = min(8, len(smaps))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            total = sum(executor.map(_count_file, smaps))
         return total or None
     except (requests.RequestException, ET.ParseError, ValueError):
         return None

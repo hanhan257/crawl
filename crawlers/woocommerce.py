@@ -201,7 +201,7 @@ class WooCommerceCrawler(BaseCrawler):
             response = self.session.get(
                 f"{self.site_url}/wp-json/wc/store/v1/products",
                 params={"per_page": 1},
-                timeout=DEFAULT_REQUEST_TIMEOUT,
+                timeout=(5, 8),
             )
             if response.status_code == 200:
                 data = response.json()
@@ -211,7 +211,7 @@ class WooCommerceCrawler(BaseCrawler):
                 response = self.session.get(
                     f"{self.site_url}/wp-json/wc/store/v1/products",
                     params={"per_page": 1},
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                    timeout=(5, 8),
                 )
                 if response.status_code == 200:
                     data = response.json()
@@ -223,7 +223,7 @@ class WooCommerceCrawler(BaseCrawler):
                     response = self.session.get(
                         f"{self.site_url}/wp-json/wc/store/v1/products",
                         params={"per_page": 1},
-                        timeout=DEFAULT_REQUEST_TIMEOUT,
+                        timeout=(5, 8),
                     )
                     if response.status_code == 200:
                         data = response.json()

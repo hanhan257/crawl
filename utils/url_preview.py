@@ -84,7 +84,6 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
     if not url.strip():
         return {"ok": False, "message": "Nhập link để nhận diện nền tảng.", "crawl_ready": False}
 
-    session = None
     cleaned_proxy = (proxy_url or "").strip() or None
     if cleaned_proxy is None:
         try:
@@ -93,23 +92,19 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
             cleaned_proxy = CrawlCredentials.load().proxy_url or None
         except Exception:
             cleaned_proxy = None
-    if cleaned_proxy:
-        try:
-            from utils.http_session import create_http_session
-
-            session = create_http_session(cleaned_proxy)
-        except Exception:
-            session = None
 
     target: DetectedTarget | None = None
     last_exc: UnsupportedUrlError | None = None
+    # Direct trước. List proxy (hàng chục IP) không được chặn bước nhận diện.
     try:
-        target = resolve_url(url.strip(), session=session)
+        target = resolve_url(url.strip(), session=None)
     except UnsupportedUrlError as exc:
         last_exc = exc
-        if session is not None:
+        if cleaned_proxy:
             try:
-                target = resolve_url(url.strip(), session=None)
+                from utils.http_session import create_http_session
+
+                target = resolve_url(url.strip(), session=create_http_session(cleaned_proxy))
                 last_exc = None
             except UnsupportedUrlError as exc2:
                 last_exc = exc2
