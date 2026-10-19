@@ -1050,17 +1050,31 @@ def inject_pastel_pink_theme() -> None:
             doc.addEventListener("touchend", lock, true);
             window.setInterval(lock, 1000);
 
-            /* Ô link chỉ gửi giá trị khi blur/Enter. Dán URL thì blur luôn để nhận diện shop chạy ngay. */
+            /* Ô link chỉ gửi giá trị khi blur/Enter. Dán URL thì gọi onChange + onBlur của widget để nhận diện chạy ngay. */
             if (!win.__crawlUrlPasteCommit) {
                 win.__crawlUrlPasteCommit = true;
+                const reactProps = (el) => {
+                    const key = Object.keys(el).find((name) => name.startsWith("__reactProps"));
+                    return key ? el[key] : null;
+                };
                 const commitCrawlUrl = (el) => {
                     if (!el || el.tagName !== "INPUT" || el.type === "password") return;
                     const label = (el.getAttribute("aria-label") || "").trim();
                     if (!label.startsWith("Link ")) return;
                     win.clearTimeout(win.__crawlUrlPasteTimer);
                     win.__crawlUrlPasteTimer = win.setTimeout(() => {
-                        try { el.blur(); } catch (e) {}
-                    }, 80);
+                        const props = reactProps(el);
+                        if (props && typeof props.onChange === "function") {
+                            try { props.onChange({ target: el, currentTarget: el }); } catch (e) {}
+                        }
+                        win.setTimeout(() => {
+                            const latest = reactProps(el);
+                            if (latest && typeof latest.onBlur === "function") {
+                                try { latest.onBlur({ target: el, currentTarget: el }); } catch (e) {}
+                            }
+                            try { el.blur(); } catch (e) {}
+                        }, 60);
+                    }, 0);
                 };
                 doc.addEventListener("paste", (event) => {
                     commitCrawlUrl(event.target);
