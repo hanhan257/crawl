@@ -284,6 +284,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             return None
         return found[min(found)]
 
+    # Mọi link: meta.json là 1 file nhỏ. Shopify thì dừng, không chờ Woo/ShopBase.
+    try:
+        meta_resp = fresh_session().get(f"{base}/meta.json", timeout=_SNIFF_TIMEOUT)
+        if meta_resp.status_code == 200:
+            meta = meta_resp.json()
+            if isinstance(meta, dict) and meta.get("myshopify_domain"):
+                return "shopify"
+    except (requests.RequestException, ValueError):
+        pass
+
     path_lower = (parsed.path or "").lower()
     shopify_shaped = (
         "sitemap" in path_lower

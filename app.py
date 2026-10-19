@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v9: đếm SP trong 1 file sitemap kể cả khi requests bị chặn
+def _cached_probe_shop(  # v10: trang chủ đếm sitemap, không tải products.json 250
     url: str,
     woo_key: str,
     woo_secret: str,

@@ -852,7 +852,6 @@ def _probe_shopify(
     url_category: str | None,
 ) -> ShopProbeResult:
     from crawlers.shopify import ShopifyCrawler
-    from crawlers.shopify_hydrogen import ShopifyHydrogenCrawler
 
     host = urlparse(base_url).netloc
     token = credentials.shopify_token_for(host)
@@ -942,41 +941,12 @@ def _probe_shopify(
             url_category_slug=url_category,
         )
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        list_future = executor.submit(_shopify_list_collections, crawler)
-        total_future = executor.submit(_shopify_product_count, crawler)
-        categories = list_future.result()
-        total = total_future.result()
+    total = _shopify_product_count(crawler)
+    categories = _shopify_list_collections(crawler)
 
     if total is None and not categories and _use_one_proxy(crawler):
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            list_future = executor.submit(_shopify_list_collections, crawler)
-            total_future = executor.submit(_shopify_product_count, crawler)
-            categories = list_future.result()
-            total = total_future.result()
-
-    if (
-        total is None
-        and not categories
-        and not token
-        and target.crawl_type == "shop"
-        and ShopifyHydrogenCrawler.is_hydrogen_store(base_url)
-    ):
-        athlete_count = ShopifyHydrogenCrawler.estimate_athlete_count(base_url)
-        if athlete_count is not None:
-            message = f"**{athlete_count}** athletes · Shopify Hydrogen"
-        else:
-            message = "**?** athletes · Shopify Hydrogen (catalog lớn)"
-        return ShopProbeResult(
-            ok=True,
-            platform="shopify",
-            crawl_type=target.crawl_type,
-            base_url=base_url.rstrip("/"),
-            message=message,
-            total_products=None,
-            categories=[],
-            url_category_slug=url_category,
-        )
+        total = _shopify_product_count(crawler)
+        categories = _shopify_list_collections(crawler)
 
     if total is None and categories:
         total = sum(c.count or 0 for c in categories) or None
@@ -1283,7 +1253,7 @@ def _shopify_list_collections(crawler) -> list[ShopCategoryInfo]:
             response = crawler.session.get(
                 f"{crawler.shop_url}/collections.json",
                 params={"limit": 250, "page": page},
-                timeout=8,
+                timeout=(3, 6),
             )
             if response.status_code != 200:
                 break
@@ -1455,35 +1425,30 @@ def _shopify_collection_html_count(session, shop_url: str, handle: str) -> int |
 
 
 def _shopify_product_count(crawler) -> int | None:
+    """Đếm bằng sitemap (file nhỏ). Không tải /products.json?limit=250 — body quá nặng, nhận diện bị treo."""
     try:
         if not crawler.use_public_api and crawler.access_token:
             response = crawler.session.get(
                 f"{crawler.shop_url}/admin/api/{crawler.api_version}/products/count.json",
                 headers={"X-Shopify-Access-Token": crawler.access_token},
-                timeout=8,
+                timeout=(3, 6),
             )
             if response.status_code == 200:
                 return int(response.json().get("count", 0))
 
-        response = crawler.session.get(
-            f"{crawler.shop_url}/products.json",
-            params={"limit": 250, "page": 1},
-            timeout=8,
-        )
-        if response.status_code == 200:
-            batch = response.json().get("products", [])
-            if len(batch) < 250:
-                return len(batch)
-            # Đủ 1 trang 250 → đếm sitemap (chính xác hơn “250+”).
-            sitemap_total = _shopify_sitemap_product_count(crawler.shop_url, crawler.session)
-            return sitemap_total if sitemap_total is not None else 250
-
-        # /products.json 429 → đếm sitemap (nhanh, đủ), không cap giả 10k qua GraphQL.
         sitemap_total = _shopify_sitemap_product_count(crawler.shop_url, crawler.session)
         if sitemap_total is not None:
             return sitemap_total
-        if hasattr(crawler, "_graphql_available") and crawler._graphql_available():
-            return _shopify_graphql_product_count(crawler, max_pages=2)
+
+        response = crawler.session.get(
+            f"{crawler.shop_url}/products.json",
+            params={"limit": 30, "page": 1},
+            timeout=(3, 5),
+        )
+        if response.status_code == 200:
+            batch = response.json().get("products", [])
+            if isinstance(batch, list) and len(batch) < 30:
+                return len(batch)
     except (requests.RequestException, ValueError, TypeError):
         pass
     return None
@@ -1573,7 +1538,7 @@ def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> 
     from xml.etree import ElementTree as ET
 
     try:
-        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=8)
+        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=(3, 8))
         if index.status_code != 200:
             return None
 
@@ -1592,7 +1557,7 @@ def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> 
             local.headers.update(session.headers)
             local.proxies.update(session.proxies)
             try:
-                resp = local.get(smap_url, timeout=8)
+                resp = local.get(smap_url, timeout=(3, 8))
                 if resp.status_code != 200:
                     return 0
                 sm_root = ET.fromstring(resp.content)
