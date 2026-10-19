@@ -1049,6 +1049,27 @@ def inject_pastel_pink_theme() -> None:
             doc.addEventListener("mouseup", lock, true);
             doc.addEventListener("touchend", lock, true);
             window.setInterval(lock, 1000);
+
+            /* Ô link chỉ gửi giá trị khi blur/Enter. Dán URL thì blur luôn để nhận diện shop chạy ngay. */
+            if (!win.__crawlUrlPasteCommit) {
+                win.__crawlUrlPasteCommit = true;
+                const commitCrawlUrl = (el) => {
+                    if (!el || el.tagName !== "INPUT" || el.type === "password") return;
+                    const label = (el.getAttribute("aria-label") || "").trim();
+                    if (!label.startsWith("Link ")) return;
+                    win.clearTimeout(win.__crawlUrlPasteTimer);
+                    win.__crawlUrlPasteTimer = win.setTimeout(() => {
+                        try { el.blur(); } catch (e) {}
+                    }, 80);
+                };
+                doc.addEventListener("paste", (event) => {
+                    commitCrawlUrl(event.target);
+                }, true);
+                doc.addEventListener("input", (event) => {
+                    if (event.inputType !== "insertFromPaste") return;
+                    commitCrawlUrl(event.target);
+                }, true);
+            }
         })();
         </script>
         """,
