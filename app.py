@@ -248,14 +248,14 @@ def init_session() -> None:
         "crawl_limit": 0,
         "crawl_pages": 0,
         "crawl_workers": DEFAULT_CRAWL_WORKERS,
-        "crawl_description_format": "html",
         "crawl_include_product_url": True,
-        "crawl_fields_all": True,
+        "crawl_fields_all": False,
         "crawl_field_title": True,
         "crawl_field_images": True,
         "crawl_field_url": True,
-        "crawl_field_description": True,
+        "crawl_field_description": False,
         "crawl_field_categories": True,
+        "crawl_field_price_always": True,
         "crawl_via_sitemap": False,
         "crawl_report_json": None,
         "crawl_report_csv": None,
@@ -3736,7 +3736,7 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
             )
     render_crawl_limits_row(include_workers=True)
     render_crawl_fields_selector()
-    if crawl_fields_from_session(st.session_state).wants_description():
+    if st.session_state.get("crawl_field_description"):
         render_crawl_description_format()
 
     limit = int(st.session_state.get("crawl_limit", 0))

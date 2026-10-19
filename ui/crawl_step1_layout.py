@@ -84,19 +84,33 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+def _on_crawl_description_format_change() -> None:
+    fmt = str(st.session_state.get("crawl_description_format") or "").strip().lower()
+    if fmt in {"html", "text"}:
+        st.session_state.crawl_field_description = True
+
+
 def render_crawl_description_format() -> None:
-    """Chọn định dạng mô tả ngay lúc crawl — mặc định HTML."""
+    """HTML / text không chọn sẵn. Khách chọn thì mới lấy mô tả."""
+    radio_kwargs: dict = {}
+    if "crawl_description_format" not in st.session_state:
+        radio_kwargs["index"] = None
     st.radio(
         "Mô tả sản phẩm khi crawl",
         options=["html", "text"],
-        format_func=lambda key: "HTML (mặc định)" if key == "html" else "Text thuần",
+        format_func=lambda key: "HTML" if key == "html" else "Text thuần",
         horizontal=True,
         key="crawl_description_format",
+        on_change=_on_crawl_description_format_change,
         help=(
-            "**HTML** — giữ thẻ mô tả (`<p>…</p>`). "
-            "**Text thuần** — bỏ hết HTML, chỉ còn chữ."
+            "Không chọn thì không lấy mô tả. "
+            "**HTML** giữ thẻ (`<p>…</p>`). **Text thuần** chỉ còn chữ."
         ),
+        **radio_kwargs,
     )
+    picked = str(st.session_state.get("crawl_description_format") or "").strip().lower()
+    if picked not in {"html", "text"}:
+        st.caption("Chọn **HTML** hoặc **Text thuần** thì mới lấy mô tả.")
 
 
 def render_crawl_include_product_url() -> None:

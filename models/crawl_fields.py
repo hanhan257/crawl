@@ -17,6 +17,11 @@ CRAWL_FIELD_LABELS: dict[str, str] = {
 
 ALL_CRAWL_FIELD_KEYS: tuple[str, ...] = tuple(CRAWL_FIELD_LABELS.keys())
 
+# Giá luôn được crawl, không có nút tắt. Description chỉ khi khách chọn định dạng.
+DEFAULT_CRAWL_FIELD_ON: frozenset[str] = frozenset(
+    {"title", "images", "url", "categories"}
+)
+
 
 @dataclass
 class CrawlFields:
@@ -61,11 +66,13 @@ class CrawlFields:
 
 
 def crawl_fields_from_session(session_state) -> CrawlFields:
-    if session_state.get("crawl_fields_all", True):
-        return CrawlFields.all_fields()
     keys = [
         key
         for key in ALL_CRAWL_FIELD_KEYS
-        if session_state.get(f"crawl_field_{key}", True)
+        if session_state.get(f"crawl_field_{key}", key in DEFAULT_CRAWL_FIELD_ON)
     ]
+    if "description" in keys:
+        fmt = str(session_state.get("crawl_description_format") or "").strip().lower()
+        if fmt not in {"html", "text"}:
+            keys = [key for key in keys if key != "description"]
     return CrawlFields.from_keys(keys)
