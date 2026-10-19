@@ -2984,6 +2984,22 @@ def render_feed_history_panel(*, in_sidebar: bool = False) -> None:
                 )
 
 
+def _selected_category_label(probe: dict) -> str | None:
+    """Nhãn danh mục đang chọn trên pill. Trả về None nếu đang crawl cả shop."""
+    picked = str(st.session_state.get("crawl_category_pill") or "").strip()
+    if not picked or picked == "Tất cả":
+        return None
+    for cat in probe.get("categories") or []:
+        if cat.get("slug") != picked:
+            continue
+        name = cat.get("name") or picked
+        count = cat.get("count")
+        if count is None:
+            return f"danh mục {name}"
+        return f"danh mục {name} · {int(count)} SP"
+    return None
+
+
 def _crawl_category_pill_label(slug: str, categories: list[dict]) -> str:
     if slug == "Tất cả":
         return "Tất cả shop"
@@ -3096,6 +3112,11 @@ def render_crawl_category_pills(probe: dict) -> None:
         label_visibility="collapsed",
         width="content",
     )
+    picked = str(st.session_state.get("crawl_category_pill") or default)
+    if picked and picked != "Tất cả":
+        match = next((cat for cat in categories if cat.get("slug") == picked), None)
+        if match is not None and match.get("count") is not None:
+            st.session_state.crawl_expected_total = int(match["count"])
 
 
 def render_url_preview(
@@ -3183,12 +3204,17 @@ def render_url_preview(
 
         if info["ok"]:
             crawl_ready = info.get("crawl_ready", True)
-            status.update(
-                label=(
+            picked_label = _selected_category_label(probe)
+            if picked_label and crawl_ready and probe.get("crawl_type") == "shop":
+                status_label = f"Nhận diện: {picked_label}"
+            else:
+                status_label = (
                     f"Nhận diện: {info['message']}"
                     if crawl_ready
                     else f"Chưa crawl được: {info['message']}"
-                ),
+                )
+            status.update(
+                label=status_label,
                 state="complete" if crawl_ready else "error",
                 expanded=not crawl_ready,
             )
@@ -3211,7 +3237,11 @@ def render_url_preview(
     if info.get("ok") and probe.get("ok") and probe.get("message"):
         from utils.sitemap_mode import product_sitemap_filename
 
-        st.caption(probe["message"])
+        picked_label = _selected_category_label(probe)
+        if picked_label and probe.get("crawl_type") == "shop":
+            st.caption(picked_label)
+        else:
+            st.caption(probe["message"])
         if platform == "generic-web":
             total = probe.get("total_products")
             if total:

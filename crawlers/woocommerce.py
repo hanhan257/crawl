@@ -335,6 +335,8 @@ class WooCommerceCrawler(BaseCrawler):
     ) -> list[Product]:
         slug = (category_slug or "").strip().strip("/")
         if self.use_public_api:
+            if not (self.consumer_key and self.consumer_secret):
+                self._store_api_probe_ok()
             try:
                 category_id = self._resolve_category_id(slug)
                 if category_id is None:
@@ -464,22 +466,9 @@ class WooCommerceCrawler(BaseCrawler):
             return int(slug)
 
         if self.use_public_api:
-            for page in range(1, 11):
-                response = self.session.get(
-                    f"{self.site_url}/wp-json/wc/store/v1/products/categories",
-                    params={"per_page": 100, "page": page},
-                    timeout=30,
-                )
-                if response.status_code != 200:
-                    break
-                data = response.json()
-                if not isinstance(data, list) or not data:
-                    break
-                matched = self._category_id_from_list(data, slug)
-                if matched is not None:
-                    return matched
-                if len(data) < 100:
-                    break
+            matched = self._category_id_from_store_pages(slug)
+            if matched is not None:
+                return matched
 
         if self.consumer_key and self.consumer_secret:
             response = self.session.get(
@@ -493,6 +482,35 @@ class WooCommerceCrawler(BaseCrawler):
                 if matched is not None:
                     return matched
 
+        return None
+
+    def _category_id_from_store_pages(self, slug: str) -> int | None:
+        """Đọc id danh mục. Proxy đứt kết nối thì thử lại bằng IP máy chủ."""
+        try:
+            return self._read_store_category_id(slug)
+        except requests.RequestException:
+            if not self.proxy_rotator.current():
+                raise
+            self._switch_to_direct_session()
+            return self._read_store_category_id(slug)
+
+    def _read_store_category_id(self, slug: str) -> int | None:
+        for page in range(1, 11):
+            response = self.session.get(
+                f"{self.site_url}/wp-json/wc/store/v1/products/categories",
+                params={"per_page": 100, "page": page},
+                timeout=30,
+            )
+            if response.status_code != 200:
+                break
+            data = response.json()
+            if not isinstance(data, list) or not data:
+                break
+            matched = self._category_id_from_list(data, slug)
+            if matched is not None:
+                return matched
+            if len(data) < 100:
+                break
         return None
 
     def _worker_session(self) -> requests.Session:
