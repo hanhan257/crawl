@@ -735,9 +735,13 @@ class ShopifyCrawler(BaseCrawler):
         sitemap_url: str | None = None,
         max_sitemaps: int | None = None,
     ) -> list[str]:
-        if sitemap_url and "sitemap_products" in sitemap_url.lower():
+        # ?from=&to= nằm ở query, không được làm tool bỏ file này để lấy cả shop.
+        from utils.sitemap_mode import product_sitemap_filename
+
+        if sitemap_url and product_sitemap_filename(sitemap_url):
             return self._parse_sitemap_product_handles(sitemap_url)
-        if sitemap_url and sitemap_url.rstrip("/").endswith("sitemap.xml"):
+        sitemap_path = (urlparse(sitemap_url).path or "").lower().rstrip("/") if sitemap_url else ""
+        if sitemap_url and sitemap_path.endswith("sitemap.xml"):
             # index — lấy tất cả product sitemaps bên trong
             pass
 

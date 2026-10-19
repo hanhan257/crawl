@@ -31,8 +31,8 @@ CRAWL_HINTS = {
         "**Shopify Hydrogen (Remix):** crawl catalog athlete (vd. influxermerch.com)."
     ),
     ("shopify", "sitemap"): (
-        "Sitemap → lấy toàn bộ SP (vượt giới hạn 25k của /products.json). "
-        "Dán link shop hoặc thẳng sitemap_products_*.xml trong chế độ **Crawl theo sitemap**"
+        "Dán `/sitemap.xml` → lấy toàn bộ SP. "
+        "Dán `sitemap_products_1.xml?from=&to=` → chỉ file đó, giữ nguyên dấu `?`."
     ),
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
     ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",
@@ -180,6 +180,16 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
         detail = target.query or ""
     elif target.crawl_type == "product":
         detail = target.handle or ""
+    elif target.crawl_type == "sitemap":
+        from utils.sitemap_mode import product_sitemap_filename
+
+        sitemap_file = product_sitemap_filename(target.url or url)
+        if sitemap_file:
+            detail = sitemap_file
+            hint = (
+                f"Chỉ file `{sitemap_file}` — giữ nguyên `?from=&to=`. "
+                "Không lấy các file sitemap khác của shop."
+            )
     elif target.crawl_type == "brand":
         detail = target.query or target.handle or ""
 

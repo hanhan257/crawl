@@ -17,6 +17,18 @@ def looks_like_sitemap_url(url: str) -> bool:
     )
 
 
+def product_sitemap_filename(url: str) -> str | None:
+    """Tên file sitemap sản phẩm, kể cả khi URL có ?from=&to=.
+
+    `/sitemap.xml` là index cả shop — trả về None.
+    """
+    path = (urlparse((url or "").strip()).path or "").lower().rstrip("/")
+    name = path.rsplit("/", 1)[-1]
+    if "sitemap" in name and "product" in name:
+        return name
+    return None
+
+
 def shop_sitemap_index_url(base_url: str) -> str:
     base = (base_url or "").strip().rstrip("/")
     if not base.startswith("http"):

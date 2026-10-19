@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v6: Woo category dùng X-WP-Total của danh mục
+def _cached_probe_shop(  # v7: 1 file sitemap_products?from=&to= không đếm cả shop
     url: str,
     woo_key: str,
     woo_secret: str,
@@ -3209,6 +3209,8 @@ def render_url_preview(
         )
 
     if info.get("ok") and probe.get("ok") and probe.get("message"):
+        from utils.sitemap_mode import product_sitemap_filename
+
         st.caption(probe["message"])
         if platform == "generic-web":
             total = probe.get("total_products")
@@ -3240,6 +3242,19 @@ def render_url_preview(
             if total is not None:
                 st.caption(
                     f"Crawl đúng collection này (~**{int(total):,}** SP).".replace(",", ".")
+                )
+        elif (
+            platform in {"shopify", "shopbase"}
+            and probe.get("crawl_type") == "sitemap"
+            and product_sitemap_filename(cleaned)
+        ):
+            total = probe.get("total_products")
+            if total is not None:
+                st.caption(
+                    (
+                        f"Crawl đúng file sitemap này (~**{int(total):,}** SP), "
+                        "không lấy các file sitemap khác."
+                    ).replace(",", ".")
                 )
         elif platform == "shopify" and probe.get("crawl_type") == "shop":
             probe_msg = str(probe.get("message") or "")
@@ -3706,10 +3721,19 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
         st.markdown("</div>", unsafe_allow_html=True)
 
     if sitemap_mode:
-        st.info(
-            "Đang dùng **crawl theo sitemap** — shop lớn / 429: nên bật proxy + "
-            "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
-        )
+        from utils.sitemap_mode import product_sitemap_filename
+
+        sitemap_file = product_sitemap_filename(url.strip()) if url else None
+        if sitemap_file:
+            st.info(
+                f"Đang crawl đúng file **{sitemap_file}** (giữ nguyên `?from=&to=`). "
+                "Không lấy hết các file sitemap của shop."
+            )
+        else:
+            st.info(
+                "Đang dùng **crawl theo sitemap** — shop lớn / 429: nên bật proxy + "
+                "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
+            )
     render_crawl_limits_row(include_workers=True)
     render_crawl_fields_selector()
     if crawl_fields_from_session(st.session_state).wants_description():

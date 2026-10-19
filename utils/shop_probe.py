@@ -756,6 +756,23 @@ def _probe_shopbase(
             url_category_slug=url_category or target.handle,
         )
 
+    from utils.sitemap_mode import product_sitemap_filename
+
+    sitemap_file = product_sitemap_filename(target.url or "")
+    if target.crawl_type == "sitemap" and sitemap_file:
+        total = _shopify_one_sitemap_product_count(crawler, target.url)
+        count_text = f"**{total}**" if total is not None else "**?**"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopbase",
+            crawl_type="sitemap",
+            base_url=base_url,
+            message=f"{count_text} SP · file `{sitemap_file}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=sitemap_file,
+        )
+
     if target.crawl_type == "search" and target.query:
         total = crawler.count_search_results(target.query)
         return ShopProbeResult(
@@ -893,6 +910,24 @@ def _probe_shopify(
             total_products=1,
             categories=[],
             url_category_slug=url_category or target.handle,
+        )
+
+    # sitemap_products_1.xml?from=&to= là 1 file, không phải index cả shop.
+    from utils.sitemap_mode import product_sitemap_filename
+
+    sitemap_file = product_sitemap_filename(target.url or "")
+    if target.crawl_type == "sitemap" and sitemap_file:
+        total = _shopify_one_sitemap_product_count(crawler, target.url)
+        count_text = f"**{total}**" if total is not None else "**?**"
+        return ShopProbeResult(
+            ok=True,
+            platform="shopify",
+            crawl_type="sitemap",
+            base_url=crawler.shop_url,
+            message=f"{count_text} SP · file `{sitemap_file}`",
+            total_products=total,
+            categories=[],
+            url_category_slug=sitemap_file,
         )
 
     # Đếm collection trước khi liệt kê cả shop — list collections dễ 429
@@ -1398,6 +1433,55 @@ def _shopify_product_count(crawler) -> int | None:
             return _shopify_graphql_product_count(crawler)
     except (requests.RequestException, ValueError, TypeError):
         pass
+    return None
+
+
+def _shopify_one_sitemap_product_count(crawler, sitemap_url: str) -> int | None:
+    """Đếm <loc>/products/...</loc> trong đúng URL đã dán, giữ nguyên query ?from=&to=."""
+    from xml.etree import ElementTree as ET
+
+    from utils.http_session import create_http_session
+
+    user_agent = ""
+    session = getattr(crawler, "session", None)
+    if session is not None:
+        user_agent = session.headers.get("User-Agent") or ""
+    direct = create_http_session(None)
+    if user_agent:
+        direct.headers["User-Agent"] = user_agent
+    sessions = [direct]
+    rotator = getattr(crawler, "proxy_rotator", None)
+    if rotator is not None and getattr(rotator, "has_proxy", False):
+        proxied = create_http_session(rotator.current())
+        if user_agent:
+            proxied.headers["User-Agent"] = user_agent
+        sessions.append(proxied)
+
+    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    for http in sessions:
+        try:
+            response = http.get(sitemap_url, timeout=25)
+            if response.status_code != 200 or not response.content:
+                continue
+            root = ET.fromstring(response.content)
+            locs = [
+                (el.text or "").strip()
+                for el in root.findall(".//sm:loc", ns)
+                if el.text and "/products/" in el.text
+            ]
+            if not locs and "/products/" in (response.text or ""):
+                locs = re.findall(r"/products/[^<\s\"']+", response.text)
+            seen: set[str] = set()
+            total = 0
+            for loc in locs:
+                handle = loc.rstrip("/").rsplit("/", 1)[-1].split("?")[0].strip()
+                if not handle or handle in seen:
+                    continue
+                seen.add(handle)
+                total += 1
+            return total
+        except (requests.RequestException, ET.ParseError, ValueError, TypeError):
+            continue
     return None
 
 
