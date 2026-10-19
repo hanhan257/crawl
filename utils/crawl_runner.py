@@ -548,6 +548,49 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "campaign":
+        from crawlers.campaign_shop import CampaignShopCrawler
+
+        crawler = CampaignShopCrawler(
+            site_url=target.base_url or target.url,
+            proxy_url=effective_proxy,
+        )
+        try:
+            if target.crawl_type == "product" and target.handle:
+                product = crawler.crawl_product(target.handle)
+                products = [product] if product else []
+            elif target.crawl_type == "category" and (target.handle or target.category_slug):
+                products = crawler.crawl_category(
+                    target.category_slug or target.handle or "",
+                    limit=limit,
+                    max_pages=max_pages,
+                    progress_callback=progress_callback,
+                    max_workers=workers,
+                )
+            elif target.crawl_type == "shop":
+                products = crawler.crawl(
+                    limit=limit,
+                    max_pages=max_pages,
+                    category_slug=category_slug,
+                    progress_callback=progress_callback,
+                    max_workers=workers,
+                )
+            else:
+                raise CrawlError(f"Campaign shop: chưa hỗ trợ loại link '{target.crawl_type}'")
+        except requests.RequestException as exc:
+            raise CrawlError(f"Campaign shop: lỗi HTTP {exc}") from exc
+        except ValueError as exc:
+            raise CrawlError(str(exc)) from exc
+
+        if not products:
+            raise CrawlError("Campaign shop: không crawl được sản phẩm nào từ link này.")
+
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
+
     if target.platform == "trendsi":
 
         from crawlers.trendsi import TrendsiCrawler

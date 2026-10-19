@@ -31,6 +31,8 @@ GENERIC_WEB_SHOP_CATEGORY = re.compile(r"/shop/([^/?#]+)")
 GENERIC_WEB_CATEGORY = re.compile(r"/category/([^/?#]+)")
 TEEMILL_COLLECTION = re.compile(r"/collection/([^/?#]+)", re.I)
 TEEMILL_PRODUCT = re.compile(r"/product/([^/?#]+)", re.I)
+CAMPAIGN_CATEGORY = re.compile(r"/category/([^/?#]+)", re.I)
+CAMPAIGN_PRODUCT = re.compile(r"/campaign/([^/?#]+)", re.I)
 MAGENTO_SEARCH = re.compile(r"/catalogsearch/result", re.I)
 HTML_CATALOG_SEARCH = MAGENTO_SEARCH
 
@@ -205,6 +207,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_campaign() -> str | None:
+        try:
+            from crawlers.campaign_shop import CampaignShopCrawler
+
+            if CampaignShopCrawler.site_supports(base, session=fresh_session()):
+                return "campaign"
+        except Exception:
+            pass
+        return None
+
     def check_teemill() -> str | None:
         try:
             from crawlers.teemill import TeemillCrawler
@@ -311,7 +323,14 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return platform
 
     platform = _first_platform(
-        (check_wp_json, check_teemill, check_magento, check_generic, check_html_signals)
+        (
+            check_campaign,
+            check_wp_json,
+            check_teemill,
+            check_magento,
+            check_generic,
+            check_html_signals,
+        )
     )
     if platform:
         return platform
@@ -335,6 +354,13 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             if woo_store.status_code == 200 and isinstance(woo_store.json(), list):
                 return "woocommerce"
         except (requests.RequestException, ValueError):
+            pass
+        try:
+            from crawlers.campaign_shop import CampaignShopCrawler
+
+            if CampaignShopCrawler.site_supports(base, session=session):
+                return "campaign"
+        except Exception:
             pass
 
     # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
@@ -417,6 +443,17 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
             base_url=f"{parsed.scheme}://{parsed.netloc}",
         )
 
+    if platform == "campaign":
+        campaign_target = _detect_campaign(normalized, path)
+        if campaign_target.crawl_type != "unknown":
+            return campaign_target
+        return DetectedTarget(
+            platform="campaign",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
     if platform == "teemill":
         teemill_target = _detect_teemill(normalized, host, path)
         if teemill_target.crawl_type != "unknown":
@@ -483,8 +520,8 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Teemill, Trendsi, Magento/Jomashop, "
-        "Redbubble, Fine Art America, Web thuần (Next.js / HTML / sitemap).\n"
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Campaign shop, Teemill, Trendsi, "
+        "Magento/Jomashop, Redbubble, Fine Art America, Web thuần (Next.js / HTML / sitemap).\n"
         "Ví dụ: jomashop.com/jewelry.html · thewildlifetrustsshop.com/collection/... · keeptee.com",
         platform="unknown",
     )
@@ -945,6 +982,48 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
 
     return DetectedTarget(
         platform="woocommerce",
+        crawl_type="unknown",
+        url=url,
+        base_url=base_url,
+    )
+
+
+def _detect_campaign(url: str, path: str) -> DetectedTarget:
+    base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+
+    product_match = CAMPAIGN_PRODUCT.search(path)
+    if product_match:
+        handle = product_match.group(1).strip("/")
+        return DetectedTarget(
+            platform="campaign",
+            crawl_type="product",
+            url=url,
+            base_url=base_url,
+            handle=handle,
+        )
+
+    category_match = CAMPAIGN_CATEGORY.search(path)
+    if category_match:
+        handle = category_match.group(1).strip("/")
+        return DetectedTarget(
+            platform="campaign",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            handle=handle,
+            category_slug=handle,
+        )
+
+    if path.rstrip("/") in ("", "/"):
+        return DetectedTarget(
+            platform="campaign",
+            crawl_type="shop",
+            url=url,
+            base_url=base_url,
+        )
+
+    return DetectedTarget(
+        platform="campaign",
         crawl_type="unknown",
         url=url,
         base_url=base_url,

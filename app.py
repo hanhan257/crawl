@@ -519,7 +519,7 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v10: trang chủ đếm sitemap, không tải products.json 250
+def _cached_probe_shop(  # v11: campaign shop đếm danh mục lá
     url: str,
     woo_key: str,
     woo_secret: str,
@@ -2455,10 +2455,10 @@ def run_crawl_only(
                 # Link /classify/... hoặc /brand đã đúng category — không rebuild
                 # (trước đây build_category_crawl_url trả homepage → ra SP quần áo mặc định).
                 pass
-            elif target.platform in {"woocommerce", "teemill"} and target.crawl_type == "product":
+            elif target.platform in {"woocommerce", "teemill", "campaign"} and target.crawl_type == "product":
                 pass
             elif (
-                target.platform in {"woocommerce", "teemill", "shopify", "shopbase"}
+                target.platform in {"woocommerce", "teemill", "shopify", "shopbase", "campaign"}
                 and target.crawl_type == "category"
                 and _pill_matches_category(target, category_slug)
             ):
@@ -2520,6 +2520,8 @@ def run_crawl_only(
         )
         rb_platform = crawl_platform == "redbubble"
         workers = int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS))
+        if crawl_platform == "campaign":
+            workers = min(workers, 8)
         if crawl_platform == "shopify":
             from crawlers.shopify_hydrogen import ShopifyHydrogenCrawler
 
@@ -3136,7 +3138,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Campaign shop · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
         info = _cached_describe_url(
             cleaned,
             st.session_state.get("proxy_url", "") or "",
@@ -3157,6 +3159,8 @@ def render_url_preview(
                 )
         elif platform == "redbubble":
             status.write("Redbubble: đang đếm SP trên trang **/shop/...**…")
+        elif platform == "campaign":
+            status.write("Campaign shop: đang đếm từng danh mục…")
         else:
             status.write("Đang đếm sản phẩm và danh mục…")
 
@@ -3254,6 +3258,11 @@ def render_url_preview(
                 st.caption(
                     "Web thuần không có collection shop — crawl **Tất cả** hoặc lọc danh mục nếu có pill."
                 )
+        elif platform == "campaign":
+            st.caption(
+                "Campaign shop — **Tất cả shop** gộp mẫu nằm ở nhiều danh mục. "
+                "Chọn một danh mục để lấy đúng số SP của danh mục đó."
+            )
         elif platform == "trendsi" and probe.get("crawl_type") == "category":
             total = probe.get("total_products")
             if total:
@@ -3698,6 +3707,7 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
                     "WooCommerce search: /shop/?s=từ-khóa&post_type=product\n"
                     "Magento/Jomashop: /jewelry.html, /watches-for-men.html, /sku-slug.html\n"
                     "Web thuần: trang chủ, /shop/..., /product/..., link danh mục .html\n"
+                    "Campaign shop: trang chủ, /category/..., /campaign/... (vd. featherslife.com)\n"
                     "ShopBase: nebsport.com, wc.luminaaura.us (API catalog + mô tả HTML)"
                 )
             ),

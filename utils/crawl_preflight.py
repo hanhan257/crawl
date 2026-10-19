@@ -67,6 +67,8 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
     try:
         if target.platform == "woocommerce":
             return _check_woocommerce(session, base, host, target)
+        if target.platform == "campaign":
+            return _check_campaign(session, base, host)
         if target.platform == "teemill":
             return _check_teemill(session, base, host, target)
         if target.platform == "shopify":
@@ -159,6 +161,8 @@ def _check_reachable_direct(
     session = _preflight_session(None, allow_saved_proxy=False)
     if target.platform == "woocommerce":
         return _check_woocommerce(session, base, host, target)
+    if target.platform == "campaign":
+        return _check_campaign(session, base, host)
     if target.platform == "teemill":
         return _check_teemill(session, base, host, target)
     if target.platform == "shopify":
@@ -356,6 +360,21 @@ def _woocommerce_html_fallback_ok(
         except requests.RequestException:
             continue
     return False
+
+
+def _check_campaign(session: requests.Session, base: str, host: str) -> str | None:
+    from crawlers.campaign_shop import CampaignShopCrawler
+
+    if CampaignShopCrawler.site_supports(base, session=session):
+        return None
+    if session.proxies or _used_or_saved_proxy(None):
+        direct = _preflight_session(None, allow_saved_proxy=False)
+        if CampaignShopCrawler.site_supports(base, session=direct):
+            return None
+    return (
+        f"Campaign shop **{host}** không mở được API /api/home. "
+        "Thử tắt Proxy hoặc kiểm tra lại link."
+    )
 
 
 def _check_teemill(

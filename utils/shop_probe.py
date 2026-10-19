@@ -87,6 +87,11 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/collections/{category_slug}"
     if platform == "shopbase":
         return f"{base}/collections/{category_slug}"
+    if platform == "campaign":
+        slug = category_slug.strip().strip("/")
+        if slug in {"", "Tất cả"}:
+            return f"{base}/"
+        return f"{base}/category/{slug}"
     if platform == "teemill":
         slug = category_slug.strip().strip("/")
         if slug in {"", "all-products", "all"}:
@@ -295,6 +300,8 @@ def probe_shop_stats(
         return _probe_shopify(target, credentials, base_url, url_category)
     if target.platform == "shopbase":
         return _probe_shopbase(target, base_url, url_category)
+    if target.platform == "campaign":
+        return _probe_campaign(target, base_url, url_category, max_workers=max_workers)
     if target.platform == "teemill":
         return _probe_teemill(target, base_url, url_category)
     if target.platform == "trendsi":
@@ -661,6 +668,90 @@ def _probe_woocommerce(
         total_products=total,
         categories=categories,
         url_category_slug=url_category,
+    )
+
+
+def _probe_campaign(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+    *,
+    max_workers: int = 8,
+) -> ShopProbeResult:
+    from crawlers.campaign_shop import CampaignShopCrawler
+
+    crawler = CampaignShopCrawler(base_url)
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="campaign",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link /campaign/...",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    try:
+        raw_categories = crawler.list_categories(max_workers=max_workers)
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=True,
+            platform="campaign",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"Campaign shop — không đọc được danh mục ({exc}).",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    categories = [
+        ShopCategoryInfo(
+            slug=str(item.get("slug") or ""),
+            name=str(item.get("name") or item.get("slug") or ""),
+            count=item.get("count"),
+        )
+        for item in raw_categories
+        if item.get("slug")
+    ]
+    slug = (url_category or target.category_slug or target.handle or "").strip().strip("/")
+    total: int | None = None
+    if target.crawl_type == "category" and slug:
+        match = next((cat for cat in categories if cat.slug == slug), None)
+        if match is None:
+            try:
+                info = crawler.category_info(slug)
+            except Exception:
+                info = None
+            if info and info.get("slug"):
+                match = ShopCategoryInfo(
+                    slug=str(info["slug"]),
+                    name=str(info.get("name") or info["slug"]),
+                    count=info.get("count"),
+                )
+                categories.insert(0, match)
+        if match is not None and match.count is not None:
+            total = int(match.count)
+        if match is not None and total is not None:
+            message = f"**{total}** SP · {match.name}"
+        elif match is not None:
+            message = f"Danh mục {match.name}"
+        else:
+            message = _stats_message(total, len(categories))
+    else:
+        message = f"**{len(categories)}** danh mục · Campaign shop"
+
+    return ShopProbeResult(
+        ok=True,
+        platform="campaign",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=message,
+        total_products=total,
+        categories=categories,
+        url_category_slug=slug or url_category,
     )
 
 

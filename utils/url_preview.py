@@ -6,6 +6,7 @@ PLATFORM_LABELS = {
     "shopify": "Shopify",
     "shopbase": "ShopBase",
     "woocommerce": "WooCommerce",
+    "campaign": "Campaign shop",
     "teemill": "Teemill",
     "trendsi": "Trendsi",
     "magento": "Magento / Jomashop",
@@ -57,6 +58,12 @@ CRAWL_HINTS = {
     ("woocommerce", "category"): "Link danh mục (product-category hoặc ?filter_category=) → chỉ lấy SP trong danh mục đó",
     ("woocommerce", "search"): "Link ?s=từ-khóa → lấy SP khớp tìm kiếm",
     ("woocommerce", "product"): "Link sản phẩm → lấy 1 SP",
+    ("campaign", "shop"): (
+        "Shop campaign (Laravel, vd. featherslife.com) → "
+        "crawl danh mục lá qua /api/shop-category, gộp mẫu trùng"
+    ),
+    ("campaign", "category"): "Link /category/... → lấy campaign trong danh mục đó",
+    ("campaign", "product"): "Link /campaign/... → lấy 1 campaign",
     ("teemill", "shop"): "Trang chủ Teemill → crawl toàn bộ shop qua Omnis API",
     ("teemill", "category"): "Link /collection/... → lấy SP trong collection đó",
     ("teemill", "product"): "Link /product/... → lấy 1 SP",

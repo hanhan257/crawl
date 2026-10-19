@@ -1,3 +1,4 @@
+from .campaign_shop import CampaignShopCrawler
 from .teemill import TeemillCrawler
 from .trendsi import TrendsiCrawler
 from .shopbase import ShopBaseCrawler
@@ -17,6 +18,7 @@ __all__ = [
     "FineArtAmericaCrawler",
     "GenericWebCrawler",
     "ShopBaseCrawler",
+    "CampaignShopCrawler",
     "TeemillCrawler",
     "TrendsiCrawler",
     "MagentoGraphqlCrawler",
