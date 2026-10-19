@@ -1489,11 +1489,41 @@ def _shopify_product_count(crawler) -> int | None:
     return None
 
 
-def _shopify_one_sitemap_product_count(crawler, sitemap_url: str) -> int | None:
-    """Đếm <loc>/products/...</loc> trong đúng URL đã dán, giữ nguyên query ?from=&to=."""
-    from xml.etree import ElementTree as ET
+def _count_product_handles_in_sitemap(text: str) -> int | None:
+    """Đếm handle trong XML sitemap. None nếu body không phải sitemap."""
+    if not text or "<loc" not in text.lower():
+        return None
+    seen: set[str] = set()
+    for raw in re.findall(r"/products/([^<\s\"'#?]+)", text, flags=re.I):
+        handle = unquote(raw).strip().strip("/")
+        if not handle or handle.lower() in {"json"} or handle.lower().endswith(".xml"):
+            continue
+        seen.add(handle)
+    return len(seen)
 
+
+def _fetch_sitemap_text(crawler, sitemap_url: str) -> str | None:
+    """Lấy đúng URL sitemap (giữ ?from=&to=). Direct, rồi curl, rồi 1 proxy."""
     from utils.http_session import create_http_session
+
+    def from_response(response) -> str | None:
+        if response is None or getattr(response, "status_code", 0) != 200:
+            return None
+        text = getattr(response, "text", "") or ""
+        if "<loc" in text.lower():
+            return text
+        content = getattr(response, "content", b"") or b""
+        if content[:2] == b"\x1f\x8b":
+            import gzip
+
+            try:
+                content = gzip.decompress(content)
+            except OSError:
+                return None
+        if not content:
+            return None
+        decoded = content.decode("utf-8", errors="replace")
+        return decoded if "<loc" in decoded.lower() else None
 
     user_agent = ""
     session = getattr(crawler, "session", None)
@@ -1502,40 +1532,40 @@ def _shopify_one_sitemap_product_count(crawler, sitemap_url: str) -> int | None:
     direct = create_http_session(None)
     if user_agent:
         direct.headers["User-Agent"] = user_agent
-    sessions = [direct]
+    try:
+        text = from_response(direct.get(sitemap_url, timeout=(5, 20)))
+        if text:
+            return text
+    except requests.RequestException:
+        pass
+
+    try:
+        from utils.curl_http import curl_get
+
+        text = from_response(curl_get(sitemap_url, timeout=20))
+        if text:
+            return text
+    except Exception:
+        pass
+
     rotator = getattr(crawler, "proxy_rotator", None)
-    if rotator is not None and getattr(rotator, "has_proxy", False):
+    if rotator is not None and rotator.has_proxy:
         proxied = create_http_session(rotator.current())
         if user_agent:
             proxied.headers["User-Agent"] = user_agent
-        sessions.append(proxied)
-
-    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
-    for http in sessions:
         try:
-            response = http.get(sitemap_url, timeout=8)
-            if response.status_code != 200 or not response.content:
-                continue
-            root = ET.fromstring(response.content)
-            locs = [
-                (el.text or "").strip()
-                for el in root.findall(".//sm:loc", ns)
-                if el.text and "/products/" in el.text
-            ]
-            if not locs and "/products/" in (response.text or ""):
-                locs = re.findall(r"/products/[^<\s\"']+", response.text)
-            seen: set[str] = set()
-            total = 0
-            for loc in locs:
-                handle = loc.rstrip("/").rsplit("/", 1)[-1].split("?")[0].strip()
-                if not handle or handle in seen:
-                    continue
-                seen.add(handle)
-                total += 1
-            return total
-        except (requests.RequestException, ET.ParseError, ValueError, TypeError):
-            continue
+            return from_response(proxied.get(sitemap_url, timeout=(5, 20)))
+        except requests.RequestException:
+            return None
     return None
+
+
+def _shopify_one_sitemap_product_count(crawler, sitemap_url: str) -> int | None:
+    """Đếm <loc>/products/...</loc> trong đúng URL đã dán, giữ nguyên query ?from=&to=."""
+    text = _fetch_sitemap_text(crawler, sitemap_url)
+    if not text:
+        return None
+    return _count_product_handles_in_sitemap(text)
 
 
 def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> int | None:
