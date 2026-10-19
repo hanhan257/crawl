@@ -714,7 +714,7 @@ def _probe_campaign(
             count=item.get("count"),
         )
         for item in raw_categories
-        if item.get("slug")
+        if item.get("slug") and item.get("count") != 0
     ]
     slug = (url_category or target.category_slug or target.handle or "").strip().strip("/")
     total: int | None = None
@@ -731,7 +731,8 @@ def _probe_campaign(
                     name=str(info.get("name") or info["slug"]),
                     count=info.get("count"),
                 )
-                categories.insert(0, match)
+                if match.count != 0:
+                    categories.insert(0, match)
         if match is not None and match.count is not None:
             total = int(match.count)
         if match is not None and total is not None:
@@ -741,7 +742,14 @@ def _probe_campaign(
         else:
             message = _stats_message(total, len(categories))
     else:
-        message = f"**{len(categories)}** danh mục · Campaign shop"
+        leaf_sum = sum(int(cat.count) for cat in categories if cat.count is not None)
+        if leaf_sum > 0:
+            message = (
+                f"**{len(categories)}** danh mục · ~**{leaf_sum}** SP "
+                "(trùng giữa danh mục sẽ gộp khi crawl)"
+            )
+        else:
+            message = f"**{len(categories)}** danh mục · Campaign shop"
 
     return ShopProbeResult(
         ok=True,
