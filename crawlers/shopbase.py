@@ -34,7 +34,8 @@ CATALOG_LIST_API = "/api/catalog/next/products.json"
 CATALOG_DETAIL_API = "/api/catalog/next/product.json"
 CATALOG_COLLECTIONS_API = "/api/catalog/next/collections.json"
 CATALOG_PAGE_SIZE = 50
-CATALOG_LIST_MAX_WORKERS = 32
+# ShopBase catalog dễ rơi trang khi >8 request cùng lúc (số SP mỗi lần khác nhau).
+CATALOG_LIST_MAX_WORKERS = 8
 DETAIL_FETCH_MAX_WORKERS = 500
 
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
@@ -389,14 +390,25 @@ class ShopBaseCrawler(BaseCrawler):
             resp = http.get(
                 f"{self.site_url}{CATALOG_LIST_API}",
                 params=params,
-                timeout=30,
+                timeout=25,
             )
+        except requests.RequestException:
+            return None
+        if resp.status_code == 400:
+            # wearandjoy: count=10000 nhưng page 200 → {"messages":["Max result reached"]}.
+            return {"items": [], "_catalog_end": True}
+        try:
             resp.raise_for_status()
             payload = resp.json()
-            result = payload.get("result")
-            return result if isinstance(result, dict) else None
         except (requests.RequestException, ValueError):
             return None
+        result = payload.get("result")
+        if isinstance(result, dict):
+            return result
+        message = " ".join(str(item) for item in (payload.get("messages") or []))
+        if "max result" in message.lower():
+            return {"items": [], "_catalog_end": True}
+        return None
 
     def _collection_meta(self, handle: str) -> dict[str, Any] | None:
         handle = handle.strip().strip("/")
@@ -469,6 +481,15 @@ class ShopBaseCrawler(BaseCrawler):
         pages = max(1, (total + CATALOG_PAGE_SIZE - 1) // CATALOG_PAGE_SIZE)
         if max_pages and max_pages > 0:
             pages = min(pages, max_pages)
+        # Trang cuối đôi khi vượt trần API dù count vẫn báo đủ.
+        if pages > 1:
+            tail = self._fetch_catalog_page(
+                pages,
+                collection_handle=collection_handle,
+                query=query,
+            )
+            if isinstance(tail, dict) and tail.get("_catalog_end"):
+                pages -= 1
         return first, pages
 
     def _list_catalog_items(
@@ -508,37 +529,27 @@ class ShopBaseCrawler(BaseCrawler):
                 local.session.headers.update(self._catalog_session.headers)
             return local.session
 
-        def fetch_page(page_num: int) -> tuple[int, list[dict[str, Any]]]:
-            params: dict[str, Any] = {
-                "limit": CATALOG_PAGE_SIZE,
-                "page": page_num,
-            }
-            if collection_handle:
-                params["collection_handle"] = collection_handle
-            search = (query or "").strip()
-            if search:
-                params["q"] = search
+        def fetch_page(page_num: int) -> tuple[int, list[dict[str, Any]], bool]:
+            ended = False
             for attempt in range(3):
-                try:
-                    resp = session_for_thread().get(
-                        f"{self.site_url}{CATALOG_LIST_API}",
-                        params=params,
-                        timeout=30,
-                    )
-                    resp.raise_for_status()
-                    result = resp.json().get("result") or {}
-                    items = [
-                        item
-                        for item in (result.get("items") or [])
-                        if isinstance(item, dict)
-                    ]
-                    if items or attempt == 2:
-                        return page_num, items
-                except (requests.RequestException, ValueError):
-                    pass
+                result = self._fetch_catalog_page(
+                    page_num,
+                    collection_handle=collection_handle,
+                    query=query,
+                    session=session_for_thread(),
+                )
+                if isinstance(result, dict) and result.get("_catalog_end"):
+                    return page_num, [], True
+                items = [
+                    item
+                    for item in ((result or {}).get("items") or [])
+                    if isinstance(item, dict)
+                ]
+                if items:
+                    return page_num, items, False
                 if attempt < 2:
-                    time.sleep(0.4 * (attempt + 1))
-            return page_num, []
+                    time.sleep(0.35 * (attempt + 1))
+            return page_num, [], ended
 
         workers = min(
             max(1, max_workers),
@@ -546,32 +557,49 @@ class ShopBaseCrawler(BaseCrawler):
             total_pages - 1,
         )
         pages_done = 1
+        ended_pages: set[int] = set()
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = [
                 executor.submit(fetch_page, page_num)
                 for page_num in range(2, total_pages + 1)
             ]
             for future in as_completed(futures):
-                page_num, items = future.result()
-                page_items[page_num] = items
+                page_num, items, ended = future.result()
+                if ended:
+                    ended_pages.add(page_num)
+                    page_items[page_num] = []
+                else:
+                    page_items[page_num] = items
                 pages_done += 1
                 if progress_callback:
                     loaded = sum(len(chunk) for chunk in page_items.values())
                     progress_callback(pages_done, total_pages, loaded)
 
-        # Retry failed pages sequentially (rate-limit / timeout).
-        for page_num in range(2, total_pages + 1):
-            if page_items.get(page_num):
-                continue
-            result = self._fetch_catalog_page(
-                page_num,
-                collection_handle=collection_handle,
-                query=query,
-            )
-            if result:
+        # Trang rỗng do rate-limit: thử lại, bỏ trang API báo hết kết quả.
+        missing = [
+            page_num
+            for page_num in range(2, total_pages + 1)
+            if page_num not in ended_pages and not page_items.get(page_num)
+        ]
+        for offset in range(0, len(missing), 4):
+            wave = missing[offset : offset + 4]
+            for page_num in wave:
+                result = self._fetch_catalog_page(
+                    page_num,
+                    collection_handle=collection_handle,
+                    query=query,
+                )
+                if isinstance(result, dict) and result.get("_catalog_end"):
+                    page_items[page_num] = []
+                    continue
                 page_items[page_num] = [
-                    item for item in (result.get("items") or []) if isinstance(item, dict)
+                    item
+                    for item in ((result or {}).get("items") or [])
+                    if isinstance(item, dict)
                 ]
+            if progress_callback:
+                loaded = sum(len(chunk) for chunk in page_items.values())
+                progress_callback(total_pages, total_pages, loaded)
 
         all_items: list[dict[str, Any]] = []
         seen_handles: set[str] = set()
@@ -643,6 +671,8 @@ class ShopBaseCrawler(BaseCrawler):
                     processed == total or processed % 50 == 0
                 ):
                     progress_callback(processed, map_total, len(products))
+                if processed == total or processed % 400 == 0:
+                    self._emit_partial(products)
             self._emit_partial(products)
             if self._wants_description():
                 self.progress_phase = "description"

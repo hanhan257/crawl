@@ -2543,6 +2543,9 @@ def run_crawl_only(
                 "(tránh timeout/thiếu SP). Bỏ tick **Description** để crawl catalog nhanh hơn."
             )
         if crawl_platform == "shopbase":
+            # Catalog API rơi trang nếu bắn quá 8 request một lúc.
+            if not wants_shopbase_desc:
+                workers = min(workers, 8)
             st.session_state["_shopbase_progress_phase"] = "pages"
 
         if target_preview and crawl_platform != "redbubble":
@@ -3075,11 +3078,11 @@ def render_crawl_category_pills(probe: dict) -> None:
 
         options = slugs
         default = url_slug if url_slug in options else (slugs[0] if slugs else "Tất cả")
-        st.session_state["crawl_category_pill"] = default
+        if st.session_state.get("crawl_category_pill") not in options:
+            st.session_state["crawl_category_pill"] = default
         st.pills(
             "Danh mục Redbubble",
             options=options,
-            default=default,
             format_func=lambda slug: _crawl_category_pill_label(slug, categories),
             selection_mode="single",
             key="crawl_category_pill",
@@ -3105,10 +3108,11 @@ def render_crawl_category_pills(probe: dict) -> None:
         """,
         unsafe_allow_html=True,
     )
+    if st.session_state.get("crawl_category_pill") not in options:
+        st.session_state["crawl_category_pill"] = default
     st.pills(
         "Crawl category",
         options=options,
-        default=st.session_state.get("crawl_category_pill", default),
         format_func=lambda slug: _crawl_category_pill_label(slug, categories),
         selection_mode="single",
         key="crawl_category_pill",
