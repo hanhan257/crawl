@@ -39,6 +39,9 @@ CATALOG_LIST_MAX_WORKERS = 8
 # Trang 200 trả "Max result reached" — mỗi bộ lọc chỉ đọc được 199 trang.
 CATALOG_MAX_PAGES = 199
 CATALOG_MAX_ITEMS = CATALOG_PAGE_SIZE * CATALOG_MAX_PAGES
+# Count >= mức này nghĩa là danh sách dài hơn một cửa sổ, không phải số riêng của một shop.
+CATALOG_COUNT_CAP = 10000
+_SEARCH_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 DETAIL_FETCH_MAX_WORKERS = 500
 
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
@@ -196,11 +199,10 @@ class ShopBaseCrawler(BaseCrawler):
                     self._catalog_reported_count(collection_handle),
                 )
             reported = self._catalog_reported_count(collection_handle)
-            if reported and reported < 10000:
+            if reported and reported < CATALOG_COUNT_CAP:
                 return reported
-            if reported >= 10000 and not collection_handle:
-                # Cửa sổ catalog chỉ 9.950 SP. Tổng thật nằm ở collection lớn nhất
-                # (vd. wearandjoy /evero = 118.605).
+            if reported >= CATALOG_COUNT_CAP and not collection_handle:
+                # Cửa sổ catalog chỉ 9.950 SP. Tổng thật là collection lớn nhất của shop đó.
                 return max(reported, self._max_collection_count())
             if reported:
                 return reported
@@ -428,7 +430,7 @@ class ShopBaseCrawler(BaseCrawler):
         except requests.RequestException:
             return None
         if resp.status_code == 400:
-            # wearandjoy: count=10000 nhưng page 200 → {"messages":["Max result reached"]}.
+            # Quá trang cuối của một bộ lọc → {"messages":["Max result reached"]}.
             return {"items": [], "_catalog_end": True}
         try:
             resp.raise_for_status()
@@ -680,17 +682,94 @@ class ShopBaseCrawler(BaseCrawler):
             if str(item.get("handle") or "").strip()
         ]
 
+    def _query_counts(self, queries: list[str]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        if not queries:
+            return counts
+        workers = min(CATALOG_LIST_MAX_WORKERS, len(queries))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(self._catalog_reported_count, query=query): query
+                for query in queries
+            }
+            for future in as_completed(futures):
+                query = futures[future]
+                try:
+                    counts[query] = int(future.result() or 0)
+                except (TypeError, ValueError):
+                    counts[query] = 0
+        return counts
+
+    def _search_leaf_queries(self) -> list[str]:
+        """Tách catalog bằng từ khóa đến khi mỗi nhóm vừa một cửa sổ API."""
+        pending = list(_SEARCH_CHARS)
+        leaves: list[str] = []
+        seen: set[str] = set()
+        counted = 0
+        while pending and counted < 2500 and len(leaves) < 800:
+            wave: list[str] = []
+            while pending and len(wave) < CATALOG_LIST_MAX_WORKERS:
+                query = pending.pop(0)
+                if query in seen or len(query) > 3:
+                    continue
+                seen.add(query)
+                wave.append(query)
+            if not wave:
+                break
+            counted += len(wave)
+            for query, count in self._query_counts(wave).items():
+                if count <= 0:
+                    continue
+                if count >= CATALOG_COUNT_CAP and len(query) < 3:
+                    pending.extend(query + char for char in _SEARCH_CHARS)
+                    continue
+                leaves.append(query)
+        return leaves
+
+    def _merge_search_shards(
+        self,
+        bucket: dict[str, Product],
+        *,
+        progress_callback: CrawlProgressCallback | None,
+        max_workers: int,
+        job_offset: int,
+    ) -> None:
+        leaves = self._search_leaf_queries()
+        total = max(job_offset + len(leaves), 1)
+        for index, query in enumerate(leaves, start=1):
+            items = self._list_catalog_items(
+                query=query,
+                max_workers=max_workers,
+            )
+            for raw in items:
+                product = self._map_catalog_item(raw, skip_page_fallback=True)
+                if product is None:
+                    continue
+                existing = bucket.get(product.id)
+                if existing is None:
+                    bucket[product.id] = product
+                    continue
+                for category in product.categories:
+                    if category and category not in existing.categories:
+                        existing.categories.append(category)
+            done = job_offset + index
+            if progress_callback and (index == len(leaves) or index % 2 == 0):
+                progress_callback(done, total, len(bucket))
+            if index == len(leaves) or index % 5 == 0:
+                self._emit_partial(list(bucket.values()))
+
     def _crawl_shop_by_collections(
         self,
         *,
         progress_callback: CrawlProgressCallback | None = None,
         max_workers: int = 8,
     ) -> list[Product]:
-        """Shop vượt trần 9.950 SP/lần lọc: đọc từng collection rồi gộp theo id.
+        """Mọi shop ShopBase vượt trần 9.950 SP/lần lọc.
 
-        Collection lớn hơn một cửa sổ (vd. hats = 10.000) được đọc thêm một lượt
-        sort id tăng dần. Collection kiểu evero (118.605) bỏ qua vì hai cửa sổ
-        không phủ hết — SP của nó nằm ở các collection còn lại.
+        Đọc từng collection của chính shop đó rồi gộp theo id. Collection lớn hơn
+        một cửa sổ được đọc thêm lượt sort id tăng dần. Collection tổng (lớn hơn
+        hai cửa sổ) không đọc trực tiếp. Nếu các collection con không phủ nổi tổng,
+        tách thêm bằng từ khóa tìm kiếm cho đến khi mỗi nhóm nằm trong cửa sổ API.
         """
         categories = self._list_collections_from_api(include_counts=False)
         counts: dict[str, int] = {}
@@ -755,6 +834,20 @@ class ShopBaseCrawler(BaseCrawler):
             if index == len(jobs) or index % 2 == 0:
                 self._emit_partial(list(bucket.values()))
 
+        giant = max(counts.values(), default=0)
+        reachable = sum(
+            min(count, CATALOG_MAX_ITEMS * 2)
+            for count in counts.values()
+            if 0 < count <= CATALOG_MAX_ITEMS * 2
+        )
+        if not jobs or (giant > CATALOG_MAX_ITEMS * 2 and reachable < int(giant * 0.75)):
+            self._merge_search_shards(
+                bucket,
+                progress_callback=progress_callback,
+                max_workers=max_workers,
+                job_offset=len(jobs),
+            )
+
         products = list(bucket.values())
         self._emit_partial(products)
         if self._wants_description() and products:
@@ -787,7 +880,7 @@ class ShopBaseCrawler(BaseCrawler):
                 and not (query or "").strip()
                 and limit is None
                 and not max_pages
-                and self._catalog_reported_count() >= 10000
+                and self._catalog_reported_count() >= CATALOG_COUNT_CAP
             ):
                 sharded = self._crawl_shop_by_collections(
                     progress_callback=progress_callback,
