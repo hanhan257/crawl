@@ -874,8 +874,12 @@ class ShopBaseCrawler(BaseCrawler):
         """
         categories = self._list_collections_from_api(include_counts=False)
         counts: dict[str, int] = {}
+        self.progress_phase = "collections"
+        if progress_callback:
+            progress_callback(0, max(len(categories), 1), 0)
         if categories:
             workers = min(CATALOG_LIST_MAX_WORKERS, len(categories))
+            counted = 0
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 futures = {
                     pool.submit(
@@ -892,6 +896,9 @@ class ShopBaseCrawler(BaseCrawler):
                         counts[str(item.get("slug") or "")] = int(future.result() or 0)
                     except (TypeError, ValueError):
                         counts[str(item.get("slug") or "")] = 0
+                    counted += 1
+                    if progress_callback and (counted == len(futures) or counted % 4 == 0):
+                        progress_callback(counted, len(futures), 0)
 
         # Request đếm bị rơi trả 0. Thử lại nhóm đó, nếu không collection bị bỏ và crawl dừng ở một cửa sổ.
         missing_slugs = [
@@ -929,20 +936,59 @@ class ShopBaseCrawler(BaseCrawler):
         bucket: dict[str, Product] = {}
         total_jobs = max(len(jobs), 1)
         self.progress_phase = "collections"
+        def _absorb(name: str, items: list[dict[str, Any]]) -> None:
+            for raw in items:
+                product = self._map_catalog_item(
+                    raw,
+                    default_category=name,
+                    skip_page_fallback=True,
+                )
+                if product is None:
+                    continue
+                existing = bucket.get(product.id)
+                if existing is None:
+                    bucket[product.id] = product
+                    continue
+                for category in product.categories:
+                    if category and category not in existing.categories:
+                        existing.categories.append(category)
+
         finished = 0
         cursor = 0
         while cursor < len(jobs):
             count = jobs[cursor][4]
             if count > 400:
-                wave = [jobs[cursor]]
-                page_workers = min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers))
+                slug, name, sort_field, sort_direction, _count = jobs[cursor]
                 cursor += 1
-            else:
-                wave = []
-                while cursor < len(jobs) and jobs[cursor][4] <= 400 and len(wave) < 4:
-                    wave.append(jobs[cursor])
-                    cursor += 1
-                page_workers = max(1, min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers)) // len(wave))
+                page_workers = min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers))
+                base = len(bucket)
+
+                def _page_progress(page: int, pages: int, loaded: int, *, seen: int = base) -> None:
+                    self.progress_phase = "pages"
+                    if progress_callback and (page <= 2 or page == pages or page % 2 == 0):
+                        progress_callback(page, max(pages, 1), seen + loaded)
+
+                items = self._list_catalog_items(
+                    collection_handle=slug,
+                    max_workers=page_workers,
+                    progress_callback=_page_progress if progress_callback else None,
+                    sort_field=sort_field,
+                    sort_direction=sort_direction,
+                    preserve_phase=True,
+                )
+                _absorb(name, items)
+                finished += 1
+                self.progress_phase = "collections"
+                if progress_callback:
+                    progress_callback(finished, total_jobs, len(bucket))
+                self._emit_partial(list(bucket.values()))
+                continue
+
+            wave = []
+            while cursor < len(jobs) and jobs[cursor][4] <= 400 and len(wave) < 4:
+                wave.append(jobs[cursor])
+                cursor += 1
+            page_workers = max(1, min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers)) // len(wave))
 
             def _load(job: tuple[str, str, str | None, str | None, int]) -> tuple[str, list[dict[str, Any]]]:
                 slug, name, sort_field, sort_direction, _count = job
@@ -1018,6 +1064,9 @@ class ShopBaseCrawler(BaseCrawler):
         max_workers: int = 1,
         default_category: str = "",
     ) -> list[Product]:
+        if progress_callback and not collection_handle and not (query or "").strip():
+            self.progress_phase = "list"
+            progress_callback(0, 1, 0)
         if self._catalog_api_available():
             self._shop_name()
             if (
