@@ -220,18 +220,37 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return None
 
     def check_shopbase() -> str | None:
+        session = fresh_session()
         try:
             # Một request. Shopify thắng ở check_shopify nếu meta/products.json khớp.
-            catalog = fresh_session().get(
+            catalog = session.get(
                 f"{base}/api/catalog/next/products.json",
                 params={"limit": 1, "page": 1},
-                timeout=_SNIFF_TIMEOUT,
+                timeout=8,
+                headers={"Accept": "application/json"},
             )
+            # Shop bị giới hạn API vẫn trả header này (kể cả 404) — không được rơi xuống web thuần.
+            if "x-sb-sf-shop-api-call-limit" in catalog.headers:
+                return "shopbase"
             if catalog.status_code == 200:
                 payload = catalog.json()
                 if isinstance(payload.get("result"), dict):
                     return "shopbase"
         except (requests.RequestException, ValueError):
+            pass
+        try:
+            with session.get(base, timeout=8, stream=True) as home:
+                if home.status_code != 200:
+                    return None
+                chunk = next(home.iter_content(65536), b"")
+            text = chunk.decode("utf-8", "ignore").lower()
+            if (
+                "thesitebase.net" in text
+                or "cdn.shopbase" in text
+                or "/api/catalog/next/" in text
+            ):
+                return "shopbase"
+        except requests.RequestException:
             pass
         return None
 
