@@ -527,7 +527,7 @@ def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     shopify_token: str,
     proxy_url: str,
     probe_workers: int,
-    _cache_ver: str = "shopbase-count-v12",
+    _cache_ver: str = "shopbase-count-v13",
 ) -> dict:
     del _cache_ver
     creds = CrawlCredentials.load()

@@ -22,7 +22,7 @@ from utils.description_html import (
     extract_generic_description_from_html,
     shopbase_description_from_item,
 )
-from utils.http_session import create_http_session
+from utils.http_session import create_http_session, parse_proxy_list
 
 CrawlProgressCallback = Callable[[int, int, int], None]
 
@@ -74,9 +74,12 @@ class ShopBaseCrawler(BaseCrawler):
         self.site_url = self._normalize_site_url(site_url)
         self.request_delay = request_delay
         self._proxy_url = proxy_url
+        self._proxy_candidates = parse_proxy_list(proxy_url)
         self.session = create_http_session(proxy_url)
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
-        # Catalog API thường chặn/không ổn định qua proxy — luôn gọi trực tiếp.
+        # None = gọi thẳng. Gắn proxy khi IP máy chủ bị shop chặn catalog.
+        self._catalog_proxy: str | None = None
+        self._catalog_route_ready = False
         self._catalog_session = self._new_catalog_session()
         self._shop_name_cache: str | None = None
         self._catalog_supported: bool | None = None
@@ -86,10 +89,43 @@ class ShopBaseCrawler(BaseCrawler):
         self.progress_phase = "list"
 
     def _new_catalog_session(self) -> requests.Session:
-        session = create_http_session(None)
+        session = create_http_session(self._catalog_proxy)
         session.headers["User-Agent"] = DEFAULT_USER_AGENT
         session.headers["Accept"] = "application/json"
         return session
+
+    def _catalog_ping(self, proxy: str | None) -> bool:
+        session = create_http_session(proxy)
+        session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        session.headers["Accept"] = "application/json"
+        try:
+            resp = session.get(
+                f"{self.site_url}{CATALOG_LIST_API}",
+                params={"limit": 1, "page": 1},
+                timeout=12,
+            )
+            if resp.status_code == 200 and isinstance(resp.json().get("result"), dict):
+                return True
+        except (requests.RequestException, ValueError):
+            return False
+        return False
+
+    def _ensure_catalog_route(self) -> None:
+        """IP crawl bị shop giới hạn thì đếm qua proxy đã lưu, không trả 0 SP."""
+        if self._catalog_route_ready:
+            return
+        if self._catalog_ping(None):
+            self._catalog_proxy = None
+            self._catalog_route_ready = True
+            self._catalog_supported = True
+            return
+        for proxy in self._proxy_candidates[:4]:
+            if self._catalog_ping(proxy):
+                self._catalog_proxy = proxy
+                self._catalog_route_ready = True
+                self._catalog_supported = True
+                return
+        self._catalog_route_ready = True
 
     def _emit_partial(self, products: list[Product]) -> None:
         self.last_products = list(products)
@@ -251,6 +287,7 @@ class ShopBaseCrawler(BaseCrawler):
         *,
         include_counts: bool = False,
     ) -> list[dict[str, Any]]:
+        self._ensure_catalog_route()
         categories: list[dict[str, Any]] = []
         page = 1
         while page <= 40:
@@ -398,6 +435,7 @@ class ShopBaseCrawler(BaseCrawler):
         return False
 
     def _catalog_api_available(self) -> bool:
+        self._ensure_catalog_route()
         if self._catalog_supported is True:
             return True
         # Không ghi nhớ một lần 404. ShopBase trả 404 khi hết lượt gọi, request sau vẫn có data.

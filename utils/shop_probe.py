@@ -299,7 +299,7 @@ def probe_shop_stats(
     if target.platform == "shopify":
         return _probe_shopify(target, credentials, base_url, url_category)
     if target.platform == "shopbase":
-        return _probe_shopbase(target, base_url, url_category)
+        return _probe_shopbase(target, base_url, url_category, credentials)
     if target.platform == "campaign":
         return _probe_campaign(target, base_url, url_category, max_workers=max_workers)
     if target.platform == "teemill":
@@ -837,12 +837,14 @@ def _probe_shopbase(
     target: DetectedTarget,
     base_url: str,
     url_category: str | None,
+    credentials: CrawlCredentials | None = None,
 ) -> ShopProbeResult:
     from concurrent.futures import ThreadPoolExecutor
 
     from crawlers.shopbase import ShopBaseCrawler
 
-    crawler = ShopBaseCrawler(base_url)
+    proxy = credentials.proxy_url if credentials is not None else None
+    crawler = ShopBaseCrawler(base_url, proxy_url=proxy)
 
     if target.crawl_type == "product":
         return ShopProbeResult(
