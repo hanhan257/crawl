@@ -400,6 +400,9 @@ def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
     if is_gmc_workflow(active):
         st.session_state.export_format = "gmc-feed-csv"
         return
+    if active == "crawl":
+        st.session_state.export_format = "web-feed-csv"
+        return
     current = st.session_state.get("export_format")
     if is_trendsi_workflow(active):
         allowed = TRENDSI_EXPORT_FORMATS
@@ -1629,6 +1632,9 @@ def render_preview_section(
     rules: ExportRules,
     image_mode: str = "comma",
     max_images_per_product: int = 0,
+    *,
+    step_number: int | None = None,
+    caption: str | None = None,
 ) -> None:
     count = len(products)
     if count == 0:
@@ -1639,10 +1645,14 @@ def render_preview_section(
     format_label = FORMAT_OPTIONS.get(export_format, export_format)
     display_products = apply_rules_to_products(products, rules)
 
-    preview_step = gmc_display_step(5) if is_gmc_workflow() else 5
+    preview_step = step_number if step_number is not None else (
+        gmc_display_step(5) if is_gmc_workflow() else 5
+    )
     edit_step = edit_step_number()
     st.markdown(f"### Bước {preview_step} · Xem trước {preview_n}/{count} sản phẩm")
-    if is_gmc_workflow():
+    if caption:
+        st.caption(caption)
+    elif is_gmc_workflow():
         st.caption(
             f"**{format_label}** · chỉnh feed ở **Bước {edit_step}**."
         )
@@ -2095,12 +2105,15 @@ def _render_data_status_banner() -> None:
         else:
             st.caption("Ảnh")
     with info_col:
-        scroll_hint = (
-            f"Cuộn xuống **Bước {gmc_display_step(5)}** (xem trước) và "
-            f"**Bước {edit_step_number(gmc=True)}** (chỉnh hàng loạt feed + bảng SP)."
-            if is_gmc_workflow(mode)
-            else "Cuộn xuống **Bước 5** (xem trước) và **Bước 6** (bảng chỉnh sửa) sau Bước 4."
-        )
+        if mode == "crawl":
+            scroll_hint = "Cuộn xuống **Bước 2** để xem trước, file CSV web thuần tải ngay bên dưới."
+        elif is_gmc_workflow(mode):
+            scroll_hint = (
+                f"Cuộn xuống **Bước {gmc_display_step(5)}** (xem trước) và "
+                f"**Bước {edit_step_number(gmc=True)}** (chỉnh hàng loạt feed + bảng SP)."
+            )
+        else:
+            scroll_hint = "Cuộn xuống **Bước 5** (xem trước) và **Bước 6** (bảng chỉnh sửa) sau Bước 4."
         st.success(
             f"**{count}** sản phẩm sẵn sàng · **{title}** · Giá mẫu: **{price_text}** · {scroll_hint}"
         )
@@ -3938,35 +3951,36 @@ def main() -> None:
         with st.container(border=True):
             render_import_panel()
 
-    with st.container(border=True):
-        if gmc_mode:
-            _ensure_export_format_for_workflow(workflow_mode)
-        elif rb_mode:
-            export_format = render_redbubble_export_selector()
-        elif trendsi_mode:
-            export_format = render_trendsi_export_selector()
-        elif shopify_mode:
-            export_format = render_shopify_export_selector()
-        elif workflow_mode == "filter-title":
-            st.markdown("### Bước 2 · Xuất file (tuỳ chọn)")
-            st.caption(
-                "Sau khi lọc, SP khớp đã vào bảng bên dưới — chọn định dạng nếu muốn xuất Woo/Shopify/feed."
-            )
-            export_format = render_export_format_selector()
-        elif workflow_mode == "filter-dedupe":
-            st.markdown("### Bước 2 · File kết quả")
-            st.caption(
-                "File đã lọc lưu trong thư mục `output`. "
-                "File nhỏ có nút tải ở Bước 1; file rất lớn mở trực tiếp trên ổ đĩa."
-            )
-        elif workflow_mode == "filter-proxy":
-            st.markdown("### Bước 2 · Kết quả proxy")
-            st.caption(
-                "Kết quả lọc nằm ở Bước 1 (ô kết quả + nút tải). "
-                "File `.txt` cũng lưu trong thư mục `output`."
-            )
-        else:
-            export_format = render_export_format_selector()
+    if workflow_mode != "crawl":
+        with st.container(border=True):
+            if gmc_mode:
+                _ensure_export_format_for_workflow(workflow_mode)
+            elif rb_mode:
+                export_format = render_redbubble_export_selector()
+            elif trendsi_mode:
+                export_format = render_trendsi_export_selector()
+            elif shopify_mode:
+                export_format = render_shopify_export_selector()
+            elif workflow_mode == "filter-title":
+                st.markdown("### Bước 2 · Xuất file (tuỳ chọn)")
+                st.caption(
+                    "Sau khi lọc, SP khớp đã vào bảng bên dưới — chọn định dạng nếu muốn xuất Woo/Shopify/feed."
+                )
+                export_format = render_export_format_selector()
+            elif workflow_mode == "filter-dedupe":
+                st.markdown("### Bước 2 · File kết quả")
+                st.caption(
+                    "File đã lọc lưu trong thư mục `output`. "
+                    "File nhỏ có nút tải ở Bước 1; file rất lớn mở trực tiếp trên ổ đĩa."
+                )
+            elif workflow_mode == "filter-proxy":
+                st.markdown("### Bước 2 · Kết quả proxy")
+                st.caption(
+                    "Kết quả lọc nằm ở Bước 1 (ô kết quả + nút tải). "
+                    "File `.txt` cũng lưu trong thư mục `output`."
+                )
+            else:
+                export_format = render_export_format_selector()
 
     _render_main_workflow(
         workflow_mode,
@@ -3978,6 +3992,101 @@ def main() -> None:
         woo_secret,
         crawl_clicked,
     )
+
+
+def _link_web_feed_fields() -> ExportFields:
+    return ExportFields(
+        enabled={
+            "title",
+            "price",
+            "description",
+            "images",
+            "categories",
+            "tags",
+            "vendor",
+            "product_type",
+            "url",
+        }
+    )
+
+
+def _export_link_web_feed(products: list[Product], progress_bar, status_text) -> None:
+    """Xuất đúng dữ liệu vừa crawl, không qua bảng chỉnh sửa."""
+    fields = _link_web_feed_fields()
+    rules = ExportRules(description_convert_h_to_p=False)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    name = f"{st.session_state.export_name or 'products'}_{stamp}"
+    download_name = export_download_name(name, "web-feed-csv")
+    output_path = temp_export_path(download_name)
+
+    def on_progress(value: float, message: str) -> None:
+        try:
+            progress_bar.progress(value, text=message)
+        except TypeError:
+            progress_bar.progress(value)
+        status_text.caption(message)
+
+    try:
+        exported = export_products(
+            products,
+            str(output_path),
+            fmt="web-feed-csv",
+            rules=rules,
+            fields=fields,
+            progress=on_progress,
+            max_images_per_product=int(st.session_state.get("max_images_per_product", 0)) or None,
+        )
+        st.session_state.output_bytes = exported.read_bytes()
+        st.session_state.output_name = download_name
+        st.session_state.last_error = None
+    finally:
+        cleanup_export_artifacts(output_path)
+
+
+def _render_link_crawl_result() -> None:
+    """Crawl từ link: xem trước rồi tải CSV web thuần, không qua bước chọn file / sửa bảng."""
+    products = list(st.session_state.products_raw or [])
+    if not products:
+        return
+
+    fields = _link_web_feed_fields()
+    rules = ExportRules(description_convert_h_to_p=False)
+    with st.container(border=True):
+        render_preview_section(
+            products,
+            "web-feed-csv",
+            fields,
+            rules,
+            max_images_per_product=int(st.session_state.get("max_images_per_product", 0)),
+            step_number=2,
+            caption="CSV feed web thuần · title, giá, ảnh, category, link sản phẩm.",
+        )
+
+    sig = f"{st.session_state.get('export_name') or 'products'}:{len(products)}"
+    need_file = (
+        st.session_state.get("link_feed_sig") != sig
+        or not st.session_state.get("output_bytes")
+    )
+    with st.container(border=True):
+        st.markdown("### Bước 3 · Xuất file web thuần")
+        st.caption(
+            f"**{len(products)}** SP · CSV feed web thuần "
+            "(title, description, images, category, price, brand, tag, vendor, product_url)."
+        )
+        if need_file:
+            progress_bar = st.progress(0.0, text="Đang xuất CSV feed web thuần…")
+            status_text = st.empty()
+            try:
+                _export_link_web_feed(products, progress_bar, status_text)
+                st.session_state.link_feed_sig = sig
+                progress_bar.progress(1.0, text="File sẵn sàng")
+            except Exception as exc:
+                st.session_state.last_error = f"Không xuất được file web thuần: {exc}"
+                st.error(st.session_state.last_error)
+                return
+        if st.session_state.get("output_name"):
+            st.success(f"File sẵn sàng: **{st.session_state.output_name}**")
+        render_download_button("Tải CSV feed web thuần")
 
 
 def _render_main_workflow(
@@ -4003,6 +4112,10 @@ def _render_main_workflow(
         return
 
     _render_data_status_banner()
+
+    if workflow_mode == "crawl":
+        _render_link_crawl_result()
+        return
 
     export_format = st.session_state.get("export_format", default_export_format(workflow_mode))
     gmc_mode = is_gmc_workflow(workflow_mode)
