@@ -2568,6 +2568,10 @@ def run_crawl_only(
                             label = (
                                 f"Danh sách {current}/{total} · {matched} SP · {workers} luồng"
                             )
+                        elif phase == "collections":
+                            label = (
+                                f"Nhóm {current}/{total} · {matched} SP · {workers} luồng"
+                            )
                         else:
                             label = (
                                 f"Trang {current}/{total} · {matched} SP · {workers} luồng"

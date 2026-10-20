@@ -77,14 +77,19 @@ class ShopBaseCrawler(BaseCrawler):
         self.session = create_http_session(proxy_url)
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         # Catalog API thường chặn/không ổn định qua proxy — luôn gọi trực tiếp.
-        self._catalog_session = create_http_session(None)
-        self._catalog_session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        self._catalog_session = self._new_catalog_session()
         self._shop_name_cache: str | None = None
         self._catalog_supported: bool | None = None
         self.crawl_fields = None
         self.partial_callback: Callable[[list[Product]], None] | None = None
         self.last_products: list[Product] = []
         self.progress_phase = "list"
+
+    def _new_catalog_session(self) -> requests.Session:
+        session = create_http_session(None)
+        session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        session.headers["Accept"] = "application/json"
+        return session
 
     def _emit_partial(self, products: list[Product]) -> None:
         self.last_products = list(products)
@@ -480,6 +485,7 @@ class ShopBaseCrawler(BaseCrawler):
             1,
             collection_handle=collection_handle,
             query=query,
+            session=self._new_catalog_session(),
         )
         if not result:
             return 0
@@ -544,6 +550,7 @@ class ShopBaseCrawler(BaseCrawler):
         progress_callback: CrawlProgressCallback | None = None,
         sort_field: str | None = None,
         sort_direction: str | None = None,
+        preserve_phase: bool = False,
     ) -> list[dict[str, Any]]:
         first, total_pages = self._catalog_total_pages(
             collection_handle,
@@ -558,7 +565,8 @@ class ShopBaseCrawler(BaseCrawler):
         page_items: dict[int, list[dict[str, Any]]] = {
             1: [item for item in (first.get("items") or []) if isinstance(item, dict)],
         }
-        self.progress_phase = "pages"
+        if not preserve_phase:
+            self.progress_phase = "pages"
         if progress_callback:
             progress_callback(1, total_pages, len(page_items[1]))
 
@@ -622,30 +630,41 @@ class ShopBaseCrawler(BaseCrawler):
                     loaded = sum(len(chunk) for chunk in page_items.values())
                     progress_callback(pages_done, total_pages, loaded)
 
-        # Trang rỗng do rate-limit: thử lại, bỏ trang API báo hết kết quả.
+        # Trang rỗng do rate-limit: thử lại một lượt bằng session riêng, rồi đi tiếp.
         missing = [
             page_num
             for page_num in range(2, total_pages + 1)
             if page_num not in ended_pages and not page_items.get(page_num)
         ]
-        for offset in range(0, len(missing), 4):
-            wave = missing[offset : offset + 4]
-            for page_num in wave:
-                result = self._fetch_catalog_page(
-                    page_num,
-                    collection_handle=collection_handle,
-                    query=query,
-                    sort_field=sort_field,
-                    sort_direction=sort_direction,
-                )
-                if isinstance(result, dict) and result.get("_catalog_end"):
-                    page_items[page_num] = []
-                    continue
-                page_items[page_num] = [
-                    item
-                    for item in ((result or {}).get("items") or [])
-                    if isinstance(item, dict)
-                ]
+        if missing:
+            retry_workers = min(4, len(missing))
+            with ThreadPoolExecutor(max_workers=retry_workers) as executor:
+                futures = {
+                    executor.submit(
+                        self._fetch_catalog_page,
+                        page_num,
+                        collection_handle=collection_handle,
+                        query=query,
+                        session=self._new_catalog_session(),
+                        sort_field=sort_field,
+                        sort_direction=sort_direction,
+                    ): page_num
+                    for page_num in missing
+                }
+                for future in as_completed(futures):
+                    page_num = futures[future]
+                    try:
+                        result = future.result()
+                    except Exception:
+                        result = None
+                    if isinstance(result, dict) and result.get("_catalog_end"):
+                        page_items[page_num] = []
+                        continue
+                    page_items[page_num] = [
+                        item
+                        for item in ((result or {}).get("items") or [])
+                        if isinstance(item, dict)
+                    ]
             if progress_callback:
                 loaded = sum(len(chunk) for chunk in page_items.values())
                 progress_callback(total_pages, total_pages, loaded)
@@ -788,21 +807,46 @@ class ShopBaseCrawler(BaseCrawler):
                     except (TypeError, ValueError):
                         counts[str(item.get("slug") or "")] = 0
 
-        jobs: list[tuple[str, str, str | None, str | None]] = []
+        # Request đếm bị rơi trả 0. Thử lại nhóm đó, nếu không collection bị bỏ và crawl dừng ở một cửa sổ.
+        missing_slugs = [
+            str(item.get("slug") or "")
+            for item in categories
+            if item.get("slug") and counts.get(str(item.get("slug") or ""), 0) <= 0
+        ]
+        if missing_slugs:
+            workers = min(CATALOG_LIST_MAX_WORKERS, len(missing_slugs))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = {
+                    pool.submit(self._catalog_reported_count, slug): slug
+                    for slug in missing_slugs
+                }
+                for future in as_completed(futures):
+                    slug = futures[future]
+                    try:
+                        counts[slug] = max(counts.get(slug, 0), int(future.result() or 0))
+                    except (TypeError, ValueError):
+                        continue
+
+        jobs: list[tuple[str, str, str | None, str | None, int]] = []
         for item in categories:
             slug = str(item.get("slug") or "").strip()
             name = str(item.get("name") or slug).strip()
             count = counts.get(slug) or 0
             if not slug or count <= 0 or count > CATALOG_MAX_ITEMS * 2:
                 continue
-            jobs.append((slug, name, None, None))
+            jobs.append((slug, name, None, None, count))
             if count > CATALOG_MAX_ITEMS:
-                jobs.append((slug, name, "id", "asc"))
+                jobs.append((slug, name, "id", "asc", count))
+        # Nhóm nhỏ trước để số SP tăng ngay, không đứng ở cửa sổ 9.950 của nhóm lớn.
+        jobs.sort(key=lambda job: (job[4], job[2] is not None, job[0]))
 
         bucket: dict[str, Product] = {}
         total_jobs = max(len(jobs), 1)
-        self.progress_phase = "list"
-        for index, (slug, name, sort_field, sort_direction) in enumerate(jobs, start=1):
+        self.progress_phase = "collections"
+        for index, (slug, name, sort_field, sort_direction, _count) in enumerate(jobs, start=1):
+            if progress_callback:
+                progress_callback(index, total_jobs, len(bucket))
+
             def _page_progress(page: int, pages: int, loaded: int, *, done: int = index) -> None:
                 if progress_callback and (page == pages or page % 25 == 0):
                     progress_callback(done, total_jobs, len(bucket) + loaded)
@@ -813,6 +857,7 @@ class ShopBaseCrawler(BaseCrawler):
                 progress_callback=_page_progress if progress_callback else None,
                 sort_field=sort_field,
                 sort_direction=sort_direction,
+                preserve_phase=True,
             )
             for raw in items:
                 product = self._map_catalog_item(
