@@ -606,10 +606,13 @@ class ShopBaseCrawler(BaseCrawler):
         except (TypeError, ValueError):
             total = len(items)
         pages = max(1, (total + CATALOG_PAGE_SIZE - 1) // CATALOG_PAGE_SIZE)
+        if pages > CATALOG_MAX_PAGES:
+            pages = CATALOG_MAX_PAGES
         if max_pages and max_pages > 0:
             pages = min(pages, max_pages)
         # Trang cuối đôi khi vượt trần API dù count vẫn báo đủ.
-        if pages > 1:
+        # Đúng trần 199 thì trang 200 chắc chắn bị chặn — không cần dò thêm.
+        if pages > 1 and pages < CATALOG_MAX_PAGES:
             tail = self._fetch_catalog_page(
                 pages,
                 collection_handle=collection_handle,
@@ -930,8 +933,16 @@ class ShopBaseCrawler(BaseCrawler):
             jobs.append((slug, name, None, None, count))
             if count > CATALOG_MAX_ITEMS:
                 jobs.append((slug, name, "id", "asc", count))
-        # Nhóm lớn trước để số SP nhảy nhanh, không đứng ở vài chục SP của nhóm nhỏ.
-        jobs.sort(key=lambda job: (-job[4], job[2] is not None, job[0]))
+        # Nhóm chưa chạm trần 9.950 trước. Nhóm bị API cắt 10.000 để sau,
+        # kẻo thanh tiến trình đầy ở trang 199 rồi tưởng crawl đã xong.
+        jobs.sort(
+            key=lambda job: (
+                job[4] > CATALOG_MAX_ITEMS,
+                -(job[4] if job[4] <= CATALOG_MAX_ITEMS else 0),
+                job[2] is not None,
+                job[0],
+            )
+        )
 
         bucket: dict[str, Product] = {}
         total_jobs = max(len(jobs), 1)
@@ -962,11 +973,12 @@ class ShopBaseCrawler(BaseCrawler):
                 cursor += 1
                 page_workers = min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers))
                 base = len(bucket)
+                group_index = finished + 1
 
                 def _page_progress(page: int, pages: int, loaded: int, *, seen: int = base) -> None:
-                    self.progress_phase = "pages"
+                    self.progress_phase = "collections"
                     if progress_callback and (page <= 2 or page == pages or page % 2 == 0):
-                        progress_callback(page, max(pages, 1), seen + loaded)
+                        progress_callback(group_index, total_jobs, seen + loaded)
 
                 items = self._list_catalog_items(
                     collection_handle=slug,
@@ -1074,7 +1086,7 @@ class ShopBaseCrawler(BaseCrawler):
                 and not (query or "").strip()
                 and limit is None
                 and not max_pages
-                and self._catalog_reported_count() >= CATALOG_COUNT_CAP
+                and self._catalog_reported_count() >= CATALOG_MAX_ITEMS
             ):
                 sharded = self._crawl_shop_by_collections(
                     progress_callback=progress_callback,
