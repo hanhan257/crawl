@@ -30,8 +30,7 @@ def render_crawl_limits_row(
     sitemap_mode = bool(st.session_state.get("crawl_via_sitemap"))
     worker_max = 500
     worker_help = (
-        "Tối đa **500** luồng. Sitemap Shopify lớn: **100–500** + proxy. "
-        "Số trang = số file sitemap_products tối đa (0 = hết)."
+        "Tối đa **500** luồng. Sitemap Shopify lớn: **100–500** + proxy."
         if sitemap_mode
         else (
             "Tối đa **500** luồng (nên bật proxy khi >32). "

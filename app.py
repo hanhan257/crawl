@@ -400,7 +400,7 @@ def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
     if is_gmc_workflow(active):
         st.session_state.export_format = "gmc-feed-csv"
         return
-    if active == "crawl":
+    if active in {"crawl", "sitemap"}:
         st.session_state.export_format = "web-feed-csv"
         return
     current = st.session_state.get("export_format")
@@ -2105,7 +2105,7 @@ def _render_data_status_banner() -> None:
         else:
             st.caption("Ảnh")
     with info_col:
-        if mode == "crawl":
+        if mode in {"crawl", "sitemap"}:
             scroll_hint = "Cuộn xuống **Bước 2** để xem trước, file CSV web thuần tải ngay bên dưới."
         elif is_gmc_workflow(mode):
             scroll_hint = (
@@ -3801,16 +3801,16 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
             )
         else:
             st.info(
-                "Đang dùng **crawl theo sitemap** — shop lớn / 429: nên bật proxy + "
-                "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
+                "Đang dùng **crawl theo sitemap** — lấy hết file sản phẩm. "
+                "Shop lớn / 429: nên bật proxy + luồng **100–500**."
             )
-    link_mode = not sitemap_mode and not gmc_mode
-    render_crawl_limits_row(include_workers=True, include_limits=not link_mode)
+    simple_mode = not gmc_mode
+    render_crawl_limits_row(include_workers=True, include_limits=not simple_mode)
     render_crawl_fields_selector()
     if st.session_state.get("crawl_field_description"):
         render_crawl_description_format()
 
-    if link_mode:
+    if simple_mode:
         limit = 0
         pages = 0
     else:
@@ -3956,7 +3956,7 @@ def main() -> None:
         with st.container(border=True):
             render_import_panel()
 
-    if workflow_mode != "crawl":
+    if workflow_mode not in {"crawl", "sitemap"}:
         with st.container(border=True):
             if gmc_mode:
                 _ensure_export_format_for_workflow(workflow_mode)
@@ -4118,7 +4118,7 @@ def _render_main_workflow(
 
     _render_data_status_banner()
 
-    if workflow_mode == "crawl":
+    if workflow_mode in {"crawl", "sitemap"}:
         _render_link_crawl_result()
         return
 
