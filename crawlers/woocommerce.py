@@ -37,6 +37,15 @@ PRODUCT_LINK_RE = re.compile(
     r'href=["\'](https?://[^"\']+/product/[^"\'?#]+|/product/[^"\'?#]+)["\']',
     re.I,
 )
+WSP_CARD_RE = re.compile(
+    r'<a class="wsp-card" href="([^"]+)">'
+    r'\s*<span class="wsp-card-media"><img src="([^"]+)"[^>]*>\s*</span>'
+    r'\s*<span class="wsp-card-body"><span class="wsp-card-name">([^<]*)</span>'
+    r'<span class="wsp-card-price">([^<]*)</span>',
+    re.I,
+)
+WSP_PAGE_RE = re.compile(r"/products/page/(\d+)/", re.I)
+WSP_PRICE_RE = re.compile(r"\d+(?:\.\d+)?")
 PRICE_AMOUNT_RE = re.compile(
     r'woocommerce-Price-amount[^>]*>.*?<bdi>(?:<span[^>]*>[^<]*</span>)?([\d.,]+)',
     re.I | re.S,
@@ -248,7 +257,7 @@ class WooCommerceCrawler(BaseCrawler):
             if not (self.consumer_key and self.consumer_secret):
                 self._store_api_probe_ok()
             try:
-                return self._crawl_store_api(
+                products = self._crawl_store_api(
                     limit=limit,
                     max_pages=max_pages,
                     per_page=per_page,
@@ -272,6 +281,15 @@ class WooCommerceCrawler(BaseCrawler):
                         progress_callback=progress_callback,
                     )
                 raise
+            if products:
+                return products
+            listed = self._crawl_wsp_catalog(
+                limit=limit,
+                max_pages=max_pages,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+            return listed or products
         return self._crawl_rest_api(
             limit=limit,
             max_pages=max_pages,
@@ -840,6 +858,127 @@ class WooCommerceCrawler(BaseCrawler):
             return extract_woo_description_from_html(response.text)
         except requests.RequestException:
             return None
+
+    def count_wsp_catalog(self) -> int | None:
+        """Store API rỗng nhưng shop liệt kê SP ở /products/ (thẻ wsp-card)."""
+        per_page, pages, _cards = self._read_wsp_listing(1)
+        if not per_page or not pages:
+            return None
+        if pages == 1:
+            return per_page
+        last_count, _, _ = self._read_wsp_listing(pages)
+        if last_count:
+            return (pages - 1) * per_page + last_count
+        return pages * per_page
+
+    def _read_wsp_listing(self, page: int) -> tuple[int, int, list[Product]]:
+        url = (
+            f"{self.site_url}/products/"
+            if page <= 1
+            else f"{self.site_url}/products/page/{page}/"
+        )
+        try:
+            response = self.session.get(url, timeout=20)
+        except requests.RequestException:
+            return 0, 0, []
+        if response.status_code != 200 or "wsp-card" not in response.text:
+            return 0, 0, []
+        cards = self._parse_wsp_cards(response.text)
+        page_nums = [int(raw) for raw in WSP_PAGE_RE.findall(response.text)]
+        last_page = max(page_nums) if page_nums else 1
+        return len(cards), last_page, cards
+
+    def _parse_wsp_cards(self, page_html: str) -> list[Product]:
+        products: list[Product] = []
+        seen: set[str] = set()
+        for match in WSP_CARD_RE.finditer(page_html):
+            url = html_lib.unescape(match.group(1)).strip()
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            image = html_lib.unescape(match.group(2)).strip()
+            title = html_lib.unescape(match.group(3)).strip()
+            price_text = html_lib.unescape(match.group(4)).replace(",", "")
+            price_match = WSP_PRICE_RE.search(price_text)
+            products.append(
+                Product(
+                    source=self.source,
+                    id=url.rstrip("/").split("/")[-1],
+                    title=title,
+                    description=None,
+                    price=self._safe_float(price_match.group(0)) if price_match else None,
+                    currency="USD",
+                    url=url,
+                    image_urls=[image] if image else [],
+                    vendor=None,
+                    sku=None,
+                    tags=[],
+                    categories=[],
+                    product_type=None,
+                    status=None,
+                    variants=[],
+                )
+            )
+        return products
+
+    def _crawl_wsp_catalog(
+        self,
+        *,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        max_workers: int = 1,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[Product]:
+        per_page, pages, first_cards = self._read_wsp_listing(1)
+        if not first_cards:
+            return []
+        if max_pages and max_pages > 0:
+            pages = min(pages, max_pages)
+        if limit is not None and per_page:
+            pages = min(pages, max(1, (limit + per_page - 1) // per_page))
+        if progress_callback:
+            progress_callback(1, pages, len(first_cards))
+        page_products: dict[int, list[Product]] = {1: first_cards}
+        if pages > 1:
+            workers = max(1, min(int(max_workers or 1), 24, pages - 1))
+            proxy = self.session.proxies.get("https") if self.session.proxies else None
+
+            def fetch_page(page: int) -> tuple[int, list[Product]]:
+                sess = create_http_session(proxy)
+                sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+                sess.verify = self.session.verify
+                url = f"{self.site_url}/products/page/{page}/"
+                try:
+                    response = sess.get(url, timeout=25)
+                except requests.RequestException:
+                    return page, []
+                if response.status_code != 200:
+                    return page, []
+                return page, self._parse_wsp_cards(response.text)
+
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(fetch_page, page) for page in range(2, pages + 1)
+                ]
+                done = 1
+                for future in as_completed(futures):
+                    page, cards = future.result()
+                    page_products[page] = cards
+                    done += 1
+                    if progress_callback:
+                        matched = sum(len(page_products[n]) for n in page_products)
+                        progress_callback(done, pages, matched)
+        ordered: list[Product] = []
+        seen: set[str] = set()
+        for page in range(1, pages + 1):
+            for product in page_products.get(page) or []:
+                if not product.url or product.url in seen:
+                    continue
+                seen.add(product.url)
+                ordered.append(product)
+                if limit is not None and len(ordered) >= limit:
+                    return ordered
+        return ordered
 
     def _crawl_html_catalog(
         self,

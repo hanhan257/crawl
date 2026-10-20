@@ -1077,6 +1077,8 @@ def _woo_list_categories(crawler) -> list[ShopCategoryInfo]:
         slug = slug.strip()
         if not slug or slug in seen:
             return
+        if slug == "uncategorized" and not count:
+            return
         seen.add(slug)
         display = name.strip() or slug
         if slug == "uncategorized":
@@ -1235,7 +1237,7 @@ def _woo_product_count(crawler) -> int | None:
             )
             if response.status_code == 200:
                 total = response.headers.get("X-WP-Total")
-                if total is not None:
+                if total is not None and int(total) > 0:
                     return int(total)
         else:
             if hasattr(crawler, "_store_api_probe_ok"):
@@ -1252,7 +1254,7 @@ def _woo_product_count(crawler) -> int | None:
                     total = response.headers.get("X-WP-Total") or response.headers.get(
                         "x-wp-total"
                     )
-                    if total is not None:
+                    if total is not None and int(total) > 0:
                         return int(total)
             else:
                 response = crawler.session.get(
@@ -1264,7 +1266,7 @@ def _woo_product_count(crawler) -> int | None:
                     total = response.headers.get("X-WP-Total") or response.headers.get(
                         "x-wp-total"
                     )
-                    if total is not None:
+                    if total is not None and int(total) > 0:
                         return int(total)
                 if response.status_code == 403 and hasattr(
                     crawler, "_curl_store_probe"
@@ -1281,10 +1283,18 @@ def _woo_product_count(crawler) -> int | None:
                             total = curl_resp.headers.get(
                                 "X-WP-Total"
                             ) or curl_resp.headers.get("x-wp-total")
-                            if total is not None:
+                            if total is not None and int(total) > 0:
                                 return int(total)
     except (requests.RequestException, ValueError, TypeError):
         pass
+
+    if hasattr(crawler, "count_wsp_catalog"):
+        try:
+            wsp_total = crawler.count_wsp_catalog()
+        except (requests.RequestException, ValueError, TypeError):
+            wsp_total = None
+        if wsp_total:
+            return wsp_total
 
     # Store API khóa (GullPrint…) — đếm từ /shop/ hoặc sitemap.
     html_total = _woo_count_from_shop_html(crawler)
