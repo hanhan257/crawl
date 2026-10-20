@@ -18,6 +18,8 @@ WOOCOMMERCE_CATEGORY = re.compile(
     r"/product-category/(.+?)(?:/page/\d+)?/?$",
     re.I,
 )
+# Flatsome (vd. fanssio.com) dùng /c/jersey/ thay vì /product-category/jersey/.
+WOOCOMMERCE_C_CATEGORY = re.compile(r"^/c/([^/?#]+)", re.I)
 # GullPrint / Flatsome đôi khi dùng /home-living/mug/ thay vì /product-category/...
 WOOCOMMERCE_CUSTOM_CATEGORY = re.compile(
     r"^/(?!product/|shop/?$|cart/?$|checkout/?$|my-account|wp-|blog|about|contact|page/)"
@@ -42,8 +44,6 @@ DEFAULT_USER_AGENT = (
 )
 # Nhận diện chỉ cần 1 response nhỏ — không chờ timeout crawl (15s nối + 90s đọc).
 _SNIFF_TIMEOUT = 4
-# Woo Store API / trang Flatsome nặng (fanssio…) thường >4s từ VPS.
-_WOO_SNIFF_TIMEOUT = 12
 _RESOLVE_CACHE: dict[str, tuple[float, DetectedTarget]] = {}
 _RESOLVE_TTL = 600.0
 
@@ -155,66 +155,27 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return None
 
     def check_woo_store() -> str | None:
-        # Payload tối thiểu (_fields=id). Host chậm / chặn VPS → thử proxy kèm theo.
+        # Fanssio / Flatsome: 1 SP đầy đủ description có thể > vài trăm KB.
+        # `_fields=id` + curl_cffi (12s) — đừng dùng sniff 4s của Shopify.
         try:
             from utils.curl_http import sniff_woo_store_api
-            from utils.http_session import parse_proxy_list
 
-            proxies: list[str] = []
-            if session is not None and session.proxies:
-                proxy_val = session.proxies.get("https") or session.proxies.get("http")
-                if proxy_val:
-                    proxies.append(str(proxy_val))
-            try:
-                from utils.credentials import CrawlCredentials
-
-                proxies.extend(parse_proxy_list(CrawlCredentials.load().proxy_url))
-            except Exception:
-                pass
-            # Giữ thứ tự, bỏ trùng
-            seen: set[str] = set()
-            ordered: list[str] = []
-            for item in proxies:
-                if item and item not in seen:
-                    seen.add(item)
-                    ordered.append(item)
-            if sniff_woo_store_api(
-                base,
-                timeout=_WOO_SNIFF_TIMEOUT,
-                proxies=ordered,
-                max_proxy_tries=5,
-            ):
+            if sniff_woo_store_api(base, timeout=12):
                 return "woocommerce"
         except Exception:
             pass
         return None
 
     def check_wp_json() -> str | None:
-        # Không tải cả /wp-json/ (có site >1MB). Hỏi đúng namespace Woo.
-        for path in (
-            "/wp-json/wc/store/v1/",
-            "/wp-json/wc/v3/",
-        ):
-            try:
-                resp = fresh_session().get(
-                    f"{base}{path}",
-                    timeout=_WOO_SNIFF_TIMEOUT,
-                )
-                if resp.status_code != 200:
-                    continue
-                data = resp.json()
-                if isinstance(data, dict) and (
-                    "routes" in data
-                    or "namespace" in data
-                    or "controllers" in data
-                ):
+        try:
+            wp_json = fresh_session().get(f"{base}/wp-json/", timeout=_SNIFF_TIMEOUT)
+            if wp_json.status_code == 200:
+                data = wp_json.json()
+                routes = str(data.get("routes", {}))
+                if "wc/v3" in routes or "wc/store" in routes:
                     return "woocommerce"
-                # Một số host trả HTML index; vẫn coi 200 + body có wc/store là Woo.
-                text = (resp.text or "")[:4000].lower()
-                if "wc/store" in text or "woocommerce" in text:
-                    return "woocommerce"
-            except (requests.RequestException, ValueError):
-                continue
+        except (requests.RequestException, ValueError):
+            pass
         return None
 
     def check_shopbase() -> str | None:
@@ -282,18 +243,12 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_html_signals() -> str | None:
         try:
-            # Trang Flatsome/Woo nặng — chờ lâu hơn 4s (fanssio ~4–5s).
-            page = fresh_session().get(normalized, timeout=_WOO_SNIFF_TIMEOUT)
+            page = fresh_session().get(normalized, timeout=_SNIFF_TIMEOUT)
             if page.status_code == 200:
                 text = page.text.lower()
                 if "cdn.shopify.com" in text or "shopify.shop" in text:
                     return "shopify"
-                if (
-                    "woocommerce" in text
-                    or "wc-block" in text
-                    or "/wp-json/wc/" in text
-                    or "wp-content/plugins/woocommerce" in text
-                ):
+                if "woocommerce" in text or "wc-block" in text:
                     return "woocommerce"
         except requests.RequestException:
             pass
@@ -350,7 +305,8 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         if quick:
             return quick
 
-    platform = _first_platform((check_shopify, check_shopbase, check_woo_store))
+    # Woo trước: khớp là trả ngay, không chờ Shopify lần lượt meta/products/cart.
+    platform = _first_platform((check_woo_store, check_shopify, check_shopbase))
     if platform:
         return platform
 
@@ -378,14 +334,19 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except (requests.RequestException, ValueError):
             pass
         try:
-            woo_store = session.get(
-                f"{base}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
-                timeout=_WOO_SNIFF_TIMEOUT,
-            )
-            if woo_store.status_code == 200 and isinstance(woo_store.json(), list):
+            from utils.curl_http import sniff_woo_store_api
+
+            proxy = None
+            if session.proxies:
+                proxy = session.proxies.get("https") or session.proxies.get("http")
+            if sniff_woo_store_api(
+                base,
+                timeout=12,
+                proxies=[proxy] if proxy else None,
+                max_proxy_tries=1,
+            ):
                 return "woocommerce"
-        except (requests.RequestException, ValueError):
+        except Exception:
             pass
         try:
             from crawlers.campaign_shop import CampaignShopCrawler
@@ -395,28 +356,11 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except Exception:
             pass
 
-    # Cloudflare / host chặn IP VPS — sniff Woo nhẹ + vài proxy.
+    # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
     try:
         from utils.curl_http import sniff_woo_store_api
-        from utils.http_session import parse_proxy_list
 
-        proxies: list[str] = []
-        if session is not None and session.proxies:
-            proxy_val = session.proxies.get("https") or session.proxies.get("http")
-            if proxy_val:
-                proxies.append(str(proxy_val))
-        try:
-            from utils.credentials import CrawlCredentials
-
-            proxies.extend(parse_proxy_list(CrawlCredentials.load().proxy_url))
-        except Exception:
-            pass
-        if sniff_woo_store_api(
-            base,
-            timeout=_WOO_SNIFF_TIMEOUT,
-            proxies=proxies,
-            max_proxy_tries=5,
-        ):
+        if sniff_woo_store_api(base, timeout=12):
             return "woocommerce"
     except Exception:
         pass
@@ -994,6 +938,18 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
             category_slug=category_match.group(1).strip("/"),
         )
 
+    c_match = WOOCOMMERCE_C_CATEGORY.search(path)
+    if c_match:
+        handle = c_match.group(1).strip("/")
+        return DetectedTarget(
+            platform="woocommerce",
+            crawl_type="category",
+            url=url,
+            base_url=base_url,
+            category_slug=handle,
+            handle=handle,
+        )
+
     filter_slug = _woo_filter_category_slug(url)
     if filter_slug:
         return DetectedTarget(
@@ -1005,7 +961,7 @@ def _detect_woocommerce(url: str, host: str, path: str) -> DetectedTarget:
             handle=filter_slug,
         )
 
-    if path.rstrip("/") in ("/shop", "/products"):
+    if path.rstrip("/") in ("", "/shop", "/products"):
         return DetectedTarget(
             platform="woocommerce",
             crawl_type="shop",
