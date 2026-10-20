@@ -42,6 +42,8 @@ DEFAULT_USER_AGENT = (
 )
 # Nhận diện chỉ cần 1 response nhỏ — không chờ timeout crawl (15s nối + 90s đọc).
 _SNIFF_TIMEOUT = 4
+# Woo Store API / trang Flatsome nặng (fanssio…) thường >4s từ VPS.
+_WOO_SNIFF_TIMEOUT = 12
 _RESOLVE_CACHE: dict[str, tuple[float, DetectedTarget]] = {}
 _RESOLVE_TTL = 600.0
 
@@ -153,11 +155,24 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return None
 
     def check_woo_store() -> str | None:
+        # curl_cffi trước: impersonate Chrome, timeout dài hơn — tránh miss Woo chậm.
+        try:
+            from utils.curl_http import curl_get_json_list
+
+            data, status, _headers = curl_get_json_list(
+                f"{base}/wp-json/wc/store/v1/products",
+                params={"per_page": 1},
+                timeout=_WOO_SNIFF_TIMEOUT,
+            )
+            if status == 200 and isinstance(data, list):
+                return "woocommerce"
+        except Exception:
+            pass
         try:
             woo_store = fresh_session().get(
                 f"{base}/wp-json/wc/store/v1/products",
                 params={"per_page": 1},
-                timeout=_SNIFF_TIMEOUT,
+                timeout=_WOO_SNIFF_TIMEOUT,
             )
             if woo_store.status_code == 200:
                 data = woo_store.json()
@@ -165,30 +180,34 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                     return "woocommerce"
         except (requests.RequestException, ValueError):
             pass
-        try:
-            from utils.curl_http import curl_get_json_list
-
-            data, status, _headers = curl_get_json_list(
-                f"{base}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
-                timeout=6,
-            )
-            if status == 200 and isinstance(data, list):
-                return "woocommerce"
-        except Exception:
-            pass
         return None
 
     def check_wp_json() -> str | None:
-        try:
-            wp_json = fresh_session().get(f"{base}/wp-json/", timeout=_SNIFF_TIMEOUT)
-            if wp_json.status_code == 200:
-                data = wp_json.json()
-                routes = str(data.get("routes", {}))
-                if "wc/v3" in routes or "wc/store" in routes:
+        # Không tải cả /wp-json/ (có site >1MB). Hỏi đúng namespace Woo.
+        for path in (
+            "/wp-json/wc/store/v1/",
+            "/wp-json/wc/v3/",
+        ):
+            try:
+                resp = fresh_session().get(
+                    f"{base}{path}",
+                    timeout=_WOO_SNIFF_TIMEOUT,
+                )
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                if isinstance(data, dict) and (
+                    "routes" in data
+                    or "namespace" in data
+                    or "controllers" in data
+                ):
                     return "woocommerce"
-        except (requests.RequestException, ValueError):
-            pass
+                # Một số host trả HTML index; vẫn coi 200 + body có wc/store là Woo.
+                text = (resp.text or "")[:4000].lower()
+                if "wc/store" in text or "woocommerce" in text:
+                    return "woocommerce"
+            except (requests.RequestException, ValueError):
+                continue
         return None
 
     def check_shopbase() -> str | None:
@@ -256,12 +275,18 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     def check_html_signals() -> str | None:
         try:
-            page = fresh_session().get(normalized, timeout=_SNIFF_TIMEOUT)
+            # Trang Flatsome/Woo nặng — chờ lâu hơn 4s (fanssio ~4–5s).
+            page = fresh_session().get(normalized, timeout=_WOO_SNIFF_TIMEOUT)
             if page.status_code == 200:
                 text = page.text.lower()
                 if "cdn.shopify.com" in text or "shopify.shop" in text:
                     return "shopify"
-                if "woocommerce" in text or "wc-block" in text:
+                if (
+                    "woocommerce" in text
+                    or "wc-block" in text
+                    or "/wp-json/wc/" in text
+                    or "wp-content/plugins/woocommerce" in text
+                ):
                     return "woocommerce"
         except requests.RequestException:
             pass
@@ -349,7 +374,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             woo_store = session.get(
                 f"{base}/wp-json/wc/store/v1/products",
                 params={"per_page": 1},
-                timeout=_SNIFF_TIMEOUT,
+                timeout=_WOO_SNIFF_TIMEOUT,
             )
             if woo_store.status_code == 200 and isinstance(woo_store.json(), list):
                 return "woocommerce"
@@ -363,14 +388,14 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except Exception:
             pass
 
-    # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
+    # Cloudflare / host chậm — thử lại Woo Store API qua curl_cffi (direct).
     try:
         from utils.curl_http import curl_get_json_list
 
         data, status, _headers = curl_get_json_list(
             f"{base}/wp-json/wc/store/v1/products",
             params={"per_page": 1},
-            timeout=6,
+            timeout=_WOO_SNIFF_TIMEOUT,
         )
         if status == 200 and isinstance(data, list):
             return "woocommerce"
