@@ -3804,13 +3804,18 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
                 "Đang dùng **crawl theo sitemap** — shop lớn / 429: nên bật proxy + "
                 "luồng **100–500**. Số trang = số file `sitemap_products` tối đa (0 = hết)."
             )
-    render_crawl_limits_row(include_workers=True)
+    link_mode = not sitemap_mode and not gmc_mode
+    render_crawl_limits_row(include_workers=True, include_limits=not link_mode)
     render_crawl_fields_selector()
     if st.session_state.get("crawl_field_description"):
         render_crawl_description_format()
 
-    limit = int(st.session_state.get("crawl_limit", 0))
-    pages = int(st.session_state.get("crawl_pages", 0))
+    if link_mode:
+        limit = 0
+        pages = 0
+    else:
+        limit = int(st.session_state.get("crawl_limit", 0))
+        pages = int(st.session_state.get("crawl_pages", 0))
 
     crawl_ready = True
     preview_url = url.strip()

@@ -16,9 +16,16 @@ def close_crawl_step1_wrap() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_crawl_limits_row(*, include_workers: bool = True) -> None:
+def render_crawl_limits_row(
+    *,
+    include_workers: bool = True,
+    include_limits: bool = True,
+) -> None:
     st.markdown('<div class="crawl-limits-row">', unsafe_allow_html=True)
-    col_count = 3 if include_workers else 2
+    col_count = (2 if include_limits else 0) + (1 if include_workers else 0)
+    if col_count <= 0:
+        st.markdown("</div>", unsafe_allow_html=True)
+        return
     cols = st.columns(col_count, gap="small")
     sitemap_mode = bool(st.session_state.get("crawl_via_sitemap"))
     worker_max = 500
@@ -32,32 +39,36 @@ def render_crawl_limits_row(*, include_workers: bool = True) -> None:
         )
     )
 
-    fields: list[tuple[int, str, str, dict[str, Any]]] = [
-        (
-            1,
-            "Giới hạn SP",
-            "crawl_limit",
-            {"min_value": 0, "help": "0 = lấy hết. Shop >5k SP: tool tự dùng sitemap nếu cần."},
-        ),
-        (
-            2,
-            "Số trang",
-            "crawl_pages",
-            {
-                "min_value": 0,
-                "help": (
-                    "Sitemap: 0 = hết file sitemap_products. "
-                    "API thường: 0 = hết trang."
-                    if sitemap_mode
-                    else "0 = hết trang."
+    fields: list[tuple[int, str, str, dict[str, Any]]] = []
+    if include_limits:
+        fields.extend(
+            [
+                (
+                    1,
+                    "Giới hạn SP",
+                    "crawl_limit",
+                    {"min_value": 0, "help": "0 = lấy hết. Shop >5k SP: tool tự dùng sitemap nếu cần."},
                 ),
-            },
-        ),
-    ]
+                (
+                    2,
+                    "Số trang",
+                    "crawl_pages",
+                    {
+                        "min_value": 0,
+                        "help": (
+                            "Sitemap: 0 = hết file sitemap_products. "
+                            "API thường: 0 = hết trang."
+                            if sitemap_mode
+                            else "0 = hết trang."
+                        ),
+                    },
+                ),
+            ]
+        )
     if include_workers:
         fields.append(
             (
-                3,
+                len(fields) + 1,
                 "Luồng crawl",
                 "crawl_workers_n",
                 {
