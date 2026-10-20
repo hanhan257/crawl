@@ -122,13 +122,18 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
             from urllib.parse import urlparse
 
             from utils.curl_http import sniff_woo_store_api
-            from utils.detector import normalize_url
+            from utils.detector import _woo_sniff_proxy_list, normalize_url
 
             normalized = normalize_url(url.strip())
             parsed = urlparse(normalized)
             base = f"{parsed.scheme}://{parsed.netloc}"
 
-            if sniff_woo_store_api(base, timeout=20):
+            if sniff_woo_store_api(
+                base,
+                timeout=20,
+                proxies=_woo_sniff_proxy_list(None),
+                max_proxy_tries=5,
+            ):
                 target = DetectedTarget(
                     platform="woocommerce",
                     crawl_type="shop",
