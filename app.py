@@ -2603,7 +2603,7 @@ def run_crawl_only(
                     elif crawl_platform == "shopbase" and expected_total and expected_total >= 500:
                         est_min = max(
                             1,
-                            int(expected_total / max(workers, 1) / 80)
+                            int(expected_total / 50 / max(workers, 1) / 30)
                             + (2 if wants_shopbase_desc else 0),
                         )
                         if wants_shopbase_desc:

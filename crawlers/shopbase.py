@@ -36,6 +36,9 @@ CATALOG_COLLECTIONS_API = "/api/catalog/next/collections.json"
 CATALOG_PAGE_SIZE = 50
 # ShopBase catalog dễ rơi trang khi >8 request cùng lúc (số SP mỗi lần khác nhau).
 CATALOG_LIST_MAX_WORKERS = 8
+# Trang 200 trả "Max result reached" — mỗi bộ lọc chỉ đọc được 199 trang.
+CATALOG_MAX_PAGES = 199
+CATALOG_MAX_ITEMS = CATALOG_PAGE_SIZE * CATALOG_MAX_PAGES
 DETAIL_FETCH_MAX_WORKERS = 500
 
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
@@ -193,6 +196,12 @@ class ShopBaseCrawler(BaseCrawler):
                     self._catalog_reported_count(collection_handle),
                 )
             reported = self._catalog_reported_count(collection_handle)
+            if reported and reported < 10000:
+                return reported
+            if reported >= 10000 and not collection_handle:
+                # Cửa sổ catalog chỉ 9.950 SP. Tổng thật nằm ở collection lớn nhất
+                # (vd. wearandjoy /evero = 118.605).
+                return max(reported, self._max_collection_count())
             if reported:
                 return reported
             if collection_handle:
@@ -204,6 +213,25 @@ class ShopBaseCrawler(BaseCrawler):
                         return 0
             return len(self._list_catalog_handles(collection_handle=collection_handle))
         return len(self._discover_product_urls(max_sitemaps=max_sitemaps))
+
+    def _max_collection_count(self) -> int:
+        categories = self._list_collections_from_api(include_counts=False)
+        if not categories:
+            return 0
+        workers = min(CATALOG_LIST_MAX_WORKERS, len(categories))
+        best = 0
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [
+                pool.submit(self._catalog_reported_count, str(item.get("slug") or ""))
+                for item in categories
+                if item.get("slug")
+            ]
+            for future in as_completed(futures):
+                try:
+                    best = max(best, int(future.result() or 0))
+                except (TypeError, ValueError):
+                    continue
+        return best
 
     def _list_collections_from_api(
         self,
@@ -375,6 +403,8 @@ class ShopBaseCrawler(BaseCrawler):
         collection_handle: str | None = None,
         query: str | None = None,
         session: requests.Session | None = None,
+        sort_field: str | None = None,
+        sort_direction: str | None = None,
     ) -> dict[str, Any] | None:
         params: dict[str, Any] = {
             "limit": CATALOG_PAGE_SIZE,
@@ -385,6 +415,9 @@ class ShopBaseCrawler(BaseCrawler):
         search = (query or "").strip()
         if search:
             params["q"] = search
+        if sort_field:
+            params["sort_field"] = sort_field
+            params["sort_direction"] = sort_direction or "asc"
         http = session or self._catalog_session
         try:
             resp = http.get(
@@ -462,11 +495,15 @@ class ShopBaseCrawler(BaseCrawler):
         max_pages: int | None = None,
         *,
         query: str | None = None,
+        sort_field: str | None = None,
+        sort_direction: str | None = None,
     ) -> tuple[dict[str, Any] | None, int]:
         first = self._fetch_catalog_page(
             1,
             collection_handle=collection_handle,
             query=query,
+            sort_field=sort_field,
+            sort_direction=sort_direction,
         )
         if not first:
             return None, 0
@@ -487,6 +524,8 @@ class ShopBaseCrawler(BaseCrawler):
                 pages,
                 collection_handle=collection_handle,
                 query=query,
+                sort_field=sort_field,
+                sort_direction=sort_direction,
             )
             if isinstance(tail, dict) and tail.get("_catalog_end"):
                 pages -= 1
@@ -501,11 +540,15 @@ class ShopBaseCrawler(BaseCrawler):
         limit: int | None = None,
         max_workers: int = 8,
         progress_callback: CrawlProgressCallback | None = None,
+        sort_field: str | None = None,
+        sort_direction: str | None = None,
     ) -> list[dict[str, Any]]:
         first, total_pages = self._catalog_total_pages(
             collection_handle,
             max_pages,
             query=query,
+            sort_field=sort_field,
+            sort_direction=sort_direction,
         )
         if not first:
             return []
@@ -537,6 +580,8 @@ class ShopBaseCrawler(BaseCrawler):
                     collection_handle=collection_handle,
                     query=query,
                     session=session_for_thread(),
+                    sort_field=sort_field,
+                    sort_direction=sort_direction,
                 )
                 if isinstance(result, dict) and result.get("_catalog_end"):
                     return page_num, [], True
@@ -588,6 +633,8 @@ class ShopBaseCrawler(BaseCrawler):
                     page_num,
                     collection_handle=collection_handle,
                     query=query,
+                    sort_field=sort_field,
+                    sort_direction=sort_direction,
                 )
                 if isinstance(result, dict) and result.get("_catalog_end"):
                     page_items[page_num] = []
@@ -633,6 +680,95 @@ class ShopBaseCrawler(BaseCrawler):
             if str(item.get("handle") or "").strip()
         ]
 
+    def _crawl_shop_by_collections(
+        self,
+        *,
+        progress_callback: CrawlProgressCallback | None = None,
+        max_workers: int = 8,
+    ) -> list[Product]:
+        """Shop vượt trần 9.950 SP/lần lọc: đọc từng collection rồi gộp theo id.
+
+        Collection lớn hơn một cửa sổ (vd. hats = 10.000) được đọc thêm một lượt
+        sort id tăng dần. Collection kiểu evero (118.605) bỏ qua vì hai cửa sổ
+        không phủ hết — SP của nó nằm ở các collection còn lại.
+        """
+        categories = self._list_collections_from_api(include_counts=False)
+        counts: dict[str, int] = {}
+        if categories:
+            workers = min(CATALOG_LIST_MAX_WORKERS, len(categories))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = {
+                    pool.submit(self._catalog_reported_count, str(item.get("slug") or "")): item
+                    for item in categories
+                    if item.get("slug")
+                }
+                for future in as_completed(futures):
+                    item = futures[future]
+                    try:
+                        counts[str(item.get("slug") or "")] = int(future.result() or 0)
+                    except (TypeError, ValueError):
+                        counts[str(item.get("slug") or "")] = 0
+
+        jobs: list[tuple[str, str, str | None, str | None]] = []
+        for item in categories:
+            slug = str(item.get("slug") or "").strip()
+            name = str(item.get("name") or slug).strip()
+            count = counts.get(slug) or 0
+            if not slug or count <= 0 or count > CATALOG_MAX_ITEMS * 2:
+                continue
+            jobs.append((slug, name, None, None))
+            if count > CATALOG_MAX_ITEMS:
+                jobs.append((slug, name, "id", "asc"))
+
+        bucket: dict[str, Product] = {}
+        total_jobs = max(len(jobs), 1)
+        self.progress_phase = "list"
+        for index, (slug, name, sort_field, sort_direction) in enumerate(jobs, start=1):
+            def _page_progress(page: int, pages: int, loaded: int, *, done: int = index) -> None:
+                if progress_callback and (page == pages or page % 25 == 0):
+                    progress_callback(done, total_jobs, len(bucket) + loaded)
+
+            items = self._list_catalog_items(
+                collection_handle=slug,
+                max_workers=max_workers,
+                progress_callback=_page_progress if progress_callback else None,
+                sort_field=sort_field,
+                sort_direction=sort_direction,
+            )
+            for raw in items:
+                product = self._map_catalog_item(
+                    raw,
+                    default_category=name,
+                    skip_page_fallback=True,
+                )
+                if product is None:
+                    continue
+                existing = bucket.get(product.id)
+                if existing is None:
+                    bucket[product.id] = product
+                    continue
+                for category in product.categories:
+                    if category and category not in existing.categories:
+                        existing.categories.append(category)
+            if progress_callback:
+                progress_callback(index, total_jobs, len(bucket))
+            if index == len(jobs) or index % 2 == 0:
+                self._emit_partial(list(bucket.values()))
+
+        products = list(bucket.values())
+        self._emit_partial(products)
+        if self._wants_description() and products:
+            self.progress_phase = "description"
+            self._enrich_descriptions_parallel(
+                products,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+            self._emit_partial(products)
+        if progress_callback and products:
+            progress_callback(total_jobs, total_jobs, len(products))
+        return products
+
     def _crawl_catalog(
         self,
         *,
@@ -646,6 +782,19 @@ class ShopBaseCrawler(BaseCrawler):
     ) -> list[Product]:
         if self._catalog_api_available():
             self._shop_name()
+            if (
+                not collection_handle
+                and not (query or "").strip()
+                and limit is None
+                and not max_pages
+                and self._catalog_reported_count() >= 10000
+            ):
+                sharded = self._crawl_shop_by_collections(
+                    progress_callback=progress_callback,
+                    max_workers=max_workers,
+                )
+                if sharded:
+                    return sharded
             items = self._list_catalog_items(
                 collection_handle=collection_handle,
                 query=query,
