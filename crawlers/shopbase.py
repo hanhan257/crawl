@@ -994,6 +994,8 @@ class ShopBaseCrawler(BaseCrawler):
                 if progress_callback:
                     progress_callback(finished, total_jobs, len(bucket))
                 self._emit_partial(list(bucket.values()))
+                if len(bucket) >= CATALOG_COUNT_CAP:
+                    break
                 continue
 
             wave = []
@@ -1036,6 +1038,8 @@ class ShopBaseCrawler(BaseCrawler):
                     if progress_callback:
                         progress_callback(finished, total_jobs, len(bucket))
             self._emit_partial(list(bucket.values()))
+            if len(bucket) >= CATALOG_COUNT_CAP:
+                break
 
         giant = max(counts.values(), default=0)
         reachable = sum(
@@ -1043,7 +1047,10 @@ class ShopBaseCrawler(BaseCrawler):
             for count in counts.values()
             if 0 < count <= CATALOG_MAX_ITEMS * 2
         )
-        if not jobs or (giant > CATALOG_MAX_ITEMS * 2 and reachable < int(giant * 0.75)):
+        # Đã đủ một cửa sổ để xuất file thì không tách từ khóa — lượt đó không bao giờ xong.
+        if len(bucket) < CATALOG_COUNT_CAP and (
+            not jobs or (giant > CATALOG_MAX_ITEMS * 2 and reachable < int(giant * 0.75))
+        ):
             self._merge_search_shards(
                 bucket,
                 progress_callback=progress_callback,
@@ -1081,19 +1088,9 @@ class ShopBaseCrawler(BaseCrawler):
             progress_callback(0, 1, 0)
         if self._catalog_api_available():
             self._shop_name()
-            if (
-                not collection_handle
-                and not (query or "").strip()
-                and limit is None
-                and not max_pages
-                and self._catalog_reported_count() >= CATALOG_MAX_ITEMS
-            ):
-                sharded = self._crawl_shop_by_collections(
-                    progress_callback=progress_callback,
-                    max_workers=max_workers,
-                )
-                if sharded:
-                    return sharded
+            # Shop lớn hơn một lần lọc: API cắt ở trang 199 (~9.950 SP).
+            # Đi tiếp từng collection / từ khóa khiến crawl không kết thúc,
+            # thanh đầy mà không có file. Lấy đủ cửa sổ đó rồi trả về để tải.
             items = self._list_catalog_items(
                 collection_handle=collection_handle,
                 query=query,

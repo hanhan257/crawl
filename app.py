@@ -2624,6 +2624,11 @@ def run_crawl_only(
                         progress_text.caption(
                             f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
                         )
+                    elif crawl_platform == "shopbase" and expected_total and expected_total > 9950:
+                        progress_text.caption(
+                            "ShopBase — API chỉ trả tối đa **~9.950** SP một lần. "
+                            "Đủ số đó thì dừng và xuất file để tải."
+                        )
                     elif crawl_platform == "shopbase" and expected_total and expected_total >= 500:
                         est_min = max(
                             1,
@@ -2713,7 +2718,16 @@ def run_crawl_only(
         feed_rows = count_gmc_export_rows(products, variant_mode)
         report_note = "Báo cáo crawl — tải JSON / CSV link SP bên dưới."
         missing_note = ""
-        if expected_total and len(products) < int(expected_total):
+        if (
+            crawl_platform == "shopbase"
+            and expected_total
+            and len(products) < int(expected_total)
+        ):
+            missing_note = (
+                f" · Shop báo ~**{int(expected_total):,}** SP, API chỉ cho "
+                f"**{len(products):,}** SP/lần — file đã sẵn để tải ở Bước 3."
+            ).replace(",", ".")
+        elif expected_total and len(products) < int(expected_total):
             missing_note = (
                 f" · Thiếu ~**{int(expected_total) - len(products)}** so với dự kiến "
                 "— **vẫn xuất/tải file được** ở Bước 2."
