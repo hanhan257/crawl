@@ -144,43 +144,16 @@ def sniff_woo_store_api(
     url = f"{base}/wp-json/wc/store/v1/products"
     params = {"per_page": 1, "_fields": "id"}
 
-    # Direct curl_cffi
+    def _ok(data: list[Any] | None, status: int) -> bool:
+        return status == 200 and isinstance(data, list)
+
     data, status, _headers = curl_get_json_list(
         url, params=params, timeout=timeout, proxy=None
     )
-    if status == 200 and isinstance(data, list):
+    if _ok(data, status):
         return True
 
-    # Direct requests (khi thiếu curl_cffi)
-    try:
-        import requests
-
-        resp = requests.get(
-            url,
-            params=params,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                ),
-                "Accept": "application/json",
-            },
-            timeout=timeout,
-        )
-        if resp.status_code == 200 and isinstance(resp.json(), list):
-            return True
-    except Exception:
-        pass
-
-    for proxy in (proxies or [])[: max(0, int(max_proxy_tries))]:
-        if not proxy:
-            continue
-        data, status, _headers = curl_get_json_list(
-            url, params=params, timeout=timeout, proxy=proxy
-        )
-        if status == 200 and isinstance(data, list):
-            return True
+    if not CURL_CFFI_AVAILABLE:
         try:
             import requests
 
@@ -195,11 +168,21 @@ def sniff_woo_store_api(
                     ),
                     "Accept": "application/json",
                 },
-                proxies={"http": proxy, "https": proxy},
                 timeout=timeout,
             )
             if resp.status_code == 200 and isinstance(resp.json(), list):
                 return True
         except Exception:
+            pass
+
+    # IP VPS bị chặn: thử vài proxy, chỉ curl_cffi (không nhân đôi timeout với requests).
+    proxy_timeout = min(float(timeout), 8.0)
+    for proxy in (proxies or [])[: max(0, int(max_proxy_tries))]:
+        if not proxy:
             continue
+        data, status, _headers = curl_get_json_list(
+            url, params=params, timeout=proxy_timeout, proxy=proxy
+        )
+        if _ok(data, status):
+            return True
     return False

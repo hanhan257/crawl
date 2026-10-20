@@ -130,9 +130,9 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
 
             if sniff_woo_store_api(
                 base,
-                timeout=20,
+                timeout=10,
                 proxies=_woo_sniff_proxy_list(None),
-                max_proxy_tries=5,
+                max_proxy_tries=3,
             ):
                 target = DetectedTarget(
                     platform="woocommerce",

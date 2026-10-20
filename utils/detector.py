@@ -45,7 +45,8 @@ DEFAULT_USER_AGENT = (
 # Nhận diện chỉ cần 1 response nhỏ — không chờ timeout crawl (15s nối + 90s đọc).
 _SNIFF_TIMEOUT = 4
 # Woo Store API / Flatsome nặng (fanssio…) thường >4s từ VPS.
-_WOO_SNIFF_TIMEOUT = 12
+_WOO_SNIFF_TIMEOUT = 10
+_WOO_SNIFF_PROXY_TRIES = 3
 _RESOLVE_CACHE: dict[str, tuple[float, DetectedTarget]] = {}
 _RESOLVE_TTL = 600.0
 
@@ -189,7 +190,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                 base,
                 timeout=_WOO_SNIFF_TIMEOUT,
                 proxies=_woo_sniff_proxy_list(session),
-                max_proxy_tries=5,
+                max_proxy_tries=_WOO_SNIFF_PROXY_TRIES,
             ):
                 return "woocommerce"
         except Exception:
@@ -385,7 +386,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
                 base,
                 timeout=_WOO_SNIFF_TIMEOUT,
                 proxies=_woo_sniff_proxy_list(session),
-                max_proxy_tries=5,
+                max_proxy_tries=_WOO_SNIFF_PROXY_TRIES,
             ):
                 return "woocommerce"
         except Exception:
@@ -398,19 +399,6 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except Exception:
             pass
 
-    # Cloudflare chặn requests — thử Woo Store API qua curl_cffi (direct).
-    try:
-        from utils.curl_http import sniff_woo_store_api
-
-        if sniff_woo_store_api(
-            base,
-            timeout=_WOO_SNIFF_TIMEOUT,
-            proxies=_woo_sniff_proxy_list(session),
-            max_proxy_tries=5,
-        ):
-            return "woocommerce"
-    except Exception:
-        pass
     return None
 
 
