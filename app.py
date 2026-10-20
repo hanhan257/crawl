@@ -501,7 +501,7 @@ def _cached_product_image(url: str, proxy_url: str, cache_nonce: int) -> bytes |
 
 
 @st.cache_data(show_spinner=False, ttl=900)
-def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "woo-sniff-v4") -> dict:
+def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "woo-sniff-v5") -> dict:
     # _cache_ver: đổi khi logic nhận diện Woo đổi — tránh cache miss cũ (vd. fanssio).
     return describe_url(url, proxy_url=proxy_url or None)
 

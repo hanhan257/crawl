@@ -72,9 +72,17 @@ def curl_get(
         sep = "&" if "?" in url else "?"
         url = f"{url}{sep}{urlencode(params)}"
 
-    kwargs: dict[str, Any] = {"timeout": timeout, "impersonate": impersonate}
+    kwargs: dict[str, Any] = {
+        "timeout": timeout,
+        "impersonate": impersonate,
+        "headers": {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    }
     if proxy:
-        kwargs["proxy"] = proxy
+        # curl_cffi dùng `proxies=` giống requests; `proxy=` bị bỏ qua.
+        kwargs["proxies"] = {"http": proxy, "https": proxy}
 
     try:
         response = curl_requests.get(url, **kwargs)
