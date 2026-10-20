@@ -123,6 +123,7 @@ class ShopifyCrawler(BaseCrawler):
         self.session = create_http_session(self.proxy_rotator.current())
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._page_local = threading.local()
+        self._proxy_lock = threading.Lock()
         self._api_session_locked = False
         self._api_proxy: str | None = None
         self.last_products: list[Product] = []
@@ -692,6 +693,15 @@ class ShopifyCrawler(BaseCrawler):
     ) -> list[Product]:
         per_page = 250
         first_batch = self._fetch_public_page(1)
+        if limit is None and len(first_batch) < per_page:
+            completed = self._complete_short_catalog(
+                first_batch,
+                max_pages=max_pages,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+            if completed is not None:
+                return completed
         estimated_pages = max_pages
         if estimated_pages is None and limit is not None:
             estimated_pages = max(1, (limit + per_page - 1) // per_page)
@@ -725,6 +735,198 @@ class ShopifyCrawler(BaseCrawler):
                 progress_callback=progress_callback,
             )
         return products
+
+    def _complete_short_catalog(
+        self,
+        first_batch: list[dict[str, Any]],
+        *,
+        max_pages: int | None,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+    ) -> list[Product] | None:
+        """Trang products.json ngắn hơn sitemap thì đó là response bị cắt, không phải hết shop."""
+        handles = self._discover_handles_from_sitemaps(max_sitemaps=max_pages)
+        if handles and len(first_batch) >= len(handles):
+            return None
+        if not handles and len(first_batch) >= 30:
+            return None
+        target = len(handles) or 250
+        fuller = self._longest_products_json(stop_at=target)
+        raw_items = fuller if len(fuller) > len(first_batch) else first_batch
+        by_handle = self._products_by_handle(raw_items)
+        if not handles:
+            if len(raw_items) > len(first_batch):
+                products = list(by_handle.values())
+                self._publish_partial(products)
+                return products
+            return None
+        self._fill_missing_handles(
+            by_handle,
+            handles,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
+        ordered = [by_handle[h] for h in handles if h in by_handle]
+        self._publish_partial(ordered)
+        return ordered
+
+    def _read_products_page(self, session: requests.Session) -> list[dict[str, Any]] | None:
+        try:
+            response = session.get(
+                f"{self.shop_url}/products.json",
+                params={"limit": 250, "page": 1},
+                timeout=(8, 20),
+                headers={"Accept": "application/json"},
+            )
+        except requests.RequestException:
+            return None
+        if response.status_code != 200:
+            return None
+        try:
+            data = response.json()
+        except ValueError:
+            return None
+        batch = data.get("products") if isinstance(data, dict) else None
+        if not isinstance(batch, list):
+            return None
+        return batch
+
+    def _longest_products_json(self, *, stop_at: int) -> list[dict[str, Any]]:
+        """Đổi route cho tới khi products.json dài bằng sitemap, không giữ trang 2 SP."""
+        sessions: list[tuple[requests.Session, str | None]] = []
+        direct = create_http_session(None)
+        direct.headers["User-Agent"] = DEFAULT_USER_AGENT
+        sessions.append((direct, None))
+        seen: set[str] = set()
+        if self._api_proxy:
+            seen.add(self._api_proxy)
+        for _ in range(min(8, self.proxy_rotator.count)):
+            with self._proxy_lock:
+                proxy = self.proxy_rotator.rotate()
+            if not proxy or proxy in seen:
+                break
+            seen.add(proxy)
+            sess = create_http_session(proxy)
+            sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+            sessions.append((sess, proxy))
+
+        best: list[dict[str, Any]] = []
+        best_pair: tuple[requests.Session, str | None] | None = None
+        pool = ThreadPoolExecutor(max_workers=min(4, len(sessions)))
+        futures = {
+            pool.submit(self._read_products_page, sess): (sess, proxy)
+            for sess, proxy in sessions
+        }
+        try:
+            for future in as_completed(futures):
+                batch = future.result()
+                if not batch or len(batch) <= len(best):
+                    continue
+                best = batch
+                best_pair = futures[future]
+                if len(best) >= stop_at:
+                    break
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+        if best_pair is not None:
+            sess, proxy = best_pair
+            self._lock_api_route(sess, proxy)
+        return best
+
+    def _products_by_handle(self, raw_items: list[dict[str, Any]]) -> dict[str, Product]:
+        by_handle: dict[str, Product] = {}
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            handle = str(item.get("handle") or "").strip()
+            product = self._map_public_product(item)
+            if not handle and product.url:
+                handle = urlparse(product.url).path.rstrip("/").split("/")[-1]
+            if handle:
+                by_handle[handle] = product
+        return by_handle
+
+    def _next_spread_session(self) -> requests.Session:
+        with self._proxy_lock:
+            if self.proxy_rotator.count > 1:
+                proxy = self.proxy_rotator.rotate()
+            else:
+                proxy = self._api_proxy if self._api_session_locked else self.proxy_rotator.current()
+        sess = create_http_session(proxy)
+        sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+        return sess
+
+    def _fetch_product_by_handle(self, handle: str) -> Product | None:
+        """Một SP: /products/{handle}.json cùng dạng products.json, rồi .js nếu bị chặn."""
+        for attempt in range(3):
+            sess = self._page_session() if attempt == 0 else self._next_spread_session()
+            for suffix in (".json", ".js"):
+                try:
+                    response = sess.get(
+                        f"{self.shop_url}/products/{handle}{suffix}",
+                        timeout=(8, 15),
+                        headers={"Accept": "application/json"},
+                    )
+                except requests.RequestException:
+                    continue
+                if response.status_code == 429:
+                    break
+                if response.status_code != 200:
+                    continue
+                try:
+                    payload = response.json()
+                except ValueError:
+                    continue
+                if suffix == ".json" and isinstance(payload, dict):
+                    item = payload.get("product")
+                    if isinstance(item, dict) and item.get("title"):
+                        return self._map_public_product(item)
+                    continue
+                product = self._product_from_js_payload(payload)
+                if product is not None:
+                    return product
+        return None
+
+    def _fill_missing_handles(
+        self,
+        by_handle: dict[str, Product],
+        handles: list[str],
+        *,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+    ) -> None:
+        missing = [handle for handle in handles if handle not in by_handle]
+        if not missing:
+            return
+        workers = max(1, min(8, max_workers or 1, len(missing)))
+        total = len(handles)
+
+        def report() -> None:
+            if progress_callback:
+                progress_callback(len(by_handle), total, len(by_handle))
+
+        def load(handle: str) -> tuple[str, Product | None]:
+            return handle, self._fetch_product_by_handle(handle)
+
+        for _round in range(2):
+            if not missing:
+                break
+            if workers <= 1:
+                for handle in missing:
+                    _, product = load(handle)
+                    if product:
+                        by_handle[handle] = product
+                    report()
+            else:
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    futures = [executor.submit(load, handle) for handle in missing]
+                    for future in as_completed(futures):
+                        handle, product = future.result()
+                        if product:
+                            by_handle[handle] = product
+                        report()
+            missing = [handle for handle in handles if handle not in by_handle]
+            self._api_session_locked = False
 
     def _http_get(self, url: str, *, timeout: int = 20) -> requests.Response | None:
         """GET tới khi có 200. IP server bị 429 thì thử direct rồi vài proxy."""
@@ -854,17 +1056,9 @@ class ShopifyCrawler(BaseCrawler):
 
     def _fetch_product_js(self, handle: str) -> Product | None:
         """products.json bị 429 thì /products/{handle}.js vẫn trả đủ title, giá, ảnh."""
-        try:
-            response = self._page_session().get(
-                f"{self.shop_url}/products/{handle}.js",
-                timeout=20,
-                headers={"Accept": "application/json"},
-            )
-            if response.status_code != 200:
-                return None
-            item = response.json()
-        except (requests.RequestException, ValueError):
-            return None
+        return self._fetch_product_by_handle(handle)
+
+    def _product_from_js_payload(self, item: Any) -> Product | None:
         if not isinstance(item, dict) or not item.get("title"):
             return None
         images = item.get("images") or []
@@ -948,45 +1142,22 @@ class ShopifyCrawler(BaseCrawler):
         max_workers: int = 8,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
-        """API danh sách bị 429: lấy handle từ sitemap rồi đọc song song /products/{handle}.js."""
+        """API danh sách bị cắt/429: đọc từng handle, ít luồng để khỏi chỉ sót vài SP."""
         self._skip_html_description = True
         handles = self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps)
         if not handles:
             return []
         if limit is not None:
             handles = handles[:limit]
-        total = len(handles)
         if progress_callback:
-            progress_callback(0, total, 0)
-        workers = max(1, min(max_workers or 1, 32 if self.proxy_rotator.count == 0 else 64))
+            progress_callback(0, len(handles), 0)
         by_handle: dict[str, Product] = {}
-        done = 0
-        lock = threading.Lock()
-
-        def load(handle: str) -> tuple[str, Product | None]:
-            return handle, self._fetch_product_js(handle)
-
-        if workers <= 1:
-            for handle in handles:
-                _, product = load(handle)
-                if product:
-                    by_handle[handle] = product
-                done += 1
-                if progress_callback:
-                    progress_callback(done, total, len(by_handle))
-        else:
-            with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = [executor.submit(load, handle) for handle in handles]
-                for future in as_completed(futures):
-                    handle, product = future.result()
-                    with lock:
-                        if product:
-                            by_handle[handle] = product
-                        done += 1
-                        snapshot = [by_handle[h] for h in handles if h in by_handle]
-                        self._publish_partial(snapshot)
-                        if progress_callback:
-                            progress_callback(done, total, len(by_handle))
+        self._fill_missing_handles(
+            by_handle,
+            handles,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
         ordered = [by_handle[h] for h in handles if h in by_handle]
         self._publish_partial(ordered)
         return ordered
