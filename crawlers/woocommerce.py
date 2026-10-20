@@ -266,6 +266,14 @@ class WooCommerceCrawler(BaseCrawler):
                 )
             except requests.HTTPError as exc:
                 if self._is_auth_blocked(exc):
+                    listed = self._crawl_wsp_catalog(
+                        limit=limit,
+                        max_pages=max_pages,
+                        max_workers=max_workers,
+                        progress_callback=progress_callback,
+                    )
+                    if listed:
+                        return listed
                     if self._curl_store_probe() and self._switch_to_curl_cffi():
                         return self._crawl_store_api(
                             limit=limit,
@@ -864,6 +872,7 @@ class WooCommerceCrawler(BaseCrawler):
         per_page, pages, _cards = self._read_wsp_listing(1)
         if not per_page or not pages:
             return None
+        self._uses_product_listing = True
         if pages == 1:
             return per_page
         last_count, _, _ = self._read_wsp_listing(pages)
@@ -932,6 +941,7 @@ class WooCommerceCrawler(BaseCrawler):
         per_page, pages, first_cards = self._read_wsp_listing(1)
         if not first_cards:
             return []
+        self._uses_product_listing = True
         if max_pages and max_pages > 0:
             pages = min(pages, max_pages)
         if limit is not None and per_page:
@@ -956,18 +966,25 @@ class WooCommerceCrawler(BaseCrawler):
                     return page, []
                 return page, self._parse_wsp_cards(response.text)
 
-            with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = [
-                    executor.submit(fetch_page, page) for page in range(2, pages + 1)
-                ]
-                done = 1
-                for future in as_completed(futures):
-                    page, cards = future.result()
-                    page_products[page] = cards
-                    done += 1
-                    if progress_callback:
-                        matched = sum(len(page_products[n]) for n in page_products)
-                        progress_callback(done, pages, matched)
+            def run_pages(page_nums: list[int]) -> None:
+                nonlocal done
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    futures = [executor.submit(fetch_page, page) for page in page_nums]
+                    for future in as_completed(futures):
+                        page, cards = future.result()
+                        if cards:
+                            page_products[page] = cards
+                        done += 1
+                        if progress_callback:
+                            matched = sum(len(page_products[n]) for n in page_products)
+                            progress_callback(min(done, pages), pages, matched)
+
+            done = 1
+            run_pages(list(range(2, pages + 1)))
+            missing = [page for page in range(2, pages + 1) if not page_products.get(page)]
+            if missing:
+                done = pages - len(missing)
+                run_pages(missing)
         ordered: list[Product] = []
         seen: set[str] = set()
         for page in range(1, pages + 1):

@@ -658,6 +658,8 @@ def _probe_woocommerce(
         total = sum(c.count or 0 for c in categories) or None
 
     message = _stats_message(total, len(categories))
+    if getattr(crawler, "_uses_product_listing", False) and total:
+        message += " · danh sách /products/"
 
     return ShopProbeResult(
         ok=True,
