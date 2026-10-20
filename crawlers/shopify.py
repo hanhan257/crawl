@@ -474,9 +474,21 @@ class ShopifyCrawler(BaseCrawler):
             if self._products_json_probe(direct, self.shop_url):
                 self._switch_to_direct_session()
                 ok = True
-        elif not ok and self.proxy_rotator.count > 1:
-            self.refresh_session(rotate=True)
-            ok = self._products_json_probe(self.session, self.shop_url)
+        if not ok and self.proxy_rotator.count > 0:
+            seen: set[str] = set()
+            for _ in range(min(8, self.proxy_rotator.count)):
+                proxy = self.proxy_rotator.rotate()
+                if not proxy or proxy in seen:
+                    break
+                seen.add(proxy)
+                sess = create_http_session(proxy)
+                sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+                if self._products_json_probe(sess, self.shop_url):
+                    self.session = sess
+                    if hasattr(self._page_local, "session"):
+                        delattr(self._page_local, "session")
+                    ok = True
+                    break
         if ok:
             self._public_json_ok = True
         return ok
@@ -486,7 +498,8 @@ class ShopifyCrawler(BaseCrawler):
             return True
         try:
             payload = self._graphql_request(
-                "query { products(first: 1) { edges { node { handle } } } }"
+                "query { products(first: 1) { edges { node { handle } } } }",
+                max_retries=1,
             )
             ok = bool(payload.get("data", {}).get("products"))
         except (requests.RequestException, ValueError, KeyError):
@@ -788,6 +801,46 @@ class ShopifyCrawler(BaseCrawler):
             progress_callback=progress_callback,
         )
 
+    def _fetch_product_js(self, handle: str) -> Product | None:
+        """products.json bị 429 thì /products/{handle}.js vẫn trả đủ title, giá, ảnh."""
+        try:
+            response = self._page_session().get(
+                f"{self.shop_url}/products/{handle}.js",
+                timeout=20,
+                headers={"Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            item = response.json()
+        except (requests.RequestException, ValueError):
+            return None
+        if not isinstance(item, dict) or not item.get("title"):
+            return None
+        images = item.get("images") or []
+        if images and isinstance(images[0], str):
+            item["images"] = [
+                {"src": src if str(src).startswith("http") else f"https:{src}"}
+                for src in images
+            ]
+        variants: list[dict[str, Any]] = []
+        for variant in item.get("variants") or []:
+            if not isinstance(variant, dict):
+                continue
+            variant = dict(variant)
+            price = variant.get("price")
+            if isinstance(price, int):
+                variant["price"] = f"{price / 100:.2f}"
+            compare = variant.get("compare_at_price")
+            if isinstance(compare, int) and compare:
+                variant["compare_at_price"] = f"{compare / 100:.2f}"
+            variants.append(variant)
+        item["variants"] = variants
+        if not item.get("body_html") and item.get("description"):
+            item["body_html"] = item.get("description")
+        if not item.get("product_type"):
+            item["product_type"] = item.get("type") or ""
+        return self._map_public_product(item)
+
     def _fetch_product_by_handle_graphql(self, handle: str) -> Product | None:
         try:
             payload = self._graphql_request(
@@ -915,6 +968,8 @@ class ShopifyCrawler(BaseCrawler):
         if missing:
             for handle in missing:
                 product = self._fetch_product_by_handle_graphql(handle)
+                if product is None:
+                    product = self._fetch_product_js(handle)
                 if product:
                     by_handle[handle] = product
                 snapshot = [by_handle[h] for h in handles if h in by_handle]
