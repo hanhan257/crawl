@@ -453,7 +453,7 @@ def _refresh_crawl_messages(url: str) -> None:
     """Xóa thông báo lỗi/info cũ khi link hiện tại đã hợp lệ."""
     cleaned = url.strip()
     if st.session_state.get("crawl_url_sig") != cleaned:
-        if cleaned and st.session_state.get("crawl_url_sig"):
+        if cleaned:
             _clear_url_probe_cache()
         st.session_state.crawl_url_sig = cleaned
         st.session_state.crawl_expected_total = None
@@ -479,6 +479,9 @@ def _refresh_crawl_messages(url: str) -> None:
 
 
 def _on_crawl_url_change() -> None:
+    # Mỗi lần dán/sửa link thì đếm lại. Không dùng số 0 SP đã cache của lần trước.
+    st.session_state["probe_nonce"] = int(st.session_state.get("probe_nonce") or 0) + 1
+    _clear_url_probe_cache()
     _refresh_crawl_messages(str(st.session_state.get("crawl_url") or ""))
 
 
@@ -527,8 +530,10 @@ def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     shopify_token: str,
     proxy_url: str,
     probe_workers: int,
-    _cache_ver: str = "shopbase-count-v14",
+    probe_nonce: int = 0,
+    _cache_ver: str = "shopbase-count-v15",
 ) -> dict:
+    del probe_nonce
     del _cache_ver
     creds = CrawlCredentials.load()
     if shopify_token:
@@ -3182,6 +3187,7 @@ def render_url_preview(
             shopify_token,
             st.session_state.get("proxy_url", ""),
             int(st.session_state.get("crawl_workers", DEFAULT_CRAWL_WORKERS)),
+            int(st.session_state.get("probe_nonce") or 0),
         )
 
         if info["ok"] and probe.get("ok"):
