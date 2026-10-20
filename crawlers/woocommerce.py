@@ -593,8 +593,9 @@ class WooCommerceCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
-        per_page = min(per_page, 100)
+        per_page = min(max(per_page, 100), 100)
         max_workers = max(1, min(int(max_workers or 1), API_LIST_WOO_MAX_WORKERS))
+        self._skip_html_description = True
         self._parallel_fetch = max_workers > 1
         params_base: dict[str, Any] = {"per_page": per_page}
         if category_id:
@@ -645,7 +646,8 @@ class WooCommerceCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
-        per_page = min(per_page, 100)
+        per_page = min(max(per_page, 100), 100)
+        self._skip_html_description = True
         self._parallel_fetch = max_workers > 1
         params_base: dict[str, Any] = {
             "per_page": per_page,
@@ -824,6 +826,8 @@ class WooCommerceCrawler(BaseCrawler):
     def _resolve_description(self, item: dict[str, Any], page_url: str | None) -> str | None:
         description = woo_description_from_item(item)
         if description or not page_url:
+            return description
+        if getattr(self, "_skip_html_description", False):
             return description
         try:
             response = get_with_retry(

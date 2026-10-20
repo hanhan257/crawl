@@ -9,8 +9,8 @@ T = TypeVar("T")
 
 ProgressCallback = Callable[[int, int, int], None]
 API_LIST_MAX_WORKERS = 500
-# Woo Store API dễ 429 — giữ thấp hơn luồng UI.
-API_LIST_WOO_MAX_WORKERS = 24
+# Woo Store API: 100 SP/trang. 48 luồng vẫn dưới mức dễ rơi 429 hàng loạt.
+API_LIST_WOO_MAX_WORKERS = 48
 # Đợt fetch bám theo luồng user chọn. 500 cùng lúc dễ timeout/thiếu trang.
 API_LIST_WAVE_SIZE = 64
 EMPTY_PAGE_RETRY_ROUNDS = 3

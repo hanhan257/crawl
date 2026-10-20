@@ -123,6 +123,8 @@ class ShopifyCrawler(BaseCrawler):
         self.session = create_http_session(self.proxy_rotator.current())
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._page_local = threading.local()
+        self._api_session_locked = False
+        self._api_proxy: str | None = None
         self.last_products: list[Product] = []
         self.partial_callback: Callable[[list[Product]], None] | None = None
 
@@ -140,12 +142,19 @@ class ShopifyCrawler(BaseCrawler):
     def _switch_to_direct_session(self) -> None:
         """Một số shop chặn proxy list — chuyển sang direct cho cả crawl."""
         self.proxy_rotator = ProxyRotator(None)
-        self.session = create_http_session(None)
-        self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
-        if hasattr(self._page_local, "session"):
-            delattr(self._page_local, "session")
+        sess = create_http_session(None)
+        sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+        self._lock_api_route(sess, None)
         self._public_json_ok = None
         self._graphql_ok = None
+
+    def _lock_api_route(self, sess: requests.Session, proxy: str | None) -> None:
+        """Giữ đúng phiên đã đọc được API — luồng sau không được đổi sang proxy khác."""
+        self._api_session_locked = True
+        self._api_proxy = proxy
+        self.session = sess
+        self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
+        self._page_local.session = sess
 
     @staticmethod
     def _products_json_probe(session: requests.Session, shop_url: str) -> bool:
@@ -153,7 +162,8 @@ class ShopifyCrawler(BaseCrawler):
             response = session.get(
                 f"{shop_url}/products.json",
                 params={"limit": 1, "page": 1},
-                timeout=12,
+                timeout=8,
+                headers={"Accept": "application/json"},
             )
             if response.status_code != 200:
                 return False
@@ -163,22 +173,20 @@ class ShopifyCrawler(BaseCrawler):
             return False
 
     def _page_session(self, *, rotate: bool = False) -> requests.Session:
-        if rotate or not hasattr(self._page_local, "session"):
-            proxy = (
-                self.proxy_rotator.rotate()
-                if rotate and self.proxy_rotator.count > 1
-                else self.proxy_rotator.current()
-            )
-            if (
-                not rotate
-                and self.proxy_rotator.count > 1
-                and not hasattr(self._page_local, "session")
-            ):
-                proxy = self.proxy_rotator.rotate()
-            sess = create_http_session(proxy)
-            sess.headers.update(self.session.headers)
+        if not rotate and hasattr(self._page_local, "session"):
+            return self._page_local.session
+        if self._api_session_locked and not rotate:
+            proxy = self._api_proxy
+        elif rotate and self.proxy_rotator.count > 1:
+            proxy = self.proxy_rotator.rotate()
+        else:
+            proxy = self.proxy_rotator.current()
+        sess = create_http_session(proxy)
+        sess.headers.update(self.session.headers)
+        sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+        if not rotate:
             self._page_local.session = sess
-        return self._page_local.session
+        return sess
 
     def _publish_partial(self, products: list[Product]) -> None:
         self.last_products = list(products)
@@ -231,6 +239,7 @@ class ShopifyCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
+        self._skip_html_description = True
         if handle == "all":
             return self.crawl(
                 limit=limit,
@@ -454,44 +463,68 @@ class ShopifyCrawler(BaseCrawler):
         return handles
 
     def _fetch_collection_page(self, handle: str, page: int) -> list[dict[str, Any]]:
-        response = get_with_retry(
-            self._page_session(),
+        response = self._page_session().get(
             f"{self.shop_url}/collections/{handle}/products.json",
             params={"limit": 250, "page": page},
-            timeout=DEFAULT_REQUEST_TIMEOUT,
+            timeout=(8, 20),
+            headers={"Accept": "application/json"},
         )
+        if response.status_code == 429:
+            raise requests.HTTPError(
+                "Shopify collection products.json 429",
+                response=response,
+            )
+        response.raise_for_status()
         batch = response.json().get("products", [])
         return batch if isinstance(batch, list) else []
 
     def _public_products_json_ok(self) -> bool:
         """True nếu /products.json còn dùng được (một số shop Shopify chặn 429)."""
-        if getattr(self, "_public_json_ok", None) is True:
+        if getattr(self, "_public_json_ok", None) is True and self._api_session_locked:
             return True
-        ok = self._products_json_probe(self.session, self.shop_url)
-        if not ok and self.proxy_rotator.has_proxy:
+        if self._products_json_probe(self.session, self.shop_url):
+            self._lock_api_route(self.session, self.proxy_rotator.current())
+            self._public_json_ok = True
+            return True
+        if self.proxy_rotator.has_proxy:
             direct = create_http_session(None)
             direct.headers["User-Agent"] = DEFAULT_USER_AGENT
             if self._products_json_probe(direct, self.shop_url):
-                self._switch_to_direct_session()
-                ok = True
-        if not ok and self.proxy_rotator.count > 0:
-            seen: set[str] = set()
-            for _ in range(min(8, self.proxy_rotator.count)):
-                proxy = self.proxy_rotator.rotate()
-                if not proxy or proxy in seen:
-                    break
-                seen.add(proxy)
-                sess = create_http_session(proxy)
-                sess.headers["User-Agent"] = DEFAULT_USER_AGENT
-                if self._products_json_probe(sess, self.shop_url):
-                    self.session = sess
-                    if hasattr(self._page_local, "session"):
-                        delattr(self._page_local, "session")
-                    ok = True
-                    break
-        if ok:
-            self._public_json_ok = True
-        return ok
+                self.proxy_rotator = ProxyRotator(None)
+                self._lock_api_route(direct, None)
+                self._public_json_ok = True
+                return True
+        proxies: list[str] = []
+        seen: set[str] = set()
+        for _ in range(min(12, self.proxy_rotator.count)):
+            proxy = self.proxy_rotator.rotate()
+            if not proxy or proxy in seen:
+                break
+            seen.add(proxy)
+            proxies.append(proxy)
+
+        def _probe_proxy(proxy: str) -> tuple[str, requests.Session] | None:
+            sess = create_http_session(proxy)
+            sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+            if self._products_json_probe(sess, self.shop_url):
+                return proxy, sess
+            return None
+
+        if proxies:
+            pool = ThreadPoolExecutor(max_workers=min(6, len(proxies)))
+            futures = [pool.submit(_probe_proxy, proxy) for proxy in proxies]
+            try:
+                for future in as_completed(futures):
+                    found = future.result()
+                    if not found:
+                        continue
+                    proxy, sess = found
+                    self._lock_api_route(sess, proxy)
+                    self._public_json_ok = True
+                    return True
+            finally:
+                pool.shutdown(wait=False, cancel_futures=True)
+        return False
 
     def _graphql_available(self) -> bool:
         if getattr(self, "_graphql_ok", None) is True:
@@ -564,12 +597,19 @@ class ShopifyCrawler(BaseCrawler):
         raise requests.RequestException("Shopify GraphQL request failed")
 
     def _fetch_public_page(self, page: int) -> list[dict[str, Any]]:
-        response = get_with_retry(
-            self._page_session(),
+        """Một trang catalog API — 250 SP. Không ngủ theo Retry-After khi 429."""
+        response = self._page_session().get(
             f"{self.shop_url}/products.json",
             params={"limit": 250, "page": page},
-            timeout=DEFAULT_REQUEST_TIMEOUT,
+            timeout=(8, 20),
+            headers={"Accept": "application/json"},
         )
+        if response.status_code == 429:
+            raise requests.HTTPError(
+                "Shopify products.json 429",
+                response=response,
+            )
+        response.raise_for_status()
         batch = response.json().get("products", [])
         return batch if isinstance(batch, list) else []
 
@@ -598,93 +638,67 @@ class ShopifyCrawler(BaseCrawler):
         max_workers: int = 1,
         progress_callback: CrawlProgressCallback | None = None,
     ) -> list[Product]:
-        # Probe lại — có thể vừa bị 429 từ bước nhận diện / crawl trước.
+        """Shopify có API: lấy thẳng /products.json (250 SP/trang), không đi GraphQL trước."""
+        self._skip_html_description = True
         if getattr(self, "_public_json_ok", None) is not True:
             self._public_json_ok = None
-        if getattr(self, "_graphql_ok", None) is not True:
-            self._graphql_ok = None
 
-        if limit is None or limit > 2500:
-            sitemap_total = self._sitemap_handle_count(max_sitemaps=max_pages)
-            if sitemap_total >= SITEMAP_FIRST_MIN_PRODUCTS and (
-                limit is None or limit >= sitemap_total
-            ):
-                workers = max_workers
-                if sitemap_total > 5000:
-                    workers = max(workers, 32)
-                if sitemap_total > 20000:
-                    workers = max(workers, 64)
-                return self._crawl_via_sitemap(
-                    limit=limit,
-                    max_sitemaps=max_pages,
-                    max_workers=workers,
-                    progress_callback=progress_callback,
-                )
+        if progress_callback:
+            progress_callback(0, 1, 0)
 
-        # GraphQL catalog đầy đủ hơn products.json (hết page ~21) và hỗ trợ tới ~25k SP.
-        if self._graphql_available():
+        if self._public_products_json_ok():
             try:
-                products = self._crawl_graphql(
-                    limit=limit,
-                    max_pages=max_pages,
-                    progress_callback=progress_callback,
-                )
-                return self._crawl_via_sitemap_if_larger(
-                    products,
+                return self._crawl_products_json_api(
                     limit=limit,
                     max_pages=max_pages,
                     max_workers=max_workers,
                     progress_callback=progress_callback,
                 )
             except requests.RequestException:
-                # GraphQL lỗi/throttle → sitemap + batch handle (tránh products.json đứng ở page 2).
-                return self._crawl_via_sitemap(
+                self._public_json_ok = None
+                self._api_session_locked = False
+
+        products = self._crawl_via_product_js(
+            limit=limit,
+            max_sitemaps=max_pages,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
+        if products:
+            return products
+
+        if self._graphql_available():
+            try:
+                return self._crawl_graphql(
                     limit=limit,
-                    max_sitemaps=max_pages,
-                    max_workers=max_workers,
+                    max_pages=max_pages,
                     progress_callback=progress_callback,
                 )
+            except requests.RequestException:
+                pass
 
-        # PopFanPrints: /products.json 429 — crawl sitemap + GraphQL theo handle
-        # (không paginate products GraphQL: dễ throttle/đứng ~7–8k SP).
-        if not self._public_products_json_ok():
-            products = self._crawl_via_sitemap(
-                limit=limit,
-                max_sitemaps=max_pages,
-                max_workers=max_workers,
-                progress_callback=progress_callback,
-            )
-            if products:
-                return products
-            raise requests.RequestException(
-                "Shopify /products.json bị chặn (429) và GraphQL cũng không dùng được. "
-                "Bật **Proxy**, giảm luồng crawl (8–32), đợi vài phút rồi thử lại."
-            )
+        raise requests.RequestException(
+            "Shopify /products.json bị chặn (429) và GraphQL cũng không dùng được. "
+            "Bật **Proxy**, giảm luồng crawl (8–32), đợi vài phút rồi thử lại."
+        )
 
+    def _crawl_products_json_api(
+        self,
+        *,
+        limit: int | None,
+        max_pages: int | None,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+    ) -> list[Product]:
         per_page = 250
-        try:
-            first_batch = self._fetch_public_page(1)
-        except requests.HTTPError as exc:
-            status = exc.response.status_code if exc.response is not None else None
-            if status == 429:
-                products = self._crawl_via_sitemap(
-                    limit=limit,
-                    max_sitemaps=max_pages,
-                    max_workers=max_workers,
-                    progress_callback=progress_callback,
-                )
-                if products:
-                    return products
-            raise
-
+        first_batch = self._fetch_public_page(1)
         estimated_pages = max_pages
         if estimated_pages is None and limit is not None:
             estimated_pages = max(1, (limit + per_page - 1) // per_page)
+        elif estimated_pages is None and len(first_batch) >= per_page:
+            estimated_pages = None
 
-        list_workers = max_workers
-        if list_workers > API_LIST_WAVE_SIZE:
-            list_workers = API_LIST_WAVE_SIZE
-
+        list_workers = max(1, min(max_workers or 1, API_LIST_WAVE_SIZE))
         raw_items, _pages = fetch_pages_in_waves(
             self._fetch_public_page,
             per_page=per_page,
@@ -696,22 +710,59 @@ class ShopifyCrawler(BaseCrawler):
             estimated_pages=estimated_pages,
         )
         products = [self._map_public_product(item) for item in raw_items]
-        return self._crawl_via_sitemap_if_larger(
-            products,
-            limit=limit,
-            max_pages=max_pages,
-            max_workers=max_workers,
-            progress_callback=progress_callback,
-        )
+        self._publish_partial(products)
+        # products.json dừng quanh trang ~21. Shop lớn hơn thì bù handle còn thiếu bằng .js.
+        if (
+            limit is None
+            and len(products) >= SITEMAP_FIRST_MIN_PRODUCTS
+            and len(raw_items) % per_page == 0
+        ):
+            return self._crawl_via_sitemap_if_larger(
+                products,
+                limit=limit,
+                max_pages=max_pages,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+        return products
+
+    def _http_get(self, url: str, *, timeout: int = 20) -> requests.Response | None:
+        """GET tới khi có 200. IP server bị 429 thì thử direct rồi vài proxy."""
+        sessions: list[tuple[requests.Session, str | None]] = [
+            (self.session, self._api_proxy if self._api_session_locked else self.proxy_rotator.current())
+        ]
+        if self.proxy_rotator.has_proxy or self._api_proxy:
+            direct = create_http_session(None)
+            direct.headers["User-Agent"] = DEFAULT_USER_AGENT
+            sessions.append((direct, None))
+        seen: set[str] = set()
+        for _ in range(min(4, self.proxy_rotator.count)):
+            proxy = self.proxy_rotator.rotate()
+            if not proxy or proxy in seen:
+                break
+            seen.add(proxy)
+            sess = create_http_session(proxy)
+            sess.headers["User-Agent"] = DEFAULT_USER_AGENT
+            sessions.append((sess, proxy))
+        for sess, proxy in sessions:
+            try:
+                response = sess.get(url, timeout=timeout)
+            except requests.RequestException:
+                continue
+            if response.status_code == 200 and response.content:
+                if not self._api_session_locked:
+                    self._lock_api_route(sess, proxy)
+                return response
+        return None
 
     def _collect_product_sitemaps(self) -> list[str]:
         index_url = f"{self.shop_url}/sitemap.xml"
+        response = self._http_get(index_url, timeout=20)
+        if response is None:
+            return []
         try:
-            response = self.session.get(index_url, timeout=30)
-            if response.status_code != 200:
-                return []
             root = ET.fromstring(response.content)
-        except (requests.RequestException, ET.ParseError):
+        except ET.ParseError:
             return []
         locs = [
             (el.text or "").strip()
@@ -721,12 +772,12 @@ class ShopifyCrawler(BaseCrawler):
         return locs
 
     def _parse_sitemap_product_handles(self, sitemap_url: str) -> list[str]:
+        response = self._http_get(sitemap_url, timeout=25)
+        if response is None:
+            return []
         try:
-            response = self.session.get(sitemap_url, timeout=40)
-            if response.status_code != 200:
-                return []
             root = ET.fromstring(response.content)
-        except (requests.RequestException, ET.ParseError):
+        except ET.ParseError:
             return []
         handles: list[str] = []
         seen: set[str] = set()
@@ -888,6 +939,57 @@ class ShopifyCrawler(BaseCrawler):
                     self._map_public_product(self._graphql_node_to_public_item(node))
                 )
         return products
+
+    def _crawl_via_product_js(
+        self,
+        *,
+        limit: int | None = None,
+        max_sitemaps: int | None = None,
+        max_workers: int = 8,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[Product]:
+        """API danh sách bị 429: lấy handle từ sitemap rồi đọc song song /products/{handle}.js."""
+        self._skip_html_description = True
+        handles = self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps)
+        if not handles:
+            return []
+        if limit is not None:
+            handles = handles[:limit]
+        total = len(handles)
+        if progress_callback:
+            progress_callback(0, total, 0)
+        workers = max(1, min(max_workers or 1, 32 if self.proxy_rotator.count == 0 else 64))
+        by_handle: dict[str, Product] = {}
+        done = 0
+        lock = threading.Lock()
+
+        def load(handle: str) -> tuple[str, Product | None]:
+            return handle, self._fetch_product_js(handle)
+
+        if workers <= 1:
+            for handle in handles:
+                _, product = load(handle)
+                if product:
+                    by_handle[handle] = product
+                done += 1
+                if progress_callback:
+                    progress_callback(done, total, len(by_handle))
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [executor.submit(load, handle) for handle in handles]
+                for future in as_completed(futures):
+                    handle, product = future.result()
+                    with lock:
+                        if product:
+                            by_handle[handle] = product
+                        done += 1
+                        snapshot = [by_handle[h] for h in handles if h in by_handle]
+                        self._publish_partial(snapshot)
+                        if progress_callback:
+                            progress_callback(done, total, len(by_handle))
+        ordered = [by_handle[h] for h in handles if h in by_handle]
+        self._publish_partial(ordered)
+        return ordered
 
     def _crawl_via_sitemap(
         self,
