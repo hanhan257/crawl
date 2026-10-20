@@ -508,7 +508,7 @@ class ShopBaseCrawler(BaseCrawler):
             resp = http.get(
                 f"{self.site_url}{CATALOG_LIST_API}",
                 params=params,
-                timeout=25,
+                timeout=12,
             )
         except requests.RequestException:
             return None
@@ -878,7 +878,11 @@ class ShopBaseCrawler(BaseCrawler):
             workers = min(CATALOG_LIST_MAX_WORKERS, len(categories))
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 futures = {
-                    pool.submit(self._catalog_reported_count, str(item.get("slug") or "")): item
+                    pool.submit(
+                        self._catalog_reported_count,
+                        str(item.get("slug") or ""),
+                        attempts=1,
+                    ): item
                     for item in categories
                     if item.get("slug")
                 }
@@ -899,7 +903,7 @@ class ShopBaseCrawler(BaseCrawler):
             workers = min(CATALOG_LIST_MAX_WORKERS, len(missing_slugs))
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 futures = {
-                    pool.submit(self._catalog_reported_count, slug): slug
+                    pool.submit(self._catalog_reported_count, slug, attempts=1): slug
                     for slug in missing_slugs
                 }
                 for future in as_completed(futures):
@@ -919,47 +923,61 @@ class ShopBaseCrawler(BaseCrawler):
             jobs.append((slug, name, None, None, count))
             if count > CATALOG_MAX_ITEMS:
                 jobs.append((slug, name, "id", "asc", count))
-        # Nhóm nhỏ trước để số SP tăng ngay, không đứng ở cửa sổ 9.950 của nhóm lớn.
-        jobs.sort(key=lambda job: (job[4], job[2] is not None, job[0]))
+        # Nhóm lớn trước để số SP nhảy nhanh, không đứng ở vài chục SP của nhóm nhỏ.
+        jobs.sort(key=lambda job: (-job[4], job[2] is not None, job[0]))
 
         bucket: dict[str, Product] = {}
         total_jobs = max(len(jobs), 1)
         self.progress_phase = "collections"
-        for index, (slug, name, sort_field, sort_direction, _count) in enumerate(jobs, start=1):
-            if progress_callback:
-                progress_callback(index, total_jobs, len(bucket))
+        finished = 0
+        cursor = 0
+        while cursor < len(jobs):
+            count = jobs[cursor][4]
+            if count > 400:
+                wave = [jobs[cursor]]
+                page_workers = min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers))
+                cursor += 1
+            else:
+                wave = []
+                while cursor < len(jobs) and jobs[cursor][4] <= 400 and len(wave) < 4:
+                    wave.append(jobs[cursor])
+                    cursor += 1
+                page_workers = max(1, min(CATALOG_LIST_MAX_WORKERS, max(1, max_workers)) // len(wave))
 
-            def _page_progress(page: int, pages: int, loaded: int, *, done: int = index) -> None:
-                if progress_callback and (page == pages or page % 25 == 0):
-                    progress_callback(done, total_jobs, len(bucket) + loaded)
-
-            items = self._list_catalog_items(
-                collection_handle=slug,
-                max_workers=max_workers,
-                progress_callback=_page_progress if progress_callback else None,
-                sort_field=sort_field,
-                sort_direction=sort_direction,
-                preserve_phase=True,
-            )
-            for raw in items:
-                product = self._map_catalog_item(
-                    raw,
-                    default_category=name,
-                    skip_page_fallback=True,
+            def _load(job: tuple[str, str, str | None, str | None, int]) -> tuple[str, list[dict[str, Any]]]:
+                slug, name, sort_field, sort_direction, _count = job
+                items = self._list_catalog_items(
+                    collection_handle=slug,
+                    max_workers=page_workers,
+                    sort_field=sort_field,
+                    sort_direction=sort_direction,
+                    preserve_phase=True,
                 )
-                if product is None:
-                    continue
-                existing = bucket.get(product.id)
-                if existing is None:
-                    bucket[product.id] = product
-                    continue
-                for category in product.categories:
-                    if category and category not in existing.categories:
-                        existing.categories.append(category)
-            if progress_callback:
-                progress_callback(index, total_jobs, len(bucket))
-            if index == len(jobs) or index % 2 == 0:
-                self._emit_partial(list(bucket.values()))
+                return name, items
+
+            with ThreadPoolExecutor(max_workers=len(wave)) as pool:
+                futures = [pool.submit(_load, job) for job in wave]
+                for future in as_completed(futures):
+                    name, items = future.result()
+                    for raw in items:
+                        product = self._map_catalog_item(
+                            raw,
+                            default_category=name,
+                            skip_page_fallback=True,
+                        )
+                        if product is None:
+                            continue
+                        existing = bucket.get(product.id)
+                        if existing is None:
+                            bucket[product.id] = product
+                            continue
+                        for category in product.categories:
+                            if category and category not in existing.categories:
+                                existing.categories.append(category)
+                    finished += 1
+                    if progress_callback:
+                        progress_callback(finished, total_jobs, len(bucket))
+            self._emit_partial(list(bucket.values()))
 
         giant = max(counts.values(), default=0)
         reachable = sum(
