@@ -80,6 +80,7 @@ class ShopBaseCrawler(BaseCrawler):
         # None = gọi thẳng. Gắn proxy khi IP máy chủ bị shop chặn catalog.
         self._catalog_proxy: str | None = None
         self._catalog_route_ready = False
+        self._catalog_window_count = 0
         self._catalog_session = self._new_catalog_session()
         self._shop_name_cache: str | None = None
         self._catalog_supported: bool | None = None
@@ -94,7 +95,8 @@ class ShopBaseCrawler(BaseCrawler):
         session.headers["Accept"] = "application/json"
         return session
 
-    def _catalog_ping(self, proxy: str | None) -> bool:
+    def _route_product_count(self, proxy: str | None) -> int:
+        """-1 khi request hỏng. 0 khi body rỗng. >0 khi catalog trả số SP."""
         session = create_http_session(proxy)
         session.headers["User-Agent"] = DEFAULT_USER_AGENT
         session.headers["Accept"] = "application/json"
@@ -102,30 +104,58 @@ class ShopBaseCrawler(BaseCrawler):
             resp = session.get(
                 f"{self.site_url}{CATALOG_LIST_API}",
                 params={"limit": 1, "page": 1},
-                timeout=12,
+                timeout=10,
             )
-            if resp.status_code == 200 and isinstance(resp.json().get("result"), dict):
-                return True
-        except (requests.RequestException, ValueError):
-            return False
-        return False
+        except requests.RequestException:
+            return -1
+        if resp.status_code != 200:
+            return -1
+        try:
+            result = resp.json().get("result")
+        except ValueError:
+            return -1
+        if not isinstance(result, dict):
+            return -1
+        try:
+            count = int(result.get("count") or 0)
+        except (TypeError, ValueError):
+            count = 0
+        if count <= 0 and not result.get("items"):
+            return 0
+        return count
 
     def _ensure_catalog_route(self) -> None:
-        """IP crawl bị shop giới hạn thì đếm qua proxy đã lưu, không trả 0 SP."""
+        """Chỉ khóa đường nào trả được số SP. Body rỗng không được tính là thành công."""
         if self._catalog_route_ready:
             return
-        if self._catalog_ping(None):
+        direct = self._route_product_count(None)
+        if direct > 0:
             self._catalog_proxy = None
+            self._catalog_window_count = direct
             self._catalog_route_ready = True
             self._catalog_supported = True
             return
-        for proxy in self._proxy_candidates[:4]:
-            if self._catalog_ping(proxy):
-                self._catalog_proxy = proxy
-                self._catalog_route_ready = True
-                self._catalog_supported = True
-                return
+        candidates = self._proxy_candidates[:24]
+        for offset in range(0, len(candidates), 6):
+            wave = candidates[offset : offset + 6]
+            with ThreadPoolExecutor(max_workers=len(wave)) as pool:
+                futures = {
+                    pool.submit(self._route_product_count, proxy): proxy for proxy in wave
+                }
+                for future in as_completed(futures):
+                    try:
+                        count = int(future.result() or 0)
+                    except (TypeError, ValueError):
+                        count = 0
+                    if count <= 0:
+                        continue
+                    self._catalog_proxy = futures[future]
+                    self._catalog_window_count = count
+                    self._catalog_route_ready = True
+                    self._catalog_supported = True
+                    return
         self._catalog_route_ready = True
+        self._catalog_window_count = 0
 
     def _emit_partial(self, products: list[Product]) -> None:
         self.last_products = list(products)
@@ -239,12 +269,22 @@ class ShopBaseCrawler(BaseCrawler):
                     max_sitemaps * CATALOG_PAGE_SIZE,
                     self._catalog_reported_count(collection_handle),
                 )
-            reported = self._catalog_reported_count(collection_handle)
+            if collection_handle:
+                reported = self._catalog_reported_count(collection_handle)
+            else:
+                # Giữ số của request đã thành công. Gọi lại dễ gặp body rỗng và thành 0 SP.
+                reported = int(self._catalog_window_count or 0)
+                if reported <= 0:
+                    reported = self._catalog_reported_count()
             if reported and reported < CATALOG_COUNT_CAP:
                 return reported
             if reported >= CATALOG_COUNT_CAP and not collection_handle:
                 # Cửa sổ catalog chỉ 9.950 SP. Tổng thật là collection lớn nhất của shop đó.
-                return max(reported, self._max_collection_count())
+                try:
+                    extra = self._max_collection_count()
+                except Exception:
+                    extra = 0
+                return max(reported, extra)
             if reported:
                 return reported
             if collection_handle:
@@ -263,7 +303,7 @@ class ShopBaseCrawler(BaseCrawler):
         categories = self._list_collections_from_api(include_counts=False)
         if not categories:
             return 0
-        workers = min(CATALOG_LIST_MAX_WORKERS, len(categories))
+        workers = min(3, len(categories))
         best = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [
@@ -436,24 +476,10 @@ class ShopBaseCrawler(BaseCrawler):
 
     def _catalog_api_available(self) -> bool:
         self._ensure_catalog_route()
-        if self._catalog_supported is True:
+        if self._catalog_window_count > 0:
+            self._catalog_supported = True
             return True
-        # Không ghi nhớ một lần 404. ShopBase trả 404 khi hết lượt gọi, request sau vẫn có data.
-        for attempt in range(3):
-            try:
-                resp = self._new_catalog_session().get(
-                    f"{self.site_url}{CATALOG_LIST_API}",
-                    params={"limit": 1, "page": 1},
-                    timeout=20,
-                )
-                if resp.status_code == 200 and isinstance(resp.json().get("result"), dict):
-                    self._catalog_supported = True
-                    return True
-            except (requests.RequestException, ValueError):
-                pass
-            if attempt < 2:
-                time.sleep(0.6 * (attempt + 1))
-        return False
+        return self._catalog_supported is True
 
     def _fetch_catalog_page(
         self,
@@ -1529,12 +1555,24 @@ class ShopBaseCrawler(BaseCrawler):
         return found
 
     def _parse_sitemap_locs(self, sitemap_url: str) -> list[str]:
+        sessions = [self.session, create_http_session(None)]
+        if self._catalog_proxy:
+            sessions.insert(0, create_http_session(self._catalog_proxy))
+        resp = None
+        for session in sessions:
+            try:
+                resp = session.get(sitemap_url, timeout=20)
+            except requests.RequestException:
+                resp = None
+                continue
+            if resp.status_code == 200 and resp.text.strip():
+                break
+            resp = None
+        if resp is None:
+            return []
         try:
-            resp = self.session.get(sitemap_url, timeout=25)
-            if resp.status_code != 200 or not resp.text.strip():
-                return []
             root = ET.fromstring(resp.text)
-        except (requests.RequestException, ET.ParseError):
+        except ET.ParseError:
             return []
 
         locs: list[str] = []
