@@ -218,7 +218,9 @@ class ShopBaseCrawler(BaseCrawler):
                         return int(meta.get("product_count") or 0)
                     except (TypeError, ValueError):
                         return 0
-            return len(self._list_catalog_handles(collection_handle=collection_handle))
+            listed = len(self._list_catalog_handles(collection_handle=collection_handle))
+            if listed:
+                return listed
         return len(self._discover_product_urls(max_sitemaps=max_sitemaps))
 
     def _max_collection_count(self) -> int:
@@ -229,7 +231,11 @@ class ShopBaseCrawler(BaseCrawler):
         best = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [
-                pool.submit(self._catalog_reported_count, str(item.get("slug") or ""))
+                pool.submit(
+                    self._catalog_reported_count,
+                    str(item.get("slug") or ""),
+                    attempts=1,
+                )
                 for item in categories
                 if item.get("slug")
             ]
@@ -245,19 +251,25 @@ class ShopBaseCrawler(BaseCrawler):
         *,
         include_counts: bool = False,
     ) -> list[dict[str, Any]]:
-        if not self._catalog_api_available():
-            return []
-
         categories: list[dict[str, Any]] = []
         page = 1
         while page <= 40:
+            resp = None
+            for attempt in range(3):
+                try:
+                    resp = self._new_catalog_session().get(
+                        f"{self.site_url}{CATALOG_COLLECTIONS_API}",
+                        params={"limit": 50, "page": page},
+                        timeout=20,
+                    )
+                    if resp.status_code == 200:
+                        break
+                except requests.RequestException:
+                    resp = None
+                if attempt < 2:
+                    time.sleep(0.6 * (attempt + 1))
             try:
-                resp = self._catalog_session.get(
-                    f"{self.site_url}{CATALOG_COLLECTIONS_API}",
-                    params={"limit": 50, "page": page},
-                    timeout=20,
-                )
-                if resp.status_code != 200:
+                if resp is None or resp.status_code != 200:
                     break
                 items = (resp.json().get("result") or {}).get("items") or []
                 if not items:
@@ -386,22 +398,24 @@ class ShopBaseCrawler(BaseCrawler):
         return False
 
     def _catalog_api_available(self) -> bool:
-        if self._catalog_supported is not None:
-            return self._catalog_supported
-        try:
-            resp = self._catalog_session.get(
-                f"{self.site_url}{CATALOG_LIST_API}",
-                params={"limit": 1, "page": 1},
-                timeout=15,
-            )
-            if resp.status_code != 200:
-                self._catalog_supported = False
-                return False
-            payload = resp.json()
-            self._catalog_supported = isinstance(payload.get("result"), dict)
-        except (requests.RequestException, ValueError):
-            self._catalog_supported = False
-        return bool(self._catalog_supported)
+        if self._catalog_supported is True:
+            return True
+        # Không ghi nhớ một lần 404. ShopBase trả 404 khi hết lượt gọi, request sau vẫn có data.
+        for attempt in range(3):
+            try:
+                resp = self._new_catalog_session().get(
+                    f"{self.site_url}{CATALOG_LIST_API}",
+                    params={"limit": 1, "page": 1},
+                    timeout=20,
+                )
+                if resp.status_code == 200 and isinstance(resp.json().get("result"), dict):
+                    self._catalog_supported = True
+                    return True
+            except (requests.RequestException, ValueError):
+                pass
+            if attempt < 2:
+                time.sleep(0.6 * (attempt + 1))
+        return False
 
     def _fetch_catalog_page(
         self,
@@ -480,22 +494,26 @@ class ShopBaseCrawler(BaseCrawler):
         collection_handle: str | None = None,
         *,
         query: str | None = None,
+        attempts: int = 3,
     ) -> int:
-        result = self._fetch_catalog_page(
-            1,
-            collection_handle=collection_handle,
-            query=query,
-            session=self._new_catalog_session(),
-        )
-        if not result:
-            return 0
-        count = result.get("count")
-        if count is None:
-            return len(result.get("items") or [])
-        try:
-            return int(count)
-        except (TypeError, ValueError):
-            return 0
+        for attempt in range(max(1, attempts)):
+            result = self._fetch_catalog_page(
+                1,
+                collection_handle=collection_handle,
+                query=query,
+                session=self._new_catalog_session(),
+            )
+            if result and not result.get("_catalog_end"):
+                count = result.get("count")
+                if count is None:
+                    return len(result.get("items") or [])
+                try:
+                    return int(count)
+                except (TypeError, ValueError):
+                    return 0
+            if attempt < attempts - 1:
+                time.sleep(0.6 * (attempt + 1))
+        return 0
 
     def _catalog_total_pages(
         self,

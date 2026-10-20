@@ -916,11 +916,9 @@ def _probe_shopbase(
             url_category_slug=url_category or target.handle,
         )
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        total_future = executor.submit(crawler.count_sitemap_products)
-        categories_future = executor.submit(crawler.probe_categories)
-        total = total_future.result()
-        categories_raw, _ = categories_future.result()
+    # Tuần tự: đếm song song dễ đốt hết lượt API và ra 0 SP / 0 danh mục.
+    categories_raw, _ = crawler.probe_categories()
+    total = crawler.count_sitemap_products()
 
     categories = [
         ShopCategoryInfo(

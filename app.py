@@ -520,14 +520,16 @@ def _cached_generic_product_count(url: str) -> int | None:
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def _cached_probe_shop(  # v11: campaign shop đếm danh mục lá
+def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     url: str,
     woo_key: str,
     woo_secret: str,
     shopify_token: str,
     proxy_url: str,
     probe_workers: int,
+    _cache_ver: str = "shopbase-count-v12",
 ) -> dict:
+    del _cache_ver
     creds = CrawlCredentials.load()
     if shopify_token:
         creds.shopify_token = shopify_token
