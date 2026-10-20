@@ -117,22 +117,24 @@ def describe_url(url: str, proxy_url: str | None = None) -> dict:
                 last_exc = exc2
 
     if target is None and last_exc is not None:
-        # Cloudflare Woo — curl_cffi direct khi requests + proxy đều fail.
+        # Woo chậm / chặn IP VPS — sniff payload nhẹ + lần lượt vài proxy.
         try:
             from urllib.parse import urlparse
 
-            from utils.curl_http import curl_get_json_list
+            from utils.curl_http import sniff_woo_store_api
             from utils.detector import normalize_url
+            from utils.http_session import parse_proxy_list
 
             normalized = normalize_url(url.strip())
             parsed = urlparse(normalized)
             base = f"{parsed.scheme}://{parsed.netloc}"
-            data, status, _headers = curl_get_json_list(
-                f"{base}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
+            proxies = parse_proxy_list(cleaned_proxy)
+            if sniff_woo_store_api(
+                base,
                 timeout=20,
-            )
-            if status == 200 and isinstance(data, list):
+                proxies=proxies,
+                max_proxy_tries=8,
+            ):
                 target = DetectedTarget(
                     platform="woocommerce",
                     crawl_type="shop",

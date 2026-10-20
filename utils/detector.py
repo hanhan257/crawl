@@ -155,30 +155,37 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         return None
 
     def check_woo_store() -> str | None:
-        # curl_cffi trước: impersonate Chrome, timeout dài hơn — tránh miss Woo chậm.
+        # Payload tối thiểu (_fields=id). Host chậm / chặn VPS → thử proxy kèm theo.
         try:
-            from utils.curl_http import curl_get_json_list
+            from utils.curl_http import sniff_woo_store_api
+            from utils.http_session import parse_proxy_list
 
-            data, status, _headers = curl_get_json_list(
-                f"{base}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
+            proxies: list[str] = []
+            if session is not None and session.proxies:
+                proxy_val = session.proxies.get("https") or session.proxies.get("http")
+                if proxy_val:
+                    proxies.append(str(proxy_val))
+            try:
+                from utils.credentials import CrawlCredentials
+
+                proxies.extend(parse_proxy_list(CrawlCredentials.load().proxy_url))
+            except Exception:
+                pass
+            # Giữ thứ tự, bỏ trùng
+            seen: set[str] = set()
+            ordered: list[str] = []
+            for item in proxies:
+                if item and item not in seen:
+                    seen.add(item)
+                    ordered.append(item)
+            if sniff_woo_store_api(
+                base,
                 timeout=_WOO_SNIFF_TIMEOUT,
-            )
-            if status == 200 and isinstance(data, list):
+                proxies=ordered,
+                max_proxy_tries=5,
+            ):
                 return "woocommerce"
         except Exception:
-            pass
-        try:
-            woo_store = fresh_session().get(
-                f"{base}/wp-json/wc/store/v1/products",
-                params={"per_page": 1},
-                timeout=_WOO_SNIFF_TIMEOUT,
-            )
-            if woo_store.status_code == 200:
-                data = woo_store.json()
-                if isinstance(data, list):
-                    return "woocommerce"
-        except (requests.RequestException, ValueError):
             pass
         return None
 
@@ -388,16 +395,28 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
         except Exception:
             pass
 
-    # Cloudflare / host chậm — thử lại Woo Store API qua curl_cffi (direct).
+    # Cloudflare / host chặn IP VPS — sniff Woo nhẹ + vài proxy.
     try:
-        from utils.curl_http import curl_get_json_list
+        from utils.curl_http import sniff_woo_store_api
+        from utils.http_session import parse_proxy_list
 
-        data, status, _headers = curl_get_json_list(
-            f"{base}/wp-json/wc/store/v1/products",
-            params={"per_page": 1},
+        proxies: list[str] = []
+        if session is not None and session.proxies:
+            proxy_val = session.proxies.get("https") or session.proxies.get("http")
+            if proxy_val:
+                proxies.append(str(proxy_val))
+        try:
+            from utils.credentials import CrawlCredentials
+
+            proxies.extend(parse_proxy_list(CrawlCredentials.load().proxy_url))
+        except Exception:
+            pass
+        if sniff_woo_store_api(
+            base,
             timeout=_WOO_SNIFF_TIMEOUT,
-        )
-        if status == 200 and isinstance(data, list):
+            proxies=proxies,
+            max_proxy_tries=5,
+        ):
             return "woocommerce"
     except Exception:
         pass

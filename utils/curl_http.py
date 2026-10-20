@@ -125,3 +125,81 @@ def curl_get_json_list(
     if isinstance(data, list):
         return data, response.status_code, response.headers
     return None, response.status_code, response.headers
+
+
+def sniff_woo_store_api(
+    base_url: str,
+    *,
+    timeout: float = 12,
+    proxies: list[str] | None = None,
+    max_proxy_tries: int = 5,
+) -> bool:
+    """Nhận diện Woo qua Store API nhẹ (`_fields=id`) — direct rồi lần lượt proxy.
+
+    Fanssio và một số Flatsome trả description rất nặng; `_fields=id` chỉ ~15 byte.
+    """
+    base = (base_url or "").rstrip("/")
+    if not base:
+        return False
+    url = f"{base}/wp-json/wc/store/v1/products"
+    params = {"per_page": 1, "_fields": "id"}
+
+    # Direct curl_cffi
+    data, status, _headers = curl_get_json_list(
+        url, params=params, timeout=timeout, proxy=None
+    )
+    if status == 200 and isinstance(data, list):
+        return True
+
+    # Direct requests (khi thiếu curl_cffi)
+    try:
+        import requests
+
+        resp = requests.get(
+            url,
+            params=params,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                ),
+                "Accept": "application/json",
+            },
+            timeout=timeout,
+        )
+        if resp.status_code == 200 and isinstance(resp.json(), list):
+            return True
+    except Exception:
+        pass
+
+    for proxy in (proxies or [])[: max(0, int(max_proxy_tries))]:
+        if not proxy:
+            continue
+        data, status, _headers = curl_get_json_list(
+            url, params=params, timeout=timeout, proxy=proxy
+        )
+        if status == 200 and isinstance(data, list):
+            return True
+        try:
+            import requests
+
+            resp = requests.get(
+                url,
+                params=params,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/120.0.0.0 Safari/537.36"
+                    ),
+                    "Accept": "application/json",
+                },
+                proxies={"http": proxy, "https": proxy},
+                timeout=timeout,
+            )
+            if resp.status_code == 200 and isinstance(resp.json(), list):
+                return True
+        except Exception:
+            continue
+    return False
