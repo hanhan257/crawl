@@ -156,7 +156,11 @@ def fetch_pages_in_waves(
         return first_batch[:limit], pages_fetched
 
     if len(first_batch) < per_page:
-        return list(first_batch), pages_fetched
+        # Hết catalog chỉ khi header báo một trang. Shop trả 10 SP dù xin 100
+        # vẫn đi tiếp. ShopBase không dùng hàm này.
+        if not first_batch or (estimated_pages is not None and estimated_pages <= 1):
+            return list(first_batch), pages_fetched
+        per_page = len(first_batch)
 
     workers = max(1, min(max_workers, API_LIST_MAX_WORKERS))
     end_page = estimated_pages or max_pages

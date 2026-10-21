@@ -101,6 +101,7 @@ class WooCommerceCrawler(BaseCrawler):
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self.session.verify = verify_ssl
         self._api_total_pages: int | None = None
+        self._api_total_items: int | None = None
         self._parallel_fetch = False
         self._store_api_direct = False
         self._use_curl_cffi = False
@@ -563,6 +564,43 @@ class WooCommerceCrawler(BaseCrawler):
                 continue
         return None
 
+    @staticmethod
+    def _total_items_from_headers(response: requests.Response | CurlResponse) -> int | None:
+        for key in ("X-WP-Total", "x-wp-total"):
+            raw = response.headers.get(key)
+            if not raw:
+                continue
+            try:
+                return max(0, int(raw))
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    def _remember_catalog_totals(self, response: requests.Response | CurlResponse) -> None:
+        self._api_total_pages = self._total_pages_from_headers(response)
+        self._api_total_items = self._total_items_from_headers(response)
+
+    def _fit_server_page_size(
+        self,
+        per_page: int,
+        first_batch: list[dict[str, Any]],
+        estimated_pages: int | None,
+    ) -> tuple[int, int | None]:
+        """Shop trả ít hơn per_page xin (thường 10) nhưng header vẫn báo cả catalog.
+
+        Không dừng ở trang đầu. Số trang tính lại theo đúng kích thước trang server trả.
+        """
+        got = len(first_batch)
+        total = self._api_total_items
+        more = (total is not None and total > got) or (
+            estimated_pages is not None and estimated_pages > 1
+        )
+        if got <= 0 or got >= per_page or not more:
+            return per_page, estimated_pages
+        if total is not None and total > got:
+            estimated_pages = max(1, (total + got - 1) // got)
+        return got, estimated_pages
+
     def _fetch_store_page(self, page: int, params_base: dict[str, Any]) -> list[dict[str, Any]]:
         batch = self._fetch_store_page_once(page, params_base)
         if (
@@ -581,7 +619,7 @@ class WooCommerceCrawler(BaseCrawler):
         params = {**params_base, "page": page}
         response = self._store_api_get(params)
         if page == 1:
-            self._api_total_pages = self._total_pages_from_headers(response)
+            self._remember_catalog_totals(response)
         batch = response.json()
         if not isinstance(batch, list):
             return []
@@ -600,7 +638,7 @@ class WooCommerceCrawler(BaseCrawler):
             timeout=DEFAULT_REQUEST_TIMEOUT,
         )
         if page == 1:
-            self._api_total_pages = self._total_pages_from_headers(response)
+            self._remember_catalog_totals(response)
         batch = response.json()
         if not isinstance(batch, list):
             return []
@@ -634,8 +672,12 @@ class WooCommerceCrawler(BaseCrawler):
             categories = [search]
 
         self._api_total_pages = None
+        self._api_total_items = None
         first_batch = self._fetch_store_page(1, params_base)
         estimated_pages = self._api_total_pages
+        per_page, estimated_pages = self._fit_server_page_size(
+            per_page, first_batch, estimated_pages
+        )
         if estimated_pages is None:
             if max_pages:
                 estimated_pages = max_pages
@@ -685,8 +727,12 @@ class WooCommerceCrawler(BaseCrawler):
             params_base["search"] = search
 
         self._api_total_pages = None
+        self._api_total_items = None
         first_batch = self._fetch_rest_page(1, params_base)
         estimated_pages = self._api_total_pages
+        per_page, estimated_pages = self._fit_server_page_size(
+            per_page, first_batch, estimated_pages
+        )
         if estimated_pages is None:
             if max_pages:
                 estimated_pages = max_pages
