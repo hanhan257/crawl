@@ -506,6 +506,38 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "searchspring":
+        from crawlers.searchspring import SearchSpringCrawler
+
+        crawler = SearchSpringCrawler(
+            site_url=target.base_url or target.url,
+            proxy_url=effective_proxy,
+        )
+        crawler.partial_callback = partial_callback
+        try:
+            products = crawler.crawl(
+                limit=limit,
+                max_pages=max_pages,
+                category_slug=category_slug,
+                progress_callback=progress_callback,
+                max_workers=workers,
+            )
+        except Exception as exc:
+            raise CrawlError(
+                f"SearchSpring: {exc}",
+                partial_products=crawler.last_products,
+            ) from exc
+        if not products:
+            raise CrawlError(
+                "SearchSpring: không crawl được sản phẩm nào từ link này.",
+                partial_products=crawler.last_products,
+            )
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
+
     if target.platform == "teemill":
 
         from crawlers.teemill import TeemillCrawler

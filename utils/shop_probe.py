@@ -304,6 +304,8 @@ def probe_shop_stats(
         return _probe_campaign(target, base_url, url_category, max_workers=max_workers)
     if target.platform == "teemill":
         return _probe_teemill(target, base_url, url_category)
+    if target.platform == "searchspring":
+        return _probe_searchspring(target, base_url, url_category, credentials)
     if target.platform == "trendsi":
         return _probe_trendsi(target, base_url, url_category)
     if target.platform == "magento":
@@ -762,6 +764,53 @@ def _probe_campaign(
         total_products=total,
         categories=categories,
         url_category_slug=slug or url_category,
+    )
+
+
+def _probe_searchspring(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+    credentials: CrawlCredentials | None = None,
+) -> ShopProbeResult:
+    from crawlers.searchspring import SearchSpringCrawler
+
+    proxy = credentials.proxy_url if credentials is not None else None
+    crawler = SearchSpringCrawler(base_url, proxy_url=proxy)
+    chosen = (url_category or "").strip() or None
+    try:
+        total = crawler.count_products(chosen)
+        rows = crawler.list_categories()
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=False,
+            platform="searchspring",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"SearchSpring: không đếm được catalog ({exc}).",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    categories = [
+        ShopCategoryInfo(
+            slug=str(row.get("slug") or ""),
+            name=str(row.get("name") or row.get("slug") or ""),
+            count=row.get("count"),
+        )
+        for row in rows
+        if row.get("slug")
+    ]
+    return ShopProbeResult(
+        ok=True,
+        platform="searchspring",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=_stats_message(total, len(categories)),
+        total_products=total,
+        categories=categories,
+        url_category_slug=url_category,
     )
 
 

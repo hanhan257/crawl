@@ -254,6 +254,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_searchspring() -> str | None:
+        try:
+            from crawlers.searchspring import SearchSpringCrawler
+
+            if SearchSpringCrawler.site_supports(base, session=fresh_session()):
+                return "searchspring"
+        except Exception:
+            pass
+        return None
+
     def check_campaign() -> str | None:
         try:
             from crawlers.campaign_shop import CampaignShopCrawler
@@ -377,6 +387,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     platform = _first_platform(
         (
+            check_searchspring,
             check_campaign,
             check_wp_json,
             check_teemill,
@@ -458,6 +469,14 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
             return shopify_target
         return DetectedTarget(
             platform="shopify",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
+    if platform == "searchspring":
+        return DetectedTarget(
+            platform="searchspring",
             crawl_type="shop",
             url=normalized,
             base_url=f"{parsed.scheme}://{parsed.netloc}",
@@ -562,8 +581,9 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Campaign shop, Teemill, Trendsi, "
-        "Magento/Jomashop, Redbubble, Fine Art America, Web thuần (Next.js / HTML / sitemap).\n"
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, BigCommerce + SearchSpring, "
+        "Campaign shop, Teemill, Trendsi, Magento/Jomashop, Redbubble, Fine Art America, "
+        "Web thuần (Next.js / HTML / sitemap).\n"
         "Ví dụ: jomashop.com/jewelry.html · thewildlifetrustsshop.com/collection/... · keeptee.com",
         platform="unknown",
     )

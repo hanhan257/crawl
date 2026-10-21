@@ -2565,9 +2565,6 @@ def run_crawl_only(
                 "(tránh timeout/thiếu SP). Bỏ tick **Description** để crawl catalog nhanh hơn."
             )
         if crawl_platform == "shopbase":
-            # Catalog API rơi trang nếu bắn quá 8 request một lúc.
-            if not wants_shopbase_desc:
-                workers = min(workers, 8)
             st.session_state["_shopbase_progress_phase"] = "pages"
 
         if target_preview and crawl_platform != "redbubble":
@@ -2575,53 +2572,75 @@ def run_crawl_only(
             progress_text = st.empty()
 
             def progress_callback(current: int, total: int, matched: int) -> None:
-                _update_crawl_live_ui(action_area, live_area, matched, expected_total)
+                phase = (
+                    st.session_state.get("_shopbase_progress_phase") or "list"
+                    if crawl_platform == "shopbase"
+                    else ""
+                )
+                counting = crawl_platform == "shopbase" and phase == "pages"
+                _update_crawl_live_ui(
+                    action_area,
+                    live_area,
+                    0 if counting else matched,
+                    expected_total,
+                    counting=counting,
+                )
                 if progress_bar is not None and total:
-                    ratio = min(current / total, 1.0)
-                    if crawl_platform == "generic-web":
-                        label = f"Đang xử lý {current}/{total} · {matched} SP"
-                    elif crawl_platform == "shopbase":
-                        phase = st.session_state.get("_shopbase_progress_phase") or "list"
-                        if wants_shopbase_desc and phase == "description":
+                    if counting:
+                        ratio = 0.0
+                        if total > 1:
+                            label = f"Đang đếm SP · trang {current}/{total} · chưa crawl sản phẩm"
+                        else:
+                            label = "Đang đếm SP · chưa crawl sản phẩm"
+                    else:
+                        ratio = min(current / total, 1.0)
+                        if crawl_platform == "generic-web":
+                            label = f"Đang xử lý {current}/{total} · {matched} SP"
+                        elif crawl_platform == "shopbase":
+                            if wants_shopbase_desc and phase == "description":
+                                label = (
+                                    f"Mô tả {current}/{total} · {matched} SP · {workers} luồng"
+                                )
+                            elif phase == "list":
+                                label = (
+                                    f"Đang crawl sản phẩm {current}/{total} · {matched} SP · {workers} luồng"
+                                )
+                            elif phase == "collections":
+                                label = (
+                                    f"Nhóm {current}/{total} · {matched} SP · {workers} luồng"
+                                )
+                            else:
+                                label = (
+                                    f"Đang đếm SP · trang {current}/{total} · chưa crawl sản phẩm"
+                                )
+                        elif crawl_platform == "trendsi":
                             label = (
-                                f"Mô tả {current}/{total} · {matched} SP · {workers} luồng"
+                                f"Chi tiết {current}/{total} · {matched} SP · {workers} luồng"
                             )
-                        elif phase == "list":
+                        elif crawl_platform == "fineartamerica":
                             label = (
-                                f"Danh sách {current}/{total} · {matched} SP · {workers} luồng"
+                                f"Artwork {current}/{total} · {matched} SP · {workers} luồng"
                             )
-                        elif phase == "collections":
+                        elif (
+                            target_preview is not None
+                            and getattr(target_preview, "crawl_type", "") == "sitemap"
+                        ):
                             label = (
-                                f"Nhóm {current}/{total} · {matched} SP · {workers} luồng"
+                                f"Sitemap {current}/{total} · {matched} SP · {workers} luồng"
+                            )
+                        elif st.session_state.get("crawl_shopify_hydrogen"):
+                            label = (
+                                f"Athletes {current}/{total} · {matched} SP · {workers} luồng"
                             )
                         else:
-                            label = (
-                                f"Trang {current}/{total} · {matched} SP · {workers} luồng"
-                            )
-                    elif crawl_platform == "trendsi":
-                        label = (
-                            f"Chi tiết {current}/{total} · {matched} SP · {workers} luồng"
-                        )
-                    elif crawl_platform == "fineartamerica":
-                        label = (
-                            f"Artwork {current}/{total} · {matched} SP · {workers} luồng"
-                        )
-                    elif (
-                        target_preview is not None
-                        and getattr(target_preview, "crawl_type", "") == "sitemap"
-                    ):
-                        label = (
-                            f"Sitemap {current}/{total} · {matched} SP · {workers} luồng"
-                        )
-                    elif st.session_state.get("crawl_shopify_hydrogen"):
-                        label = (
-                            f"Athletes {current}/{total} · {matched} SP · {workers} luồng"
-                        )
-                    else:
-                        label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
+                            label = f"Trang {current}/{total} · {matched} SP · {workers} luồng"
                     progress_bar.progress(ratio, text=label)
                 if progress_text is not None:
-                    if crawl_platform == "generic-web" and total:
+                    if counting:
+                        progress_text.caption(
+                            "ShopBase đang đếm sản phẩm trong catalog. **Chưa crawl sản phẩm.**"
+                        )
+                    elif crawl_platform == "generic-web" and total:
                         est_min = max(1, int(total * 1.4 / 60 / max(workers, 1)))
                         progress_text.caption(
                             f"Web thuần — ước tính **~{est_min} phút** với {workers} luồng."
@@ -3063,7 +3082,14 @@ def _format_sp_count(count: int | None) -> str:
     return f"{count:,}".replace(",", ".")
 
 
-def _crawl_status_label(matched: int, expected_total: int | None = None) -> str:
+def _crawl_status_label(
+    matched: int,
+    expected_total: int | None = None,
+    *,
+    counting: bool = False,
+) -> str:
+    if counting:
+        return "Đang đếm SP · chưa crawl sản phẩm"
     count_text = _format_sp_count(matched)
     if expected_total is not None and expected_total > 0:
         return (
@@ -3077,19 +3103,25 @@ def _update_crawl_live_ui(
     live_area,
     matched: int,
     expected_total: int | None = None,
+    *,
+    counting: bool = False,
 ) -> None:
-    st.session_state.crawl_matched_count = matched
-    label = _crawl_status_label(matched, expected_total)
+    if not counting:
+        st.session_state.crawl_matched_count = matched
+    label = _crawl_status_label(matched, expected_total, counting=counting)
     if action_area is not None:
         action_area.markdown(
             f'<div class="crawl-busy-btn">{html.escape(label)}</div>',
             unsafe_allow_html=True,
         )
     if live_area is not None:
-        parts = [f"**{_format_sp_count(matched)}** SP đã crawl"]
-        if expected_total is not None and expected_total > 0:
-            parts.append(f"/ ~**{_format_sp_count(expected_total)}** dự kiến")
-        live_area.info(" · ".join(parts))
+        if counting:
+            live_area.info("Đang đếm sản phẩm trong catalog. **Chưa crawl sản phẩm.**")
+        else:
+            parts = [f"**{_format_sp_count(matched)}** SP đã crawl"]
+            if expected_total is not None and expected_total > 0:
+                parts.append(f"/ ~**{_format_sp_count(expected_total)}** dự kiến")
+            live_area.info(" · ".join(parts))
 
 
 def render_crawl_category_pills(probe: dict) -> None:

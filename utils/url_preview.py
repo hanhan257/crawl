@@ -13,6 +13,7 @@ PLATFORM_LABELS = {
     "redbubble": "Redbubble",
     "fineartamerica": "Fine Art America",
     "generic-web": "Web thuần",
+    "searchspring": "BigCommerce + SearchSpring",
 }
 
 CRAWL_TYPE_LABELS = {
@@ -84,6 +85,10 @@ CRAWL_HINTS = {
     ("generic-web", "category"): "Link danh mục → đếm SP trên link đó và crawl (.html, /shop/..., /category/...)",
     ("generic-web", "search"): "Link tìm kiếm (vd. /catalogsearch/result/?q=...)",
     ("generic-web", "product"): "Link sản phẩm (/product/... hoặc .html)",
+    ("searchspring", "shop"): (
+        "BigCommerce dùng SearchSpring làm catalog. "
+        "Trang chủ → chia theo danh mục (mỗi bộ lọc tối đa 10.000 SP) rồi lấy title, giá, ảnh, link."
+    ),
 }
 
 

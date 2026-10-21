@@ -34,8 +34,8 @@ CATALOG_LIST_API = "/api/catalog/next/products.json"
 CATALOG_DETAIL_API = "/api/catalog/next/product.json"
 CATALOG_COLLECTIONS_API = "/api/catalog/next/collections.json"
 CATALOG_PAGE_SIZE = 50
-# ShopBase catalog dễ rơi trang khi >8 request cùng lúc (số SP mỗi lần khác nhau).
-CATALOG_LIST_MAX_WORKERS = 8
+# Trần luồng khi tải danh sách catalog. Trang rỗng được thử lại ở vòng sau.
+CATALOG_LIST_MAX_WORKERS = 64
 # Trang 200 trả "Max result reached" — mỗi bộ lọc chỉ đọc được 199 trang.
 CATALOG_MAX_PAGES = 199
 CATALOG_MAX_ITEMS = CATALOG_PAGE_SIZE * CATALOG_MAX_PAGES
@@ -1084,7 +1084,7 @@ class ShopBaseCrawler(BaseCrawler):
         default_category: str = "",
     ) -> list[Product]:
         if progress_callback and not collection_handle and not (query or "").strip():
-            self.progress_phase = "list"
+            self.progress_phase = "pages"
             progress_callback(0, 1, 0)
         if self._catalog_api_available():
             self._shop_name()
