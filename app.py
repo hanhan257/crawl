@@ -507,7 +507,7 @@ def _cached_product_image(url: str, proxy_url: str, cache_nonce: int) -> bytes |
 
 
 @st.cache_data(show_spinner=False, ttl=900)
-def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "shopbase-sniff-v6") -> dict:
+def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "searchspring-sniff-v7") -> dict:
     # _cache_ver: đổi khi logic nhận diện Woo đổi — tránh cache miss cũ (vd. fanssio).
     return describe_url(url, proxy_url=proxy_url or None)
 
@@ -534,7 +534,7 @@ def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     proxy_url: str,
     probe_workers: int,
     probe_nonce: int = 0,
-    _cache_ver: str = "shopbase-count-v15",
+    _cache_ver: str = "searchspring-count-v16",
 ) -> dict:
     del probe_nonce
     del _cache_ver
@@ -2499,6 +2499,8 @@ def run_crawl_only(
                     category_slug,
                 )
                 preview = describe_url(crawl_url)
+            elif target.platform == "searchspring" and target.crawl_type == "shop":
+                category_filter = category_slug
             elif target.platform == "generic-web":
                 if getattr(target, "crawl_type", "") == "shop":
                     category_filter = category_slug
@@ -3125,7 +3127,7 @@ def render_crawl_category_pills(probe: dict) -> None:
             selection_mode="single",
             key="crawl_category_pill",
             label_visibility="collapsed",
-            width="content",
+            width="stretch",
         )
         return
 
@@ -3137,8 +3139,11 @@ def render_crawl_category_pills(probe: dict) -> None:
     st.markdown(
         """
 <style>
+    div[data-testid="stPills"],
     div[data-testid="stPills"] > div,
     div[data-testid="stPills"] [data-baseweb="button-group"] {
+        width: 100% !important;
+        max-width: 100% !important;
         flex-wrap: wrap !important;
         row-gap: 0.35rem !important;
     }
@@ -3155,7 +3160,7 @@ def render_crawl_category_pills(probe: dict) -> None:
         selection_mode="single",
         key="crawl_category_pill",
         label_visibility="collapsed",
-        width="content",
+        width="stretch",
     )
     picked = str(st.session_state.get("crawl_category_pill") or default)
     if picked and picked != "Tất cả":
@@ -3164,16 +3169,27 @@ def render_crawl_category_pills(probe: dict) -> None:
             st.session_state.crawl_expected_total = int(match["count"])
 
 
+def render_saved_crawl_category_pills() -> None:
+    """Danh mục render ngoài cột 2 nửa, để pill chiếm hết chiều ngang."""
+    probe = st.session_state.get("_crawl_category_probe")
+    if isinstance(probe, dict) and probe.get("categories"):
+        render_crawl_category_pills(probe)
+
+
 def render_url_preview(
     url: str,
     shopify_token: str = "",
     woo_key: str = "",
     woo_secret: str = "",
+    *,
+    include_categories: bool = True,
 ) -> None:
     if not url.strip():
+        st.session_state.pop("_crawl_category_probe", None)
         return
 
     if not _url_ready_for_probe(url):
+        st.session_state.pop("_crawl_category_probe", None)
         st.caption("Nhập đủ link shop (vd. `yourstore.com`) để nhận diện nền tảng.")
         return
 
@@ -3181,7 +3197,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Campaign shop · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · BigCommerce + SearchSpring · Campaign shop · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
         info = _cached_describe_url(
             cleaned,
             st.session_state.get("proxy_url", "") or "",
@@ -3394,7 +3410,13 @@ def render_url_preview(
                         64 if total > 20000 else 32,
                     )
             st.session_state["crawl_category_pill"] = default_cat
-        render_crawl_category_pills(probe)
+        if include_categories:
+            st.session_state.pop("_crawl_category_probe", None)
+            render_crawl_category_pills(probe)
+        else:
+            st.session_state["_crawl_category_probe"] = probe
+    else:
+        st.session_state.pop("_crawl_category_probe", None)
 
     if info.get("ok") and info.get("hint"):
         st.caption(info["hint"])
@@ -3773,7 +3795,9 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
         woo_key = st.session_state.get("crawl_woo_key", "")
         woo_secret = st.session_state.get("crawl_woo_secret", "")
 
-        render_url_preview(url, shopify_token, woo_key, woo_secret)
+        render_url_preview(
+            url, shopify_token, woo_key, woo_secret, include_categories=False
+        )
 
         if url.strip():
             url_info = describe_url(url.strip())
@@ -3803,6 +3827,8 @@ def render_crawl_panel(*, sitemap_mode: bool = False) -> tuple[str, int, int, st
             _clear_image_cache()
             st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
         st.markdown("</div>", unsafe_allow_html=True)
+
+    render_saved_crawl_category_pills()
 
     if sitemap_mode:
         from utils.sitemap_mode import product_sitemap_filename
@@ -3926,6 +3952,7 @@ def main() -> None:
                 clear_image_cache=_clear_image_cache,
                 run_crawl=run_crawl_only,
                 update_crawl_ui=_update_crawl_live_ui,
+                render_categories=render_saved_crawl_category_pills,
             )
     elif workflow_mode == "trendsi":
         with st.container(border=True):
@@ -3936,6 +3963,7 @@ def main() -> None:
                 clear_image_cache=_clear_image_cache,
                 run_crawl=run_crawl_only,
                 update_crawl_ui=_update_crawl_live_ui,
+                render_categories=render_saved_crawl_category_pills,
             )
     elif workflow_mode == "shopify":
         with st.container(border=True):
@@ -3946,6 +3974,7 @@ def main() -> None:
                 clear_image_cache=_clear_image_cache,
                 run_crawl=run_crawl_only,
                 update_crawl_ui=_update_crawl_live_ui,
+                render_categories=render_saved_crawl_category_pills,
             )
     elif workflow_mode == "filter-title":
         with st.container(border=True):

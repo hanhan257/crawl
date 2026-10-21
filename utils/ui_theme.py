@@ -663,6 +663,13 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     border: 1px solid var(--border-soft);
     border-radius: var(--radius-pill);
     padding: 0.2rem;
+    width: 100%;
+    max-width: 100%;
+}
+[data-testid="stPills"] [data-baseweb="button-group"] {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: wrap;
 }
 [data-testid="stPills"] button {
     border-radius: var(--radius-pill) !important;

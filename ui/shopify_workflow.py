@@ -87,6 +87,7 @@ def render_shopify_crawl_panel(
     clear_image_cache: Callable[[], None],
     run_crawl: Callable[..., None] | None = None,
     update_crawl_ui: Callable[..., None] | None = None,
+    render_categories: Callable[[], None] | None = None,
 ) -> tuple[str, int, int, bool]:
     """Bước 1 — link Shopify bên trái, cài đặt crawl bên phải."""
     st.markdown("### Bước 1 · Crawl Shopify")
@@ -118,7 +119,7 @@ def render_shopify_crawl_panel(
             else:
                 st.error(check["message"])
 
-        render_url_preview(url, "", "", "")
+        render_url_preview(url, "", "", "", include_categories=False)
 
     with right_col:
         st.markdown('<div class="crawl-side-tools">', unsafe_allow_html=True)
@@ -147,6 +148,9 @@ def render_shopify_crawl_panel(
             clear_image_cache()
             st.session_state.last_info = "Đã reset session HTTP + cache ảnh."
         st.markdown("</div>", unsafe_allow_html=True)
+
+    if render_categories is not None:
+        render_categories()
 
     render_crawl_limits_row(include_workers=True)
     render_crawl_description_format()
