@@ -507,7 +507,7 @@ def _cached_product_image(url: str, proxy_url: str, cache_nonce: int) -> bytes |
 
 
 @st.cache_data(show_spinner=False, ttl=900)
-def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "searchspring-sniff-v7") -> dict:
+def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "shopify-search-v8") -> dict:
     # _cache_ver: đổi khi logic nhận diện Woo đổi — tránh cache miss cũ (vd. fanssio).
     return describe_url(url, proxy_url=proxy_url or None)
 
@@ -534,7 +534,7 @@ def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     proxy_url: str,
     probe_workers: int,
     probe_nonce: int = 0,
-    _cache_ver: str = "searchspring-count-v16",
+    _cache_ver: str = "shopify-search-v17",
 ) -> dict:
     del probe_nonce
     del _cache_ver

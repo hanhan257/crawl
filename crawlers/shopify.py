@@ -24,6 +24,7 @@ from utils.http_session import ProxyRotator, create_http_session, reset_session
 CrawlProgressCallback = Callable[[int, int, int], None]
 SHOPIFY_SEARCH_HANDLE_PATTERN = re.compile(r'"handle"\s*:\s*"([^"]+)"')
 SHOPIFY_SEARCH_COUNT_PATTERN = re.compile(r"([\d][\d,]*)\s+items", re.I)
+SHOPIFY_SEARCH_PAGE_SIZE = 250
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -328,7 +329,13 @@ class ShopifyCrawler(BaseCrawler):
 
         handles = self._discover_search_handles(search, max_pages=max_pages)
         if not handles:
-            return []
+            return self._crawl_search_from_catalog(
+                search,
+                limit=limit,
+                max_pages=max_pages,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
 
         if limit is not None:
             handles = handles[:limit]
@@ -384,21 +391,13 @@ class ShopifyCrawler(BaseCrawler):
         return products
 
     def count_search_results(self, query: str) -> int | None:
-        try:
-            response = get_with_retry(
-                self.session,
-                f"{self.shop_url}/search",
-                params={"q": query.strip(), "type": "product"},
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-            )
-        except requests.RequestException:
+        html = self._fetch_search_html({"q": query.strip(), "type": "product"})
+        if not html:
             return None
-
-        match = SHOPIFY_SEARCH_COUNT_PATTERN.search(response.text)
+        match = SHOPIFY_SEARCH_COUNT_PATTERN.search(html)
         if match:
             return int(match.group(1).replace(",", ""))
-
-        handles = self._extract_search_handles_from_html(response.text)
+        handles = self._extract_search_handles_from_html(html)
         return len(handles) if handles else None
 
     def _discover_search_handles(
@@ -418,17 +417,11 @@ class ShopifyCrawler(BaseCrawler):
             if page > 1:
                 params["page"] = page
 
-            try:
-                response = get_with_retry(
-                    self.session,
-                    f"{self.shop_url}/search",
-                    params=params,
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
-                )
-            except requests.RequestException:
+            html = self._fetch_search_html(params)
+            if html is None:
                 break
 
-            page_handles = self._extract_search_handles_from_html(response.text)
+            page_handles = self._extract_search_handles_from_html(html)
             if not page_handles:
                 break
 
@@ -451,16 +444,152 @@ class ShopifyCrawler(BaseCrawler):
 
         return handles
 
+    def _fetch_search_html(self, params: dict[str, str | int]) -> str | None:
+        """Một request. Trang /search hay 429 — không retry dài, để crawl chuyển sang catalog."""
+        try:
+            response = self.session.get(
+                f"{self.shop_url}/search",
+                params=params,
+                timeout=(8, 20),
+                headers={"Accept": "text/html"},
+            )
+        except requests.RequestException:
+            return None
+        if response.status_code != 200 or not response.text:
+            return None
+        return response.text
+
+    def _crawl_search_from_catalog(
+        self,
+        query: str,
+        *,
+        limit: int | None = None,
+        max_pages: int | None = None,
+        max_workers: int = 8,
+        progress_callback: CrawlProgressCallback | None = None,
+    ) -> list[Product]:
+        """Lọc /products.json theo từ khóa khi trang /search không trả HTML."""
+        tokens = self._search_tokens(query)
+        if not tokens:
+            return []
+        self._skip_html_description = True
+        total_pages = self._search_catalog_pages(max_pages)
+        if total_pages <= 0:
+            return []
+        if progress_callback:
+            progress_callback(0, total_pages, 0)
+
+        products: dict[str, Product] = {}
+        lock = threading.Lock()
+        done = 0
+        workers = min(max(1, max_workers), 12, total_pages)
+
+        def fetch_page(page_num: int) -> list[dict[str, Any]]:
+            for attempt in range(3):
+                try:
+                    return self._fetch_public_page(page_num)
+                except requests.RequestException:
+                    if attempt == 2:
+                        return []
+                    time.sleep(0.4 * (attempt + 1))
+            return []
+
+        def absorb(batch: list[dict[str, Any]]) -> None:
+            nonlocal done
+            matched: list[Product] = []
+            for item in batch:
+                if not self._item_matches_search(item, tokens):
+                    continue
+                product = self._map_public_product(item)
+                if product.id:
+                    matched.append(product)
+            with lock:
+                for product in matched:
+                    products.setdefault(product.id, product)
+                done += 1
+                if progress_callback and (done == total_pages or done % 2 == 0):
+                    progress_callback(done, total_pages, len(products))
+
+        if workers <= 1:
+            for page_num in range(1, total_pages + 1):
+                absorb(fetch_page(page_num))
+                if limit and len(products) >= limit:
+                    break
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(fetch_page, page_num)
+                    for page_num in range(1, total_pages + 1)
+                ]
+                for future in as_completed(futures):
+                    absorb(future.result())
+
+        ordered = list(products.values())
+        if limit and limit > 0:
+            ordered = ordered[:limit]
+        if progress_callback and total_pages:
+            progress_callback(total_pages, total_pages, len(ordered))
+        return ordered
+
+    def _search_catalog_pages(self, max_pages: int | None) -> int:
+        published = 0
+        try:
+            response = self.session.get(f"{self.shop_url}/meta.json", timeout=15)
+            if response.status_code == 200:
+                published = int(response.json().get("published_products_count") or 0)
+        except (requests.RequestException, TypeError, ValueError):
+            published = 0
+        if published > 0:
+            pages = max(1, (published + SHOPIFY_SEARCH_PAGE_SIZE - 1) // SHOPIFY_SEARCH_PAGE_SIZE)
+        else:
+            pages = 40
+        if max_pages and max_pages > 0:
+            pages = min(pages, max_pages)
+        return pages
+
+    @staticmethod
+    def _search_tokens(query: str) -> list[str]:
+        tokens: list[str] = []
+        for part in re.split(r"\s+", query.strip().lower()):
+            if len(part) >= 2:
+                tokens.append(part)
+        return tokens
+
+    @staticmethod
+    def _item_matches_search(item: dict[str, Any], tokens: list[str]) -> bool:
+        tags = item.get("tags")
+        if isinstance(tags, list):
+            tag_text = " ".join(str(tag) for tag in tags)
+        else:
+            tag_text = str(tags or "")
+        blob = " ".join(
+            (
+                str(item.get("title") or ""),
+                str(item.get("product_type") or ""),
+                str(item.get("vendor") or ""),
+                tag_text,
+            )
+        ).lower()
+        return all(token in blob for token in tokens)
+
     @staticmethod
     def _extract_search_handles_from_html(html: str) -> list[str]:
         handles: list[str] = []
         seen: set[str] = set()
-        for match in SHOPIFY_SEARCH_HANDLE_PATTERN.finditer(html):
-            handle = match.group(1).strip()
-            if not handle or handle in seen:
-                continue
+
+        def add(handle: str) -> None:
+            handle = unquote(handle).strip().strip("/")
+            if not handle or handle in seen or handle.lower() in {"json", "js"}:
+                return
+            if handle.endswith(".json") or handle.endswith(".js"):
+                return
             seen.add(handle)
             handles.append(handle)
+
+        for match in SHOPIFY_SEARCH_HANDLE_PATTERN.finditer(html):
+            add(match.group(1))
+        for match in PRODUCT_PATH.finditer(html):
+            add(match.group(1))
         return handles
 
     def _fetch_collection_page(self, handle: str, page: int) -> list[dict[str, Any]]:

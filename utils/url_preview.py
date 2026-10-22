@@ -37,7 +37,10 @@ CRAWL_HINTS = {
         "Dán `sitemap_products_1.xml?from=&to=` → chỉ file đó, giữ nguyên dấu `?`."
     ),
     ("shopify", "category"): "Link collection → lấy SP trong collection đó",
-    ("shopify", "search"): "Link /search?q=từ-khóa → lấy SP khớp tìm kiếm (HTML storefront)",
+    ("shopify", "search"): (
+        "Link /search?q=từ-khóa&type=product → crawl đúng kết quả tìm kiếm. "
+        "Trang search bị chặn thì lọc catalog /products.json theo từ khóa."
+    ),
     ("shopify", "product"): "Link sản phẩm → lấy 1 SP",
     ("fineartamerica", "shop"): (
         "Trang chủ → sitemap popular (~10 triệu URL). "

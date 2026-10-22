@@ -436,6 +436,14 @@ def _check_shopify(
             return None
         if response.status_code in {401, 403}:
             return f"Shopify **{host}** chặn trang tìm kiếm ({response.status_code})."
+        # /search hay 429. Catalog API vẫn lọc được từ khóa.
+        catalog = session.get(
+            f"{base}/products.json",
+            params={"limit": 1},
+            timeout=PREFLIGHT_TIMEOUT,
+        )
+        if catalog.status_code == 200:
+            return None
         return f"Shopify search **{host}** trả HTTP {response.status_code}."
 
     if target and target.crawl_type == "sitemap":
