@@ -14,6 +14,7 @@ PLATFORM_LABELS = {
     "fineartamerica": "Fine Art America",
     "generic-web": "Web thuần",
     "searchspring": "BigCommerce + SearchSpring",
+    "shoplazza": "Shoplazza",
 }
 
 CRAWL_TYPE_LABELS = {
@@ -88,6 +89,17 @@ CRAWL_HINTS = {
     ("generic-web", "category"): "Link danh mục → đếm SP trên link đó và crawl (.html, /shop/..., /category/...)",
     ("generic-web", "search"): "Link tìm kiếm (vd. /catalogsearch/result/?q=...)",
     ("generic-web", "product"): "Link sản phẩm (/product/... hoặc .html)",
+    ("shoplazza", "shop"): (
+        "Shop Shoplazza (vd. soulmaty.com). "
+        "Trang chủ → lấy SP qua /api/collections/{id}/products. "
+        "Link /search?q=từ-khóa → crawl đúng kết quả tìm kiếm."
+    ),
+    ("shoplazza", "search"): (
+        "Link /search?q=từ-khóa → /api/search. "
+        "Để Giới hạn SP = 0 để lấy hết kết quả tìm kiếm."
+    ),
+    ("shoplazza", "category"): "Link /collections/... → lấy SP trong collection đó.",
+    ("shoplazza", "product"): "Link /products/... → lấy 1 SP.",
     ("searchspring", "shop"): (
         "BigCommerce dùng SearchSpring làm catalog. "
         "Trang chủ → chia theo danh mục (mỗi bộ lọc tối đa 10.000 SP) rồi lấy title, giá, ảnh, link."

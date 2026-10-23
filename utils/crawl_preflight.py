@@ -73,6 +73,13 @@ def check_shop_reachable(url: str, proxy_url: str | None = None) -> str | None:
             return _check_teemill(session, base, host, target)
         if target.platform == "shopify":
             return _check_shopify(session, base, host, target, proxy_url=proxy_url)
+        if target.platform == "shoplazza":
+            from crawlers.shoplazza import ShoplazzaCrawler
+
+            crawler = ShoplazzaCrawler(base, proxy_url=proxy_url)
+            if crawler.api_reachable():
+                return None
+            return f"Shoplazza **{host}** không mở được API catalog (/api/search)."
         if target.platform == "generic-web":
             return _check_generic(session, base, host)
         if target.platform == "fineartamerica":
@@ -167,6 +174,12 @@ def _check_reachable_direct(
         return _check_teemill(session, base, host, target)
     if target.platform == "shopify":
         return _check_shopify(session, base, host, target, proxy_url=None)
+    if target.platform == "shoplazza":
+        from crawlers.shoplazza import ShoplazzaCrawler
+
+        if ShoplazzaCrawler(base).api_reachable():
+            return None
+        return f"Shoplazza **{host}** không mở được API catalog (/api/search)."
     if target.platform == "generic-web":
         return _check_generic(session, base, host)
     if target.platform == "trendsi":
@@ -436,7 +449,9 @@ def _check_shopify(
             return None
         if response.status_code in {401, 403}:
             return f"Shopify **{host}** chặn trang tìm kiếm ({response.status_code})."
-        # /search hay 429. Catalog API vẫn lọc được từ khóa.
+        # /search hay 429. Không chặn crawl — lọc /products.json theo từ khóa.
+        if response.status_code in {429, 500, 502, 503, 504}:
+            return None
         catalog = session.get(
             f"{base}/products.json",
             params={"limit": 1},

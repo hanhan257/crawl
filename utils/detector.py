@@ -264,6 +264,16 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
             pass
         return None
 
+    def check_shoplazza() -> str | None:
+        try:
+            from crawlers.shoplazza import ShoplazzaCrawler
+
+            if ShoplazzaCrawler.site_supports(base, session=fresh_session()):
+                return "shoplazza"
+        except Exception:
+            pass
+        return None
+
     def check_campaign() -> str | None:
         try:
             from crawlers.campaign_shop import CampaignShopCrawler
@@ -387,6 +397,7 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
     platform = _first_platform(
         (
+            check_shoplazza,
             check_searchspring,
             check_campaign,
             check_wp_json,
@@ -426,6 +437,13 @@ def probe_platform(url: str, session: requests.Session | None = None) -> str | N
 
             if CampaignShopCrawler.site_supports(base, session=session):
                 return "campaign"
+        except Exception:
+            pass
+        try:
+            from crawlers.shoplazza import ShoplazzaCrawler
+
+            if ShoplazzaCrawler.site_supports(base, session=session):
+                return "shoplazza"
         except Exception:
             pass
 
@@ -469,6 +487,17 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
             return shopify_target
         return DetectedTarget(
             platform="shopify",
+            crawl_type="shop",
+            url=normalized,
+            base_url=f"{parsed.scheme}://{parsed.netloc}",
+        )
+
+    if platform == "shoplazza":
+        shoplazza_target = _detect_shoplazza(normalized, host, path)
+        if shoplazza_target.crawl_type != "unknown":
+            return shoplazza_target
+        return DetectedTarget(
+            platform="shoplazza",
             crawl_type="shop",
             url=normalized,
             base_url=f"{parsed.scheme}://{parsed.netloc}",
@@ -581,7 +610,7 @@ def _resolve_url_uncached(url: str, session: requests.Session | None = None) -> 
 
     raise UnsupportedUrlError(
         f"Không nhận diện được nền tảng từ link: {normalized}\n"
-        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, BigCommerce + SearchSpring, "
+        "Hiện hỗ trợ: Shopify, ShopBase, WooCommerce, Shoplazza, BigCommerce + SearchSpring, "
         "Campaign shop, Teemill, Trendsi, Magento/Jomashop, Redbubble, Fine Art America, "
         "Web thuần (Next.js / HTML / sitemap).\n"
         "Ví dụ: jomashop.com/jewelry.html · thewildlifetrustsshop.com/collection/... · keeptee.com",
@@ -971,6 +1000,15 @@ def _detect_shopify(url: str, host: str, path: str) -> DetectedTarget:
         url=url,
         base_url=base_url,
     )
+
+
+def _detect_shoplazza(url: str, host: str, path: str) -> DetectedTarget:
+    target = _detect_shopify(url, host, path)
+    target.platform = "shoplazza"
+    if target.crawl_type == "sitemap":
+        target.crawl_type = "shop"
+        target.message = None
+    return target
 
 
 def _detect_shopbase(url: str, host: str, path: str) -> DetectedTarget:

@@ -7,6 +7,7 @@ from .magento_graphql import MagentoGraphqlCrawler
 from .fineartamerica import FineArtAmericaCrawler
 from .redbubble import RedbubbleCrawler
 from .searchspring import SearchSpringCrawler
+from .shoplazza import ShoplazzaCrawler
 from .shopify import ShopifyCrawler
 from .shopify_hydrogen import ShopifyHydrogenCrawler
 from .woocommerce import WooCommerceCrawler
@@ -19,6 +20,7 @@ __all__ = [
     "FineArtAmericaCrawler",
     "GenericWebCrawler",
     "SearchSpringCrawler",
+    "ShoplazzaCrawler",
     "ShopBaseCrawler",
     "CampaignShopCrawler",
     "TeemillCrawler",

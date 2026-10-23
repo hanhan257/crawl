@@ -85,6 +85,8 @@ def build_category_crawl_url(base_url: str, platform: str, category_slug: str) -
         return f"{base}/product-category/{slug}/"
     if platform == "shopify":
         return f"{base}/collections/{category_slug}"
+    if platform == "shoplazza":
+        return f"{base}/collections/{category_slug}"
     if platform == "shopbase":
         return f"{base}/collections/{category_slug}"
     if platform == "campaign":
@@ -304,6 +306,8 @@ def probe_shop_stats(
         return _probe_campaign(target, base_url, url_category, max_workers=max_workers)
     if target.platform == "teemill":
         return _probe_teemill(target, base_url, url_category)
+    if target.platform == "shoplazza":
+        return _probe_shoplazza(target, base_url, url_category, credentials)
     if target.platform == "searchspring":
         return _probe_searchspring(target, base_url, url_category, credentials)
     if target.platform == "trendsi":
@@ -764,6 +768,81 @@ def _probe_campaign(
         total_products=total,
         categories=categories,
         url_category_slug=slug or url_category,
+    )
+
+
+def _probe_shoplazza(
+    target: DetectedTarget,
+    base_url: str,
+    url_category: str | None,
+    credentials: CrawlCredentials | None = None,
+) -> ShopProbeResult:
+    from crawlers.shoplazza import ShoplazzaCrawler
+
+    proxy = credentials.proxy_url if credentials is not None else None
+    crawler = ShoplazzaCrawler(base_url, proxy_url=proxy)
+
+    if target.crawl_type == "product":
+        return ShopProbeResult(
+            ok=True,
+            platform="shoplazza",
+            crawl_type="product",
+            base_url=base_url,
+            message="**1** SP · link sản phẩm",
+            total_products=1,
+            categories=[],
+            url_category_slug=url_category or target.handle,
+        )
+
+    try:
+        if target.crawl_type == "search" and target.query:
+            total = crawler.count_search_results(target.query)
+            total_text = f"**{total}** SP" if total is not None else "**?** SP"
+            return ShopProbeResult(
+                ok=True,
+                platform="shoplazza",
+                crawl_type="search",
+                base_url=base_url,
+                message=f"{total_text} · tìm kiếm `{target.query}`",
+                total_products=total,
+                categories=[],
+                url_category_slug=target.query,
+            )
+        rows = crawler.list_categories()
+        if target.crawl_type == "category" and target.handle:
+            total = crawler.count_collection(target.handle)
+        else:
+            total = crawler.count_shop()
+    except Exception as exc:
+        return ShopProbeResult(
+            ok=False,
+            platform="shoplazza",
+            crawl_type=target.crawl_type,
+            base_url=base_url,
+            message=f"Shoplazza: không đếm được catalog ({exc}).",
+            total_products=None,
+            categories=[],
+            url_category_slug=url_category,
+        )
+
+    categories = [
+        ShopCategoryInfo(
+            slug=str(row.get("slug") or ""),
+            name=str(row.get("name") or row.get("slug") or ""),
+            count=row.get("count"),
+        )
+        for row in rows
+        if row.get("slug")
+    ]
+    return ShopProbeResult(
+        ok=True,
+        platform="shoplazza",
+        crawl_type=target.crawl_type,
+        base_url=base_url,
+        message=_stats_message(total, len(categories)) + " · Shoplazza",
+        total_products=total,
+        categories=categories,
+        url_category_slug=url_category or (target.handle if target.crawl_type == "category" else None),
     )
 
 

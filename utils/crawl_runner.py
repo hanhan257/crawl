@@ -506,6 +506,61 @@ def run_auto_crawl(
 
 
 
+    if target.platform == "shoplazza":
+        from crawlers.shoplazza import ShoplazzaCrawler
+
+        crawler = ShoplazzaCrawler(
+            site_url=target.base_url or target.url,
+            proxy_url=effective_proxy,
+        )
+        crawler.partial_callback = partial_callback
+        try:
+            if target.crawl_type == "product" and target.handle:
+                products = crawler.crawl_product(target.handle)
+            elif target.crawl_type == "search" and target.query:
+                products = crawler.crawl_search(
+                    target.query,
+                    limit=limit,
+                    max_pages=max_pages,
+                    max_workers=workers,
+                    progress_callback=progress_callback,
+                )
+            elif target.crawl_type == "category" and target.handle:
+                products = crawler.crawl(
+                    limit=limit,
+                    max_pages=max_pages,
+                    category_slug=target.handle,
+                    progress_callback=progress_callback,
+                    max_workers=workers,
+                )
+            elif target.crawl_type == "shop":
+                products = crawler.crawl(
+                    limit=limit,
+                    max_pages=max_pages,
+                    category_slug=category_slug,
+                    progress_callback=progress_callback,
+                    max_workers=workers,
+                )
+            else:
+                raise CrawlError(f"Shoplazza: chưa hỗ trợ loại link '{target.crawl_type}'")
+        except CrawlError:
+            raise
+        except Exception as exc:
+            raise CrawlError(
+                f"Shoplazza: {exc}",
+                partial_products=crawler.last_products,
+            ) from exc
+        if not products:
+            raise CrawlError(
+                "Shoplazza: không crawl được sản phẩm nào từ link này.",
+                partial_products=crawler.last_products,
+            )
+        return _finalize_crawl_products(
+            products,
+            description_format=description_format,
+            crawl_fields=crawl_fields,
+        ), target
+
     if target.platform == "searchspring":
         from crawlers.searchspring import SearchSpringCrawler
 

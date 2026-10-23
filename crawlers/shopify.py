@@ -392,13 +392,11 @@ class ShopifyCrawler(BaseCrawler):
 
     def count_search_results(self, query: str) -> int | None:
         html = self._fetch_search_html({"q": query.strip(), "type": "product"})
-        if not html:
-            return None
-        match = SHOPIFY_SEARCH_COUNT_PATTERN.search(html)
-        if match:
-            return int(match.group(1).replace(",", ""))
-        handles = self._extract_search_handles_from_html(html)
-        return len(handles) if handles else None
+        if html:
+            match = SHOPIFY_SEARCH_COUNT_PATTERN.search(html)
+            if match:
+                return int(match.group(1).replace(",", ""))
+        return self._count_search_in_catalog(query)
 
     def _discover_search_handles(
         self,
@@ -472,6 +470,11 @@ class ShopifyCrawler(BaseCrawler):
         tokens = self._search_tokens(query)
         if not tokens:
             return []
+        if not self._products_json_probe(self.session, self.shop_url):
+            direct = create_http_session(None)
+            direct.headers["User-Agent"] = DEFAULT_USER_AGENT
+            if self._products_json_probe(direct, self.shop_url):
+                self._switch_to_direct_session()
         self._skip_html_description = True
         total_pages = self._search_catalog_pages(max_pages)
         if total_pages <= 0:
@@ -530,6 +533,68 @@ class ShopifyCrawler(BaseCrawler):
         if progress_callback and total_pages:
             progress_callback(total_pages, total_pages, len(ordered))
         return ordered
+
+    def _count_search_in_catalog(self, query: str) -> int | None:
+        """Đếm SP khớp từ khóa trên /products.json khi trang /search không mở được."""
+        tokens = self._search_tokens(query)
+        if not tokens:
+            return None
+        if not self._products_json_probe(self.session, self.shop_url):
+            direct = create_http_session(None)
+            direct.headers["User-Agent"] = DEFAULT_USER_AGENT
+            if not self._products_json_probe(direct, self.shop_url):
+                return None
+            self._switch_to_direct_session()
+        total_pages = self._search_catalog_pages(None)
+        if total_pages <= 0:
+            return None
+
+        matched: set[str] = set()
+        saw_page = False
+        lock = threading.Lock()
+        workers = min(8, total_pages)
+
+        def fetch_page(page_num: int) -> list[dict[str, Any]]:
+            for attempt in range(3):
+                try:
+                    return self._fetch_public_page(page_num)
+                except requests.RequestException:
+                    if attempt == 2:
+                        return []
+                    time.sleep(0.4 * (attempt + 1))
+            return []
+
+        def absorb(batch: list[dict[str, Any]]) -> None:
+            nonlocal saw_page
+            ids: list[str] = []
+            if batch:
+                with lock:
+                    saw_page = True
+            for item in batch:
+                if not self._item_matches_search(item, tokens):
+                    continue
+                product_id = str(item.get("id") or item.get("handle") or "").strip()
+                if product_id:
+                    ids.append(product_id)
+            if not ids:
+                return
+            with lock:
+                matched.update(ids)
+
+        if workers <= 1:
+            for page_num in range(1, total_pages + 1):
+                absorb(fetch_page(page_num))
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(fetch_page, page_num)
+                    for page_num in range(1, total_pages + 1)
+                ]
+                for future in as_completed(futures):
+                    absorb(future.result())
+        if not saw_page:
+            return None
+        return len(matched)
 
     def _search_catalog_pages(self, max_pages: int | None) -> int:
         published = 0

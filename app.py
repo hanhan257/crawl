@@ -507,7 +507,7 @@ def _cached_product_image(url: str, proxy_url: str, cache_nonce: int) -> bytes |
 
 
 @st.cache_data(show_spinner=False, ttl=900)
-def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "shopify-search-v8") -> dict:
+def _cached_describe_url(url: str, proxy_url: str = "", _cache_ver: str = "shoplazza-v9") -> dict:
     # _cache_ver: đổi khi logic nhận diện Woo đổi — tránh cache miss cũ (vd. fanssio).
     return describe_url(url, proxy_url=proxy_url or None)
 
@@ -534,7 +534,7 @@ def _cached_probe_shop(  # v12: ShopBase đếm lại khi API trả rỗng
     proxy_url: str,
     probe_workers: int,
     probe_nonce: int = 0,
-    _cache_ver: str = "shopify-search-v17",
+    _cache_ver: str = "shoplazza-count-v19",
 ) -> dict:
     del probe_nonce
     del _cache_ver
@@ -3229,7 +3229,7 @@ def render_url_preview(
     info: dict
     probe: dict
     with st.status("Đang nhận diện shop...", expanded=False) as status:
-        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · BigCommerce + SearchSpring · Campaign shop · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
+        status.write("Đang kết nối và kiểm tra **Shopify · ShopBase · WooCommerce · Shoplazza · BigCommerce + SearchSpring · Campaign shop · Teemill · Trendsi · Magento · Redbubble · Web thuần**…")
         info = _cached_describe_url(
             cleaned,
             st.session_state.get("proxy_url", "") or "",
@@ -3408,7 +3408,7 @@ def render_url_preview(
         elif probe.get("crawl_type") == "search" and probe.get("url_category_slug"):
             st.caption(
                 f"Tìm kiếm **`{probe['url_category_slug']}`** — "
-                "đặt **Giới hạn SP** (vd. 24–100) rồi bấm **Crawl dữ liệu**."
+                "bấm **Crawl dữ liệu**. Để **Giới hạn SP = 0** để lấy hết kết quả."
             )
 
     if info.get("ok") and probe.get("ok"):
