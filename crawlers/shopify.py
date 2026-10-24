@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import re
 import threading
 import time
@@ -32,8 +33,6 @@ DEFAULT_USER_AGENT = (
 GRAPHQL_PATH = "/api/2024-10/graphql.json"
 GRAPHQL_PAGE_SIZE = 50
 GRAPHQL_HANDLE_BATCH = 5
-# Shop lớn: sitemap + GraphQL batch song song nhanh hơn paginate catalog GraphQL (~50 SP/trang).
-SITEMAP_FIRST_MIN_PRODUCTS = 5000
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 GID_NUMERIC = re.compile(r"/(\d+)\s*$")
 PRODUCT_PATH = re.compile(r"/products/([^/?#]+)", re.I)
@@ -48,6 +47,7 @@ vendor
 tags
 featuredImage { url }
 images(first: 10) { edges { node { url } } }
+priceRange { minVariantPrice { amount } }
 variants(first: 50) {
   edges {
     node {
@@ -65,7 +65,7 @@ variants(first: 50) {
 """
 
 PRODUCTS_GRAPHQL = f"""
-query ProductsPage($cursor: String, $pageSize: Int!) {{
+query ProductsPage($cursor: String, $pageSize: Int!) @inContext(country: US) {{
   products(first: $pageSize, after: $cursor) {{
     pageInfo {{ hasNextPage endCursor }}
     edges {{
@@ -78,7 +78,7 @@ query ProductsPage($cursor: String, $pageSize: Int!) {{
 """
 
 COLLECTION_PRODUCTS_GRAPHQL = f"""
-query CollectionProducts($handle: String!, $cursor: String, $pageSize: Int!) {{
+query CollectionProducts($handle: String!, $cursor: String, $pageSize: Int!) @inContext(country: US) {{
   collection(handle: $handle) {{
     products(first: $pageSize, after: $cursor) {{
       pageInfo {{ hasNextPage endCursor }}
@@ -93,7 +93,7 @@ query CollectionProducts($handle: String!, $cursor: String, $pageSize: Int!) {{
 """
 
 PRODUCT_BY_HANDLE_GRAPHQL = f"""
-query ProductByHandle($handle: String!) {{
+query ProductByHandle($handle: String!) @inContext(country: US) {{
   product(handle: $handle) {{
 {PRODUCT_NODE_SELECTION}
   }}
@@ -302,6 +302,17 @@ class ShopifyCrawler(BaseCrawler):
             product = self._map_public_product(item)
             product.categories = [handle]
             products.append(product)
+        products = self._continue_truncated_catalog(
+            products,
+            limit=limit,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+            collection_handle=handle,
+        )
+        for product in products:
+            if handle not in product.categories:
+                product.categories = [handle]
         return products
 
     def crawl_product(self, handle: str) -> list[Product]:
@@ -891,8 +902,6 @@ class ShopifyCrawler(BaseCrawler):
             completed = self._complete_short_catalog(
                 first_batch,
                 max_pages=max_pages,
-                max_workers=max_workers,
-                progress_callback=progress_callback,
             )
             if completed is not None:
                 return completed
@@ -915,28 +924,21 @@ class ShopifyCrawler(BaseCrawler):
         )
         products = [self._map_public_product(item) for item in raw_items]
         self._publish_partial(products)
-        # products.json dừng quanh trang ~21. Shop lớn hơn thì bù handle còn thiếu bằng .js.
-        if (
-            limit is None
-            and len(products) >= SITEMAP_FIRST_MIN_PRODUCTS
-            and len(raw_items) % per_page == 0
-        ):
-            return self._crawl_via_sitemap_if_larger(
-                products,
-                limit=limit,
-                max_pages=max_pages,
-                max_workers=max_workers,
-                progress_callback=progress_callback,
-            )
-        return products
+        # products.json hay dừng sau trang đầu (vd. 20 SP) dù shop còn hàng.
+        # Shop lớn (đủ trang 250) vẫn đối chiếu sitemap trước khi kết thúc.
+        return self._continue_truncated_catalog(
+            products,
+            limit=limit,
+            max_pages=max_pages,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
 
     def _complete_short_catalog(
         self,
         first_batch: list[dict[str, Any]],
         *,
         max_pages: int | None,
-        max_workers: int,
-        progress_callback: CrawlProgressCallback | None,
     ) -> list[Product] | None:
         """Trang products.json ngắn hơn sitemap thì đó là response bị cắt, không phải hết shop."""
         handles = self._discover_handles_from_sitemaps(max_sitemaps=max_pages)
@@ -954,15 +956,99 @@ class ShopifyCrawler(BaseCrawler):
                 self._publish_partial(products)
                 return products
             return None
-        self._fill_missing_handles(
-            by_handle,
-            handles,
-            max_workers=max_workers,
-            progress_callback=progress_callback,
-        )
+        # Còn thiếu so với sitemap. Không chốt 20 SP trang đầu rồi xuất file.
+        if len(by_handle) < len(handles):
+            return None
         ordered = [by_handle[h] for h in handles if h in by_handle]
         self._publish_partial(ordered)
         return ordered
+
+    def _published_product_count(self) -> int | None:
+        try:
+            response = self._page_session().get(
+                f"{self.shop_url}/meta.json",
+                timeout=(8, 15),
+                headers={"Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            count = int(response.json().get("published_products_count") or 0)
+        except (requests.RequestException, ValueError, TypeError):
+            return None
+        return count or None
+
+    def _collection_product_count(self, handle: str) -> int | None:
+        try:
+            response = self._page_session().get(
+                f"{self.shop_url}/collections/{handle}.json",
+                timeout=(8, 15),
+                headers={"Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            raw = (response.json().get("collection") or {}).get("products_count")
+            if raw is None:
+                return None
+            return int(raw)
+        except (requests.RequestException, ValueError, TypeError):
+            return None
+
+    def _continue_truncated_catalog(
+        self,
+        products: list[Product],
+        *,
+        limit: int | None,
+        max_pages: int | None,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+        collection_handle: str | None = None,
+    ) -> list[Product]:
+        """products.json trả 1 trang ngắn (thường 20) rồi hết. Shop còn SP thì crawl tiếp."""
+        if limit is not None:
+            return products
+        handles: list[str] = []
+        if collection_handle:
+            expected = self._collection_product_count(collection_handle) or 0
+        else:
+            handles = self._discover_handles_from_sitemaps(max_sitemaps=max_pages)
+            expected = len(handles)
+            published = self._published_product_count() or 0
+            if published > expected:
+                expected = published
+        gap = expected - len(products)
+        if gap <= 0:
+            return products
+        # Lệch vài SP ở trang cuối — catalog đã hết, không crawl lại cả shop.
+        if len(products) >= 250 and len(products) % 250 != 0 and gap < 15:
+            return products
+        if handles and len(handles) > len(products):
+            workers = max_workers
+            if len(handles) > 5000:
+                workers = max(workers, 32)
+            if len(handles) > 20000:
+                workers = max(workers, 64)
+            fuller = self._crawl_via_sitemap(
+                limit=None,
+                max_sitemaps=max_pages,
+                max_workers=workers,
+                progress_callback=progress_callback,
+            )
+            if len(fuller) > len(products):
+                products = fuller
+            if len(products) >= expected:
+                return products
+        try:
+            fuller = self._crawl_graphql(
+                limit=None,
+                max_pages=max_pages,
+                progress_callback=progress_callback,
+                collection_handle=collection_handle,
+            )
+        except requests.RequestException:
+            return products
+        if len(fuller) > len(products):
+            return fuller
+        return products
 
     def _read_products_page(self, session: requests.Session) -> list[dict[str, Any]] | None:
         try:
@@ -1122,6 +1208,18 @@ class ShopifyCrawler(BaseCrawler):
             missing = [handle for handle in handles if handle not in by_handle]
             self._api_session_locked = False
 
+    @staticmethod
+    def _xml_root(raw: bytes) -> ET.Element | None:
+        if raw[:2] == b"\x1f\x8b":
+            try:
+                raw = gzip.decompress(raw)
+            except OSError:
+                return None
+        try:
+            return ET.fromstring(raw)
+        except ET.ParseError:
+            return None
+
     def _http_get(self, url: str, *, timeout: int = 20) -> requests.Response | None:
         """GET tới khi có 200. IP server bị 429 thì thử direct rồi vài proxy."""
         sessions: list[tuple[requests.Session, str | None]] = [
@@ -1156,9 +1254,8 @@ class ShopifyCrawler(BaseCrawler):
         response = self._http_get(index_url, timeout=20)
         if response is None:
             return []
-        try:
-            root = ET.fromstring(response.content)
-        except ET.ParseError:
+        root = self._xml_root(response.content)
+        if root is None:
             return []
         locs = [
             (el.text or "").strip()
@@ -1171,9 +1268,8 @@ class ShopifyCrawler(BaseCrawler):
         response = self._http_get(sitemap_url, timeout=25)
         if response is None:
             return []
-        try:
-            root = ET.fromstring(response.content)
-        except ET.ParseError:
+        root = self._xml_root(response.content)
+        if root is None:
             return []
         handles: list[str] = []
         seen: set[str] = set()
@@ -1218,36 +1314,6 @@ class ShopifyCrawler(BaseCrawler):
                 handles.append(handle)
         return handles
 
-    def _sitemap_handle_count(self, *, max_sitemaps: int | None = None) -> int:
-        return len(self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps))
-
-    def _crawl_via_sitemap_if_larger(
-        self,
-        products: list[Product],
-        *,
-        limit: int | None,
-        max_pages: int | None,
-        max_workers: int,
-        progress_callback: CrawlProgressCallback | None,
-    ) -> list[Product]:
-        """Nếu sitemap có nhiều handle hơn batch vừa lấy → crawl hết qua sitemap."""
-        if limit is not None:
-            return products
-        sitemap_total = self._sitemap_handle_count(max_sitemaps=max_pages)
-        if sitemap_total <= len(products):
-            return products
-        workers = max_workers
-        if sitemap_total > 5000:
-            workers = max(workers, 32)
-        if sitemap_total > 20000:
-            workers = max(workers, 64)
-        return self._crawl_via_sitemap(
-            limit=limit,
-            max_sitemaps=max_pages,
-            max_workers=workers,
-            progress_callback=progress_callback,
-        )
-
     def _fetch_product_js(self, handle: str) -> Product | None:
         """products.json bị 429 thì /products/{handle}.js vẫn trả đủ title, giá, ảnh."""
         return self._fetch_product_by_handle(handle)
@@ -1291,7 +1357,10 @@ class ShopifyCrawler(BaseCrawler):
         node = (payload.get("data") or {}).get("product")
         if not isinstance(node, dict):
             return None
-        return self._map_public_product(self._graphql_node_to_public_item(node))
+        product = self._map_public_product(self._graphql_node_to_public_item(node))
+        if self._has_selling_price(product):
+            return product
+        return self._fetch_product_by_handle(handle) or product
 
     def _fetch_handles_batch_graphql(self, handles: list[str]) -> list[Product]:
         if not handles:
@@ -1322,10 +1391,12 @@ class ShopifyCrawler(BaseCrawler):
         products: list[Product] = []
         for i in range(len(handles)):
             node = data.get(f"p{i}")
-            if isinstance(node, dict):
-                products.append(
-                    self._map_public_product(self._graphql_node_to_public_item(node))
-                )
+            if not isinstance(node, dict):
+                continue
+            product = self._map_public_product(self._graphql_node_to_public_item(node))
+            if not self._has_selling_price(product):
+                product = self._fetch_product_by_handle(handles[i]) or product
+            products.append(product)
         return products
 
     def _crawl_via_product_js(
@@ -1530,6 +1601,9 @@ class ShopifyCrawler(BaseCrawler):
     def _graphql_node_to_public_item(self, node: dict[str, Any]) -> dict[str, Any]:
         variant_edges = ((node.get("variants") or {}).get("edges")) or []
         image_edges = ((node.get("images") or {}).get("edges")) or []
+        fallback_price = (
+            ((node.get("priceRange") or {}).get("minVariantPrice") or {}).get("amount")
+        )
         images: list[dict[str, Any]] = []
         for index, edge in enumerate(image_edges):
             url = ((edge.get("node") or {}).get("url")) if isinstance(edge, dict) else None
@@ -1557,8 +1631,14 @@ class ShopifyCrawler(BaseCrawler):
                 option_values.append(value)
             while len(option_values) < 3:
                 option_values.append(None)  # type: ignore[arg-type]
-            price = (vnode.get("price") or {}).get("amount")
-            compare = (vnode.get("compareAtPrice") or {}).get("amount")
+            price_node = vnode.get("price") if isinstance(vnode.get("price"), dict) else {}
+            compare_node = (
+                vnode.get("compareAtPrice")
+                if isinstance(vnode.get("compareAtPrice"), dict)
+                else {}
+            )
+            price = price_node.get("amount") or fallback_price
+            compare = compare_node.get("amount")
             variants.append(
                 {
                     "id": self._gid_to_id(vnode.get("id")),
@@ -1768,3 +1848,11 @@ class ShopifyCrawler(BaseCrawler):
             return float(value)
         except (TypeError, ValueError):
             return None
+
+    def _has_selling_price(self, product: Product) -> bool:
+        if (self._safe_float(product.price) or 0) > 0:
+            return True
+        for variant in product.variants or []:
+            if (self._safe_float(variant.get("price")) or 0) > 0:
+                return True
+        return False

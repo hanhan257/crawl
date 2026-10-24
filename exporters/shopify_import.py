@@ -433,6 +433,15 @@ def _product_base_fields(
     return row
 
 
+def _selling_price(*candidates: object) -> str:
+    """Giá bán. Bỏ 0 / trống rồi lấy giá sản phẩm hoặc giá gốc."""
+    for candidate in candidates:
+        text = format_export_price(candidate)
+        if text:
+            return text
+    return ""
+
+
 def _variant_common_fields(
     variant: dict[str, Any],
     product: Product,
@@ -443,7 +452,13 @@ def _variant_common_fields(
         "Variant Inventory Qty": "100" if variant.get("available", True) else "0",
         "Variant Inventory Policy": "deny",
         "Variant Fulfillment Service": "manual",
-        "Variant Price": format_export_price(variant.get("price") or product.price),
+        "Variant Price": _selling_price(
+            variant.get("price"),
+            product.price,
+            variant.get("compare_at_price"),
+            variant.get("regular_price"),
+        ),
+        "Variant Compare At Price": _selling_price(variant.get("compare_at_price")),
         "Variant Requires Shipping": "TRUE",
         "Variant Taxable": "TRUE",
         "Variant Weight Unit": "kg",
@@ -520,6 +535,10 @@ def product_to_shopify_rows(
     include_url: bool = False,
 ) -> list[dict[str, str]]:
     product = apply_export_rules(product, rules)
+    if product.price and product.price > 0:
+        for variant in product.variants or []:
+            if not _selling_price(variant.get("price")):
+                variant["price"] = product.price
     handle = _slugify_handle(product.title, product.id)
     variants = product.variants or []
     swatches = _color_swatches(variants)
@@ -623,7 +642,7 @@ def product_to_shopify_rows(
                 "Variant Inventory Qty": "100",
                 "Variant Inventory Policy": "deny",
                 "Variant Fulfillment Service": "manual",
-                "Variant Price": format_export_price(product.price),
+                "Variant Price": _selling_price(product.price),
                 "Variant Requires Shipping": "TRUE",
                 "Variant Taxable": "TRUE",
             }
