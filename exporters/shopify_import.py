@@ -77,6 +77,14 @@ SHOPIFY_COLUMNS_FALLBACK = [
 ]
 
 _cached_columns: list[str] | None = None
+_METAFIELD_COLUMN_RE = re.compile(
+    r"\(product\.metafields\.|\(variant\.metafields\.",
+    re.I,
+)
+
+
+def _is_metafield_column(name: str) -> bool:
+    return bool(_METAFIELD_COLUMN_RE.search(str(name or "")))
 
 
 def _load_template_columns() -> list[str] | None:
@@ -93,12 +101,13 @@ def _load_template_columns() -> list[str] | None:
 
 
 def shopify_columns(*, include_url: bool = False) -> list[str]:
+    """Cột import Shopify chuẩn. Không thêm Product URL / metafield — shop đích sẽ lỗi."""
     global _cached_columns
     if _cached_columns is None:
         _cached_columns = _load_template_columns() or list(SHOPIFY_COLUMNS_FALLBACK)
-    columns = list(_cached_columns)
-    if include_url and SHOPIFY_URL_COLUMN not in columns:
-        columns.append(SHOPIFY_URL_COLUMN)
+    columns = [col for col in _cached_columns if not _is_metafield_column(col)]
+    # include_url giữ chữ ký cũ; cột Product URL không phải cột Shopify.
+    _ = include_url
     return columns
 
 
@@ -253,6 +262,17 @@ def _size_option_slot(
     return 2
 
 
+def _row_has_size_option(row: dict[str, str]) -> bool:
+    for index in range(1, 4):
+        name = str(row.get(f"Option{index} Name") or "").strip().casefold()
+        value = str(row.get(f"Option{index} Value") or "").strip()
+        if not value:
+            continue
+        if name in _SIZE_OPTION_NAMES or _looks_like_size(value):
+            return True
+    return False
+
+
 def _apply_size_option(
     row: dict[str, str],
     attr_defs: list[dict[str, Any]],
@@ -261,6 +281,8 @@ def _apply_size_option(
     first_variant: bool,
 ) -> None:
     """Gắn Size (vd. One Size) nếu swatch/SKU thiếu option Size."""
+    if _row_has_size_option(row):
+        return
     slot = _size_option_slot(attr_defs, variant)
     if str(row.get(f"Option{slot} Value") or "").strip():
         return
@@ -277,9 +299,14 @@ def _apply_size_option(
     if not size_val:
         return
 
-    if first_variant:
-        row[f"Option{slot} Name"] = "Size"
+    row[f"Option{slot} Name"] = "Size"
     row[f"Option{slot} Value"] = size_val
+    row.update(
+        _canonical_option_fields(
+            [str(row.get(f"Option{i} Name") or "") for i in (1, 2, 3)],
+            [str(row.get(f"Option{i} Value") or "") for i in (1, 2, 3)],
+        )
+    )
 
 
 def _color_options_order(attr_defs: list[dict[str, Any]]) -> list[str]:
@@ -356,6 +383,61 @@ def _shopify_option_names(
     return []
 
 
+def _option_kind(name: str, value: str) -> str:
+    normalized = str(name or "").strip().casefold()
+    if normalized in _SIZE_OPTION_NAMES:
+        return "size"
+    if normalized in _COLOR_OPTION_NAMES:
+        return "color"
+    if _looks_like_size(value):
+        return "size"
+    return "other"
+
+
+def _display_option_name(kind: str, name: str) -> str:
+    if kind == "size":
+        return "Size"
+    if kind == "color":
+        return "Color"
+    return str(name or "").strip()
+
+
+def _canonical_option_fields(names: list[str], values: list[str]) -> dict[str, str]:
+    """Size luôn Option1, Color Option2. Ghi tên option trên mọi dòng variant.
+
+    Web import (và nhiều parser) đọc Option1 Value làm Size nếu Option2 Name trống
+    ở dòng tiếp theo — Color ở Option1 khiến Size thành Black/Black/Black.
+    """
+    pairs: list[tuple[str, str, str]] = []
+    for index in range(3):
+        name = str(names[index] if index < len(names) else "").strip()
+        value = str(values[index] if index < len(values) else "").strip()
+        if not name and not value:
+            continue
+        pairs.append((_option_kind(name, value), name, value))
+
+    size_pair = next((item for item in pairs if item[0] == "size"), None)
+    color_pair = next((item for item in pairs if item[0] == "color"), None)
+    rest = [item for item in pairs if item is not size_pair and item is not color_pair]
+
+    ordered: list[tuple[str, str]] = []
+    if size_pair:
+        ordered.append(("Size", size_pair[2]))
+    if color_pair:
+        ordered.append(("Color", color_pair[2]))
+    for kind, name, value in rest:
+        ordered.append((_display_option_name(kind, name) or "Title", value))
+    while len(ordered) < 3:
+        ordered.append(("", ""))
+
+    fields: dict[str, str] = {}
+    for index, (name, value) in enumerate(ordered[:3], start=1):
+        # Lặp Option Name trên từng variant — dòng 2+ thiếu Name thì Size bị lấy nhầm Color.
+        fields[f"Option{index} Name"] = name if value else ""
+        fields[f"Option{index} Value"] = value
+    return fields
+
+
 def _shopify_option_fields(
     variant: dict[str, Any],
     attr_defs: list[dict[str, Any]],
@@ -373,34 +455,30 @@ def _shopify_option_fields(
         str(variant.get("option3") or "").strip(),
     ]
     if any(values):
-        return {
-            "Option1 Name": names[0] if first_variant else "",
-            "Option1 Value": values[0],
-            "Option2 Name": names[1] if first_variant else "",
-            "Option2 Value": values[1],
-            "Option3 Name": names[2] if first_variant else "",
-            "Option3 Value": values[2],
-        }
+        return _canonical_option_fields(names, values)
 
     title = str(variant.get("title") or "").strip()
     if title and title.lower() not in {"default title", "default"}:
-        return {
-            "Option1 Name": "Title" if first_variant else "",
-            "Option1 Value": title,
-            "Option2 Name": "",
-            "Option2 Value": "",
-            "Option3 Name": "",
-            "Option3 Value": "",
-        }
+        return _canonical_option_fields(["Title"], [title])
 
-    return {
-        "Option1 Name": fallback[0] if first_variant else "",
-        "Option1 Value": fallback[1],
-        "Option2 Name": fallback[2] if first_variant else "",
-        "Option2 Value": fallback[3],
-        "Option3 Name": fallback[4] if first_variant else "",
-        "Option3 Value": fallback[5],
-    }
+    fallback_names = [fallback[0], fallback[2], fallback[4]]
+    fallback_values = [fallback[1], fallback[3], fallback[5]]
+    if any(str(part or "").strip() for part in fallback_names + fallback_values):
+        return _canonical_option_fields(fallback_names, fallback_values)
+    if first_variant:
+        return _canonical_option_fields(["Title"], ["Default Title"])
+    return _canonical_option_fields([], [])
+
+
+def _shopify_category_and_type(product: Product) -> tuple[str, str]:
+    """Product Category phải là taxonomy Shopify (`Apparel & Accessories > ...`)."""
+    category = ", ".join(
+        str(item).strip() for item in (product.categories or []) if str(item).strip()
+    )
+    product_type = str(product.product_type or "").strip()
+    if " > " in category:
+        return category, product_type
+    return "", product_type or category
 
 
 def _product_base_fields(
@@ -411,14 +489,14 @@ def _product_base_fields(
     color_metafield: str = "",
 ) -> dict[str, str]:
     tags = _join_tags(product.tags)
-    category = ", ".join(product.categories) if product.categories else ""
+    category, product_type = _shopify_category_and_type(product)
     row: dict[str, str] = {
         "Handle": handle,
         "Title": product.title or "",
         "Body (HTML)": _html_body(product.description),
         "Vendor": product.vendor or "",
         "Product Category": category,
-        "Type": product.product_type or "",
+        "Type": product_type,
         "Tags": tags,
         "Published": "TRUE",
         "Gift Card": "FALSE",
@@ -491,9 +569,13 @@ def _shopify_rows_from_color_swatches(
             row["Handle"] = handle
 
         color = str(swatch.get("color") or "").strip()
-        if index == 0:
-            row["Option1 Name"] = "Color"
-        row["Option1 Value"] = color
+        size_val = _size_attr_value(attr_defs)
+        row.update(
+            _canonical_option_fields(
+                ["Size", "Color"] if size_val else ["Color"],
+                [size_val, color] if size_val else [color],
+            )
+        )
         _apply_size_option(row, attr_defs, swatch, first_variant=index == 0)
         row.update(_variant_common_fields(swatch, product))
 
@@ -553,7 +635,7 @@ def product_to_shopify_rows(
         )
 
     tags = _join_tags(product.tags)
-    category = ", ".join(product.categories) if product.categories else ""
+    category, product_type = _shopify_category_and_type(product)
     priced_variants = _sort_priced_variants(
         [v for v in product.variants if _is_priced_variant(v)],
         attr_defs,
@@ -574,7 +656,7 @@ def product_to_shopify_rows(
                         "Body (HTML)": _html_body(product.description),
                         "Vendor": product.vendor or "",
                         "Product Category": category,
-                        "Type": product.product_type or "",
+                        "Type": product_type,
                         "Tags": tags,
                         "Published": "TRUE",
                         "Gift Card": "FALSE",
@@ -585,8 +667,6 @@ def product_to_shopify_rows(
                 )
                 if include_url:
                     row[SHOPIFY_URL_COLUMN] = product_url
-                if product.gmc_color and METAFIELD_COLOR in shopify_columns():
-                    row[METAFIELD_COLOR] = _color_metafield_value([], product)
                 if product.image_urls:
                     row["Image Src"] = product.image_urls[0]
                     row["Image Position"] = "1"
@@ -616,7 +696,7 @@ def product_to_shopify_rows(
                 "Body (HTML)": _html_body(product.description),
                 "Vendor": product.vendor or "",
                 "Product Category": category,
-                "Type": product.product_type or "",
+                "Type": product_type,
                 "Tags": tags,
                 "Published": "TRUE",
                 "Gift Card": "FALSE",
@@ -627,16 +707,18 @@ def product_to_shopify_rows(
         )
         if include_url:
             row[SHOPIFY_URL_COLUMN] = product_url
-        if product.gmc_color and METAFIELD_COLOR in shopify_columns():
-            row[METAFIELD_COLOR] = _color_metafield_value([], product)
+        row.update(
+            _canonical_option_fields(
+                [fallback_options[0], fallback_options[2], fallback_options[4]],
+                [
+                    fallback_options[1] or "Default Title",
+                    fallback_options[3],
+                    fallback_options[5],
+                ],
+            )
+        )
         row.update(
             {
-                "Option1 Name": fallback_options[0],
-                "Option1 Value": fallback_options[1] or "Default Title",
-                "Option2 Name": fallback_options[2],
-                "Option2 Value": fallback_options[3],
-                "Option3 Name": fallback_options[4],
-                "Option3 Value": fallback_options[5],
                 "Variant SKU": product.sku or "",
                 "Variant Inventory Tracker": "",
                 "Variant Inventory Qty": "100",
