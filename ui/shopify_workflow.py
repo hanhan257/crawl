@@ -30,6 +30,7 @@ SHOPIFY_EXPORT_FORMATS = [
     "web-feed-csv",
     "woocommerce-csv",
 ]
+SHOPIFY_EXPORT_FORMAT_KEY = "shopify_export_format"
 
 
 def validate_shopify_url(url: str) -> dict[str, Any]:
@@ -192,8 +193,8 @@ def render_shopify_export_selector() -> str | None:
     """Bước 2 — mặc định CSV import Shopify."""
     st.markdown("### Bước 2 · Chọn file xuất")
     st.caption(
-        "Mặc định **CSV import Shopify** (48 cột, 1 dòng/biến thể Color/Size). "
-        "Có thể chọn feed web hoặc Woo nếu cần."
+        "Mặc định **CSV import Shopify** (Handle, Size/Color, Variant Price). "
+        "Chỉ chọn feed web hoặc Woo khi cần định dạng khác."
     )
     options = {
         "shopify-csv": "CSV import Shopify",
@@ -201,12 +202,15 @@ def render_shopify_export_selector() -> str | None:
         "woocommerce-csv": "CSV import WooCommerce",
     }
 
+    # Key riêng — không kế thừa "web-feed-csv" từ Crawl từ link / Trendsi.
+    if st.session_state.get(SHOPIFY_EXPORT_FORMAT_KEY) not in options:
+        st.session_state[SHOPIFY_EXPORT_FORMAT_KEY] = "shopify-csv"
     export_format = st.radio(
         "Định dạng file",
         options=list(options.keys()),
         format_func=lambda key: options[key],
-        index=0,
-        key="export_format",
+        key=SHOPIFY_EXPORT_FORMAT_KEY,
         horizontal=False,
     )
+    st.session_state.export_format = export_format
     return export_format

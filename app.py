@@ -116,6 +116,7 @@ from ui.proxy_panel import render_proxy_panel
 from ui.redbubble_workflow import render_redbubble_crawl_panel, render_redbubble_export_selector
 from ui.shopify_workflow import (
     SHOPIFY_EXPORT_FORMATS,
+    SHOPIFY_EXPORT_FORMAT_KEY,
     render_shopify_crawl_panel,
     render_shopify_export_selector,
 )
@@ -408,8 +409,14 @@ def _ensure_export_format_for_workflow(mode: str | None = None) -> None:
         allowed = TRENDSI_EXPORT_FORMATS
     elif is_shopify_workflow(active):
         allowed = SHOPIFY_EXPORT_FORMATS
+        preferred = st.session_state.get(SHOPIFY_EXPORT_FORMAT_KEY)
+        if preferred in allowed:
+            st.session_state.export_format = preferred
+            return
         if not current or current not in allowed:
             st.session_state.export_format = "shopify-csv"
+            st.session_state[SHOPIFY_EXPORT_FORMAT_KEY] = "shopify-csv"
+            return
     elif is_redbubble_workflow(active):
         allowed = SHOP_EXPORT_FORMATS
     else:
@@ -424,8 +431,11 @@ def _clear_image_cache() -> None:
 
 
 def _on_workflow_mode_change() -> None:
-    _ensure_export_format_for_workflow()
     mode = st.session_state.get("workflow_mode", "crawl")
+    if is_shopify_workflow(mode):
+        st.session_state[SHOPIFY_EXPORT_FORMAT_KEY] = "shopify-csv"
+        st.session_state.export_format = "shopify-csv"
+    _ensure_export_format_for_workflow(mode)
     # Sitemap là chế độ riêng — không còn checkbox trong Crawl từ link.
     st.session_state.crawl_via_sitemap = mode == "sitemap"
     if st.session_state.products_raw is not None:
@@ -643,6 +653,11 @@ def _resolved_export_format(mode: str | None = None) -> str:
     active = mode if mode is not None else st.session_state.get("workflow_mode", "crawl")
     if is_gmc_workflow(active):
         return "gmc-feed-csv"
+    if is_shopify_workflow(active):
+        preferred = st.session_state.get(SHOPIFY_EXPORT_FORMAT_KEY)
+        if preferred in SHOPIFY_EXPORT_FORMATS:
+            return preferred
+        return "shopify-csv"
     return "web-feed-csv"
 
 
