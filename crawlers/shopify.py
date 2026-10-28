@@ -34,6 +34,22 @@ GRAPHQL_PATH = "/api/2024-10/graphql.json"
 GRAPHQL_PAGE_SIZE = 50
 GRAPHQL_HANDLE_BATCH = 5
 SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+
+def _xml_locs(root: ET.Element) -> list[str]:
+    """Lấy mọi thẻ loc, kể cả sitemap không khai báo namespace chuẩn."""
+    found: list[str] = []
+    for el in root.iter():
+        if not str(el.tag).lower().endswith("loc"):
+            continue
+        text = (el.text or "").strip()
+        if text:
+            found.append(text)
+    return found
+
+
+def _usable_products(products: list[Product]) -> list[Product]:
+    return [product for product in products if (product.title or "").strip() and (product.url or "").strip()]
 GID_NUMERIC = re.compile(r"/(\d+)\s*$")
 PRODUCT_PATH = re.compile(r"/products/([^/?#]+)", re.I)
 
@@ -891,28 +907,31 @@ class ShopifyCrawler(BaseCrawler):
         if progress_callback:
             progress_callback(0, 1, 0)
 
+        api_products: list[Product] = []
         if self._public_products_json_ok():
             try:
-                products = self._crawl_products_json_api(
+                api_products = self._crawl_products_json_api(
                     limit=limit,
                     max_pages=max_pages,
                     max_workers=max_workers,
                     progress_callback=progress_callback,
                 )
             except requests.RequestException:
-                products = []
+                api_products = []
                 self._public_json_ok = None
                 self._api_session_locked = False
-            # Trang đầu rỗng vì throttle không được coi là shop hết hàng.
-            if products:
-                return products
+        api_products = _usable_products(api_products)
+        # API ra sản phẩm đủ title/link thì dùng. Không định dạng được thì chuyển sitemap.
+        if api_products:
+            return api_products
 
         products = self._crawl_via_product_js(
             limit=limit,
-            max_sitemaps=max_pages,
+            max_sitemaps=None,
             max_workers=max_workers,
             progress_callback=progress_callback,
         )
+        products = _usable_products(products)
         if products:
             return products
 
@@ -927,7 +946,8 @@ class ShopifyCrawler(BaseCrawler):
                 pass
 
         raise requests.RequestException(
-            "Shopify /products.json bị chặn (429) và GraphQL cũng không dùng được. "
+            "Không định dạng được sản phẩm từ API Shopify. Đã kiểm tra sitemap "
+            "sản phẩm (sitemap_products_*.xml) nhưng không crawl được. "
             "Bật **Proxy**, giảm luồng crawl (8–32), đợi vài phút rồi thử lại."
         )
 
@@ -1315,9 +1335,9 @@ class ShopifyCrawler(BaseCrawler):
         if root is None:
             return []
         locs = [
-            (el.text or "").strip()
-            for el in root.findall(".//sm:loc", SITEMAP_NS)
-            if el.text and "sitemap_products" in el.text.lower()
+            loc
+            for loc in _xml_locs(root)
+            if "sitemap_products" in loc.lower() or "product-sitemap" in loc.lower()
         ]
         return locs
 
@@ -1330,8 +1350,7 @@ class ShopifyCrawler(BaseCrawler):
             return []
         handles: list[str] = []
         seen: set[str] = set()
-        for el in root.findall(".//sm:loc", SITEMAP_NS):
-            loc = (el.text or "").strip()
+        for loc in _xml_locs(root):
             match = PRODUCT_PATH.search(loc)
             if not match:
                 continue

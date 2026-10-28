@@ -37,6 +37,7 @@ PRODUCT_LINK_RE = re.compile(
     r'href=["\'](https?://[^"\']+/product/[^"\'?#]+|/product/[^"\'?#]+)["\']',
     re.I,
 )
+SITEMAP_PRODUCT_LOC = re.compile(r"/products?/[^/?#]+", re.I)
 WSP_CARD_RE = re.compile(
     r'<a class="wsp-card" href="([^"]+)">'
     r'\s*<span class="wsp-card-media"><img src="([^"]+)"[^>]*>\s*</span>'
@@ -245,6 +246,10 @@ class WooCommerceCrawler(BaseCrawler):
             return True
         return False
 
+    @staticmethod
+    def _has_usable_products(products: list[Product] | None) -> bool:
+        return any((product.title or "").strip() and (product.url or "").strip() for product in products or [])
+
     def crawl(
         self,
         limit: int | None = None,
@@ -290,7 +295,7 @@ class WooCommerceCrawler(BaseCrawler):
                         progress_callback=progress_callback,
                     )
                 raise
-            if products:
+            if self._has_usable_products(products):
                 return products
             listed = self._crawl_wsp_catalog(
                 limit=limit,
@@ -298,8 +303,19 @@ class WooCommerceCrawler(BaseCrawler):
                 max_workers=max_workers,
                 progress_callback=progress_callback,
             )
-            return listed or products
-        return self._crawl_rest_api(
+            if self._has_usable_products(listed):
+                return listed
+            # API không ra sản phẩm định dạng được: có sitemap sản phẩm thì crawl hết sitemap.
+            via_sitemap = self._crawl_html_catalog(
+                limit=limit,
+                max_pages=None,
+                max_workers=max_workers,
+                progress_callback=progress_callback,
+            )
+            if self._has_usable_products(via_sitemap):
+                return via_sitemap
+            return listed or products or via_sitemap
+        products = self._crawl_rest_api(
             limit=limit,
             max_pages=max_pages,
             status=status,
@@ -307,6 +323,15 @@ class WooCommerceCrawler(BaseCrawler):
             max_workers=max_workers,
             progress_callback=progress_callback,
         )
+        if self._has_usable_products(products):
+            return products
+        via_sitemap = self._crawl_html_catalog(
+            limit=limit,
+            max_pages=None,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
+        return via_sitemap or products
 
     def crawl_search(
         self,
@@ -1102,7 +1127,9 @@ class WooCommerceCrawler(BaseCrawler):
         urls: list[str] = []
         for sitemap_url in sitemap_urls:
             for loc in self._parse_sitemap_locs(sitemap_url):
-                if "/product/" not in loc.lower():
+                if not SITEMAP_PRODUCT_LOC.search(loc):
+                    continue
+                if loc.lower().split("?")[0].endswith(".xml"):
                     continue
                 cleaned = loc.split("?")[0].rstrip("/") + "/"
                 if cleaned in seen:
