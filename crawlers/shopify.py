@@ -158,21 +158,47 @@ class ShopifyCrawler(BaseCrawler):
         self.session.headers["User-Agent"] = DEFAULT_USER_AGENT
         self._page_local.session = sess
 
+    def _pause_for_throttle(self, response: requests.Response | None, attempt: int) -> None:
+        """429 ngắn thì chờ rồi thử lại. Không ngủ quá lâu kẻo crawl đứng."""
+        retry_after = ""
+        if response is not None:
+            retry_after = response.headers.get("Retry-After", "")
+        try:
+            sleep_s = float(retry_after)
+        except (TypeError, ValueError):
+            sleep_s = 1.2 * (attempt + 1)
+        time.sleep(min(max(sleep_s, 0.8), 8.0))
+
     @staticmethod
     def _products_json_probe(session: requests.Session, shop_url: str) -> bool:
-        try:
-            response = session.get(
-                f"{shop_url}/products.json",
-                params={"limit": 1, "page": 1},
-                timeout=8,
-                headers={"Accept": "application/json"},
-            )
+        for attempt in range(3):
+            try:
+                response = session.get(
+                    f"{shop_url}/products.json",
+                    params={"limit": 1, "page": 1},
+                    timeout=12,
+                    headers={"Accept": "application/json"},
+                )
+            except (requests.RequestException, ValueError):
+                return False
+            if response.status_code == 429 and attempt < 2:
+                retry_after = response.headers.get("Retry-After", "")
+                try:
+                    sleep_s = float(retry_after)
+                except (TypeError, ValueError):
+                    sleep_s = 1.2 * (attempt + 1)
+                time.sleep(min(max(sleep_s, 0.8), 8.0))
+                continue
             if response.status_code != 200:
                 return False
-            data = response.json()
-            return isinstance(data, dict) and isinstance(data.get("products"), list)
-        except (requests.RequestException, ValueError):
-            return False
+            try:
+                data = response.json()
+            except ValueError:
+                return False
+            products = data.get("products") if isinstance(data, dict) else None
+            # 200 + danh sách rỗng thường là throttle, không phải shop hết hàng.
+            return isinstance(products, list) and len(products) > 0
+        return False
 
     def _page_session(self, *, rotate: bool = False) -> requests.Session:
         if not rotate and hasattr(self._page_local, "session"):
@@ -803,18 +829,31 @@ class ShopifyCrawler(BaseCrawler):
         raise requests.RequestException("Shopify GraphQL request failed")
 
     def _fetch_public_page(self, page: int) -> list[dict[str, Any]]:
-        """Một trang catalog API — 250 SP. Không ngủ theo Retry-After khi 429."""
-        response = self._page_session().get(
-            f"{self.shop_url}/products.json",
-            params={"limit": 250, "page": page},
-            timeout=(8, 20),
-            headers={"Accept": "application/json"},
-        )
+        """Một trang catalog API — 250 SP. 429 thì chờ ngắn rồi thử lại.
+
+        Trang vượt cửa sổ ~100 (HTTP 400) là hết lượt products.json, không phải lỗi shop.
+        """
+        response: requests.Response | None = None
+        for attempt in range(4):
+            response = self._page_session().get(
+                f"{self.shop_url}/products.json",
+                params={"limit": 250, "page": page},
+                timeout=(8, 25),
+                headers={"Accept": "application/json"},
+            )
+            if response.status_code == 429 and attempt < 3:
+                self._pause_for_throttle(response, attempt)
+                continue
+            break
+        if response is None:
+            return []
         if response.status_code == 429:
             raise requests.HTTPError(
                 "Shopify products.json 429",
                 response=response,
             )
+        if response.status_code == 400:
+            return []
         response.raise_for_status()
         batch = response.json().get("products", [])
         return batch if isinstance(batch, list) else []
@@ -854,15 +893,19 @@ class ShopifyCrawler(BaseCrawler):
 
         if self._public_products_json_ok():
             try:
-                return self._crawl_products_json_api(
+                products = self._crawl_products_json_api(
                     limit=limit,
                     max_pages=max_pages,
                     max_workers=max_workers,
                     progress_callback=progress_callback,
                 )
             except requests.RequestException:
+                products = []
                 self._public_json_ok = None
                 self._api_session_locked = False
+            # Trang đầu rỗng vì throttle không được coi là shop hết hàng.
+            if products:
+                return products
 
         products = self._crawl_via_product_js(
             limit=limit,
@@ -911,7 +954,8 @@ class ShopifyCrawler(BaseCrawler):
         elif estimated_pages is None and len(first_batch) >= per_page:
             estimated_pages = None
 
-        list_workers = max(1, min(max_workers or 1, API_LIST_WAVE_SIZE))
+        # Quá 4 trang products.json cùng lúc dễ 429 cả shop (thesportsmerch ~25k SP).
+        list_workers = max(1, min(max_workers or 1, 4, API_LIST_WAVE_SIZE))
         raw_items, _pages = fetch_pages_in_waves(
             self._fetch_public_page,
             per_page=per_page,
@@ -1022,20 +1066,26 @@ class ShopifyCrawler(BaseCrawler):
         if len(products) >= 250 and len(products) % 250 != 0 and gap < 15:
             return products
         if handles and len(handles) > len(products):
-            workers = max_workers
-            if len(handles) > 5000:
-                workers = max(workers, 32)
-            if len(handles) > 20000:
-                workers = max(workers, 64)
-            fuller = self._crawl_via_sitemap(
-                limit=None,
-                max_sitemaps=max_pages,
-                max_workers=workers,
+            # Chỉ lấy handle còn thiếu. Crawl lại cả sitemap bằng GraphQL
+            # dễ 429 và làm rơi catalog vừa lấy được.
+            by_handle = {}
+            for product in products:
+                handle = ""
+                if product.url:
+                    handle = urlparse(product.url).path.rstrip("/").split("/")[-1]
+                if handle:
+                    by_handle[handle] = product
+            self._fill_missing_handles(
+                by_handle,
+                handles,
+                max_workers=min(max_workers or 1, 6),
                 progress_callback=progress_callback,
             )
-            if len(fuller) > len(products):
-                products = fuller
+            ordered = [by_handle[h] for h in handles if h in by_handle]
+            if len(ordered) > len(products):
+                products = ordered
             if len(products) >= expected:
+                self._publish_partial(products)
                 return products
         try:
             fuller = self._crawl_graphql(
@@ -1150,6 +1200,7 @@ class ShopifyCrawler(BaseCrawler):
                 except requests.RequestException:
                     continue
                 if response.status_code == 429:
+                    self._pause_for_throttle(response, attempt)
                     break
                 if response.status_code != 200:
                     continue
@@ -1243,6 +1294,12 @@ class ShopifyCrawler(BaseCrawler):
                 response = sess.get(url, timeout=timeout)
             except requests.RequestException:
                 continue
+            if response.status_code == 429:
+                self._pause_for_throttle(response, 0)
+                try:
+                    response = sess.get(url, timeout=timeout)
+                except requests.RequestException:
+                    continue
             if response.status_code == 200 and response.content:
                 if not self._api_session_locked:
                     self._lock_api_route(sess, proxy)
@@ -1410,6 +1467,9 @@ class ShopifyCrawler(BaseCrawler):
         """API danh sách bị cắt/429: đọc từng handle, ít luồng để khỏi chỉ sót vài SP."""
         self._skip_html_description = True
         handles = self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps)
+        if not handles:
+            time.sleep(2.0)
+            handles = self._discover_handles_from_sitemaps(max_sitemaps=max_sitemaps)
         if not handles:
             return []
         if limit is not None:

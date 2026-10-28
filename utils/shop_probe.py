@@ -1676,17 +1676,27 @@ def _shopify_product_count(crawler) -> int | None:
                 return int(response.json().get("count", 0))
 
         sitemap_total = _shopify_sitemap_product_count(crawler.shop_url, crawler.session)
-        if sitemap_total is not None:
+        if sitemap_total:
             return sitemap_total
+
+        try:
+            meta = crawler.session.get(f"{crawler.shop_url}/meta.json", timeout=(4, 10))
+            if meta.status_code == 200:
+                published = int(meta.json().get("published_products_count") or 0)
+                if published > 0:
+                    return published
+        except (requests.RequestException, ValueError, TypeError):
+            pass
 
         response = crawler.session.get(
             f"{crawler.shop_url}/products.json",
             params={"limit": 30, "page": 1},
-            timeout=(3, 5),
+            timeout=(4, 10),
         )
         if response.status_code == 200:
             batch = response.json().get("products", [])
-            if isinstance(batch, list) and len(batch) < 30:
+            # Mảng rỗng thường là bị giới hạn lượt, không phải shop 0 SP.
+            if isinstance(batch, list) and 0 < len(batch) < 30:
                 return len(batch)
     except (requests.RequestException, ValueError, TypeError):
         pass
@@ -1777,7 +1787,7 @@ def _shopify_sitemap_product_count(shop_url: str, session: requests.Session) -> 
     from xml.etree import ElementTree as ET
 
     try:
-        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=(3, 8))
+        index = session.get(f"{shop_url.rstrip('/')}/sitemap.xml", timeout=(5, 15))
         if index.status_code != 200:
             return None
 
