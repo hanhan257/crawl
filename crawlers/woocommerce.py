@@ -725,7 +725,11 @@ class WooCommerceCrawler(BaseCrawler):
         products: list[Product] = []
         for item in raw_items:
             products.append(self._map_store_product(item, categories=categories))
-        return products
+        return self._fill_xcommerce_galleries(
+            products,
+            max_workers=max_workers,
+            progress_callback=progress_callback,
+        )
 
     def _crawl_rest_api(
         self,
@@ -787,6 +791,109 @@ class WooCommerceCrawler(BaseCrawler):
             products.append(product)
         return products
 
+    def _absolute_product_url(self, permalink: object, slug: object = None) -> str:
+        text = str(permalink or "").strip()
+        if text.startswith("//"):
+            text = "https:" + text
+        if text.startswith(("http://", "https://")):
+            return text
+        if text.startswith("/"):
+            return urljoin(f"{self.site_url}/", text.lstrip("/"))
+        handle = str(slug or "").strip().strip("/")
+        if handle:
+            return urljoin(f"{self.site_url}/", f"product/{handle}/")
+        return text
+
+    def _xcommerce_catalog(self) -> tuple[str, str] | None:
+        """Shop gentic/xcommerce: gallery đầy đủ nằm ở shop-api, không phải Store API."""
+        cached = getattr(self, "_xc_catalog", None)
+        if cached is not None or getattr(self, "_xc_catalog_checked", False):
+            return cached
+        self._xc_catalog_checked = True
+        self._xc_catalog = None
+        try:
+            response = self.session.get(f"{self.site_url}/", timeout=20)
+        except requests.RequestException:
+            return None
+        if response.status_code != 200:
+            return None
+        api_match = re.search(r'"apiUrl"\s*:\s*"(https?:\\?/\\?/[^"]+)"', response.text)
+        shop_match = re.search(r'"shopId"\s*:\s*"(\d+)"', response.text)
+        if not api_match or not shop_match:
+            return None
+        api_url = api_match.group(1).replace("\\/", "/").rstrip("/")
+        if not api_url.endswith("/shop-api") and "/shop-api/" not in api_url:
+            return None
+        self._xc_catalog = (api_url.split("/shop-api")[0] + "/shop-api", shop_match.group(1))
+        return self._xc_catalog
+
+    def _fill_xcommerce_galleries(
+        self,
+        products: list[Product],
+        *,
+        max_workers: int,
+        progress_callback: CrawlProgressCallback | None,
+    ) -> list[Product]:
+        catalog = self._xcommerce_catalog()
+        if not catalog or not products:
+            return products
+        api_url, shop_id = catalog
+        workers = max(1, min(int(max_workers or 1), 16))
+
+        def load(index: int, product: Product) -> tuple[int, str, list[str]]:
+            handle = urlparse(product.url or "").path.strip("/").split("/")[-1]
+            if not handle:
+                return index, product.url or "", list(product.image_urls or [])
+            detail_url = (
+                f"{api_url}/public/shop/{shop_id}/products/by-handle/{quote(handle)}.json"
+            )
+            session = self._worker_session()
+            try:
+                response = session.get(detail_url, timeout=25)
+            except requests.RequestException:
+                return index, product.url or "", list(product.image_urls or [])
+            if response.status_code != 200:
+                return index, product.url or "", list(product.image_urls or [])
+            try:
+                data = response.json()
+            except ValueError:
+                return index, product.url or "", list(product.image_urls or [])
+            if not isinstance(data, dict):
+                return index, product.url or "", list(product.image_urls or [])
+            real = str(data.get("handle") or handle).strip().strip("/")
+            url = f"{self.site_url}/products/{real}/" if real else (product.url or "")
+            images: list[str] = []
+            seen: set[str] = set()
+            for image in data.get("images") or []:
+                src = ""
+                if isinstance(image, dict):
+                    src = str(image.get("src") or image.get("url") or "").strip()
+                elif isinstance(image, str):
+                    src = image.strip()
+                if not src or src in seen:
+                    continue
+                seen.add(src)
+                images.append(src)
+            if not images:
+                images = list(product.image_urls or [])
+            return index, url, images
+
+        done = 0
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [
+                executor.submit(load, index, product)
+                for index, product in enumerate(products)
+            ]
+            for future in as_completed(futures):
+                index, url, images = future.result()
+                products[index].url = url
+                if images:
+                    products[index].image_urls = images
+                done += 1
+                if progress_callback and (done == len(products) or done % 20 == 0):
+                    progress_callback(done, len(products), done)
+        return products
+
     def _map_store_product(
         self,
         item: dict[str, Any],
@@ -797,15 +904,16 @@ class WooCommerceCrawler(BaseCrawler):
             cat.get("name") for cat in item.get("categories") or [] if cat.get("name")
         ]
         prices = item.get("prices") or {}
+        permalink = self._absolute_product_url(item.get("permalink"), item.get("slug"))
 
         return Product(
             source=self.source,
             id=str(item.get("id", "")),
             title=item.get("name") or "",
-            description=self._resolve_description(item, item.get("permalink")),
+            description=self._resolve_description(item, permalink),
             price=self._safe_float(prices.get("price") or prices.get("regular_price")),
             currency=prices.get("currency_code"),
-            url=item.get("permalink"),
+            url=permalink,
             image_urls=images,
             vendor=None,
             sku=item.get("sku") or None,
@@ -879,9 +987,7 @@ class WooCommerceCrawler(BaseCrawler):
             cat.get("name") for cat in item.get("categories") or [] if cat.get("name")
         ]
 
-        permalink = item.get("permalink")
-        if not permalink and item.get("slug"):
-            permalink = urljoin(f"{self.site_url}/", f"product/{item['slug']}/")
+        permalink = self._absolute_product_url(item.get("permalink"), item.get("slug"))
 
         product_type = item.get("type") or (", ".join(categories) if categories else None)
         variants: list[dict[str, Any]] = []
