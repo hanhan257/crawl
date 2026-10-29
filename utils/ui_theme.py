@@ -1,4 +1,4 @@
-"""Boutique rose UI theme for Streamlit app."""
+"""Black UI theme for Streamlit app."""
 
 from __future__ import annotations
 
@@ -11,19 +11,19 @@ PASTEL_PINK_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    /* Brand tone — #FF7675 */
-    --brand: #FF7675;
-    --brand-rgb: 255, 118, 117;
-    --coral-50: #FFF5F5;
-    --coral-100: #FFE3E3;
-    --coral-200: #FFCACA;
-    --coral-300: #FFABAA;
-    --coral-400: #FF9190;
+    /* Nền đen, chữ sáng, nút chính màu trắng */
+    --brand: #F2F2F2;
+    --brand-rgb: 242, 242, 242;
+    --coral-50: #1A1A1A;
+    --coral-100: #222222;
+    --coral-200: #2E2E2E;
+    --coral-300: #3A3A3A;
+    --coral-400: #D4D4D4;
     --coral-500: var(--brand);
-    --coral-600: #F05F5E;
-    --coral-700: #E04F4E;
-    --coral-800: #C94645;
-    --coral-900: #B33D3C;
+    --coral-600: #FFFFFF;
+    --coral-700: #E4E4E4;
+    --coral-800: #CFCFCF;
+    --coral-900: #BDBDBD;
     --rose-50: var(--coral-50);
     --rose-100: var(--coral-100);
     --rose-200: var(--coral-200);
@@ -31,10 +31,10 @@ PASTEL_PINK_CSS = """
     --rose-400: var(--coral-400);
     --rose-500: var(--coral-500);
     --rose-600: var(--coral-600);
-    --ink: #1A1A1A;
-    --ink-muted: #9CA3AF;
-    --surface: #FFFFFF;
-    --canvas: #FFFBFB;
+    --ink: #F5F5F5;
+    --ink-muted: #A3A3A3;
+    --surface: #141414;
+    --canvas: #000000;
     --grid-line: rgba(var(--brand-rgb), 0.07);
     --border-soft: rgba(var(--brand-rgb), 0.16);
     --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.03);
@@ -52,18 +52,18 @@ PASTEL_PINK_CSS = """
     --pink-500: var(--coral-500);
     --pink-600: var(--coral-600);
     --pink-700: var(--coral-700);
-    --sidebar-panel: #FFA1A1;
-    --sidebar-panel-rgb: 255, 161, 161;
-    --sidebar-bg: linear-gradient(180deg, #FFB0B0 0%, #FFA1A1 55%, #FF9898 100%);
-    --sidebar-text: #3D2828;
-    --sidebar-muted: #6D4E4E;
-    --sidebar-item-bg: rgba(255, 255, 255, 0.78);
-    --sidebar-item-border: rgba(255, 255, 255, 0.85);
-    --sidebar-item-hover: rgba(255, 255, 255, 0.94);
-    --sidebar-item-active-bg: var(--brand);
-    --sidebar-item-active-text: #FFFFFF;
-    --sidebar-item-active-shadow: 0 3px 14px rgba(224, 79, 78, 0.32);
-    --sidebar-divider: rgba(255, 255, 255, 0.45);
+    --sidebar-panel: #000000;
+    --sidebar-panel-rgb: 0, 0, 0;
+    --sidebar-bg: #000000;
+    --sidebar-text: #F5F5F5;
+    --sidebar-muted: #B0B0B0;
+    --sidebar-item-bg: #161616;
+    --sidebar-item-border: #2A2A2A;
+    --sidebar-item-hover: #222222;
+    --sidebar-item-active-bg: #F2F2F2;
+    --sidebar-item-active-text: #111111;
+    --sidebar-item-active-shadow: none;
+    --sidebar-divider: #2A2A2A;
     --rose-text: var(--ink-muted);
     --rose-dark: var(--ink);
     --rose-muted: var(--ink-muted);
@@ -211,12 +211,12 @@ button[kind="header"] {
     padding: 0.55rem 0.75rem !important;
 }
 [data-testid="stSidebar"] .streamlit-expanderHeader:hover {
-    background: #FFFFFF !important;
+    background: #222222 !important;
     border-color: var(--brand) !important;
 }
 [data-testid="stSidebar"] [data-testid="stAlertContainer"] {
-    background: rgba(255, 255, 255, 0.88) !important;
-    border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
+    background: #161616 !important;
+    border: 1px solid #2A2A2A !important;
     color: var(--sidebar-text) !important;
 }
 [data-testid="stSidebar"] .stButton > button {
@@ -235,7 +235,7 @@ button[kind="header"] {
 [data-testid="stSidebar"] .stButton > button[kind="primary"] {
     background: var(--sidebar-item-active-bg) !important;
     border-color: transparent !important;
-    color: #fff !important;
+    color: #111111 !important;
     font-weight: 700 !important;
     box-shadow: var(--sidebar-item-active-shadow) !important;
 }
@@ -289,7 +289,7 @@ button[kind="header"] {
     pointer-events: none !important;
 }
 
-/* ── Sidebar menu (nền hồng phấn nhẹ #FF7675) ── */
+/* ── Sidebar menu ── */
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h1,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h2,
 [data-testid="stSidebar"] [data-testid="stMarkdown"] h3,
@@ -379,8 +379,8 @@ button[kind="header"] {
     border-color: var(--coral-300) !important;
 }
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) [data-baseweb="radio"] > div {
-    background: #fff !important;
-    border-color: #fff !important;
+    background: #111111 !important;
+    border-color: #111111 !important;
 }
 
 /* ── Hero (card trắng kiểu Vdesign) ── */
@@ -396,7 +396,7 @@ button[kind="header"] {
 .app-hero-badge {
     display: inline-block;
     background: var(--brand);
-    color: #fff;
+    color: #111111;
     border: none;
     font-size: 0.68rem;
     font-weight: 600;
@@ -462,7 +462,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"] {
     background: var(--brand) !important;
-    color: #fff !important;
+    color: #111111 !important;
     border: none !important;
     border-radius: var(--radius-pill) !important;
     font-weight: 600 !important;
@@ -499,13 +499,13 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     border-radius: var(--radius-sm) !important;
 }
 [data-testid="stAlertContainer"]:has([data-testid="stAlertContentInfo"]) {
-    background: rgba(var(--brand-rgb), 0.1) !important;
-    border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
-    color: #5C3838 !important;
+    background: #161616 !important;
+    border: 1px solid #3A3A3A !important;
+    color: var(--ink) !important;
 }
 [data-testid="stAlertContentInfo"] p,
 [data-testid="stAlertContentInfo"] [data-testid="stMarkdownContainer"] p {
-    color: #5C3838 !important;
+    color: var(--ink) !important;
     font-weight: 600 !important;
     font-size: 0.86rem !important;
 }
@@ -513,19 +513,19 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     color: var(--brand) !important;
 }
 [data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
-    background: #F0FDF4 !important;
-    border: 1px solid #86EFAC !important;
-    color: #166534 !important;
+    background: #052E16 !important;
+    border: 1px solid #166534 !important;
+    color: #BBF7D0 !important;
 }
 [data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {
-    background: #FFFBEB !important;
-    border: 1px solid #FCD34D !important;
-    color: #92400E !important;
+    background: #422006 !important;
+    border: 1px solid #A16207 !important;
+    color: #FDE68A !important;
 }
 [data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]) {
-    background: #FFF1F2 !important;
-    border: 1px solid #FDA4AF !important;
-    color: #BE123C !important;
+    background: #450A0A !important;
+    border: 1px solid #B91C1C !important;
+    color: #FECACA !important;
     font-weight: 600;
 }
 
@@ -560,7 +560,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 .stTabs [aria-selected="true"] {
     background: var(--brand) !important;
-    color: #fff !important;
+    color: #111111 !important;
     box-shadow: none !important;
 }
 
@@ -601,7 +601,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     background: var(--surface) !important;
     border: 1px solid rgba(var(--brand-rgb), 0.28) !important;
     border-radius: var(--radius-sm) !important;
-    color: #5C3838 !important;
+    color: var(--ink) !important;
     font-size: 0.82rem !important;
     font-weight: 600 !important;
     line-height: 1.35 !important;
@@ -624,7 +624,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 [data-testid="stMain"] [data-testid="stProgress"] + div .stCaption p,
 [data-testid="stMain"] [data-testid="stProgress"] ~ div .stCaption p {
-    color: #6D4E4E !important;
+    color: var(--ink-muted) !important;
     font-weight: 600 !important;
     font-size: 0.82rem !important;
 }
@@ -635,13 +635,13 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 
 .download-ready-banner {
-    background: #F0FDF4;
-    border: 1.5px solid #86EFAC;
+    background: #052E16;
+    border: 1.5px solid #166534;
     border-radius: var(--radius);
     padding: 1rem 1.2rem;
     margin: 0.5rem 0;
 }
-.download-ready-banner strong { color: #047857; }
+.download-ready-banner strong { color: #86EFAC; }
 
 .crawl-busy-btn {
     display: block;
@@ -679,7 +679,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 }
 [data-testid="stPills"] button[aria-pressed="true"] {
     background: var(--brand) !important;
-    color: white !important;
+    color: #111111 !important;
     border-color: transparent !important;
     font-weight: 600 !important;
 }
@@ -742,7 +742,7 @@ footer, #MainMenu { visibility: hidden; }
     height: 1.2rem;
     border-radius: 999px;
     background: var(--brand);
-    color: #fff;
+    color: #111111;
     font-size: 0.62rem;
     font-weight: 700;
     flex-shrink: 0;
