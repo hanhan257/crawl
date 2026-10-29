@@ -229,6 +229,8 @@ def fetch_pages_in_waves(
         items = list(first_batch)
 
     while True:
+        if end_page and next_page > end_page:
+            break
         if max_pages and next_page > max_pages:
             break
         if limit is not None and len(_merge_page_batches(page_batches, limit=limit)) >= limit:
@@ -238,16 +240,15 @@ def fetch_pages_in_waves(
             try:
                 batch = fetch_page(next_page)
             except Exception:
-                break
+                batch = []
             pages_fetched += 1
             page_batches[next_page] = batch
-            if not batch:
+            # Còn trang theo tổng đã biết thì trang rỗng là lỗi tạm, không phải hết catalog.
+            if (not batch or len(batch) < per_page) and not (end_page and next_page < end_page):
                 break
             report_progress()
             items = _merge_page_batches(page_batches, limit=limit)
             if limit is not None and len(items) >= limit:
-                break
-            if len(batch) < per_page:
                 break
             next_page += 1
             continue
@@ -261,6 +262,8 @@ def fetch_pages_in_waves(
             wave_size = max(1, min(wave_size, API_LIST_WAVE_SIZE))
 
         wave_pages = list(range(next_page, next_page + wave_size))
+        if end_page:
+            wave_pages = [page for page in wave_pages if page <= end_page]
         if max_pages:
             wave_pages = [page for page in wave_pages if page <= max_pages]
         if not wave_pages:
@@ -289,17 +292,17 @@ def fetch_pages_in_waves(
         for page_num in sorted(wave_pages):
             batch = page_batches.get(page_num) or []
             pages_fetched = len(page_batches)
-            if not batch:
-                stop = True
-                break
             report_progress()
             items = _merge_page_batches(page_batches, limit=limit)
             if limit is not None and len(items) >= limit:
                 stop = True
                 break
-            if len(batch) < per_page:
-                stop = True
-                break
+            # Trang rỗng/ngắn trước trang cuối đã biết không cắt cả shop.
+            past_known_end = bool(end_page) and page_num >= end_page
+            if not batch or len(batch) < per_page:
+                if past_known_end or not end_page:
+                    stop = True
+                    break
 
         if stop:
             break

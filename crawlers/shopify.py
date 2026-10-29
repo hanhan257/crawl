@@ -860,6 +860,15 @@ class ShopifyCrawler(BaseCrawler):
             if response.status_code == 429 and attempt < 3:
                 self._pause_for_throttle(response, attempt)
                 continue
+            # 200 + products rỗng ở trang giữa thường là throttle, không phải hết shop.
+            if response.status_code == 200 and page > 1 and attempt < 2:
+                try:
+                    peeked = response.json().get("products", [])
+                except ValueError:
+                    peeked = []
+                if not isinstance(peeked, list) or not peeked:
+                    self._pause_for_throttle(response, attempt)
+                    continue
             break
         if response is None:
             return []
@@ -968,9 +977,16 @@ class ShopifyCrawler(BaseCrawler):
             )
             if completed is not None:
                 return completed
+        expected_count = 0
+        if limit is None:
+            expected_count = self._published_product_count() or 0
         estimated_pages = max_pages
         if estimated_pages is None and limit is not None:
             estimated_pages = max(1, (limit + per_page - 1) // per_page)
+        elif estimated_pages is None and expected_count > per_page:
+            # Biết shop ~10k SP thì xin đủ số trang. Trang rỗng giữa chừng
+            # không được cắt catalog tại ~3.000.
+            estimated_pages = (expected_count + per_page - 1) // per_page
         elif estimated_pages is None and len(first_batch) >= per_page:
             estimated_pages = None
 
@@ -1075,6 +1091,9 @@ class ShopifyCrawler(BaseCrawler):
             expected = self._collection_product_count(collection_handle) or 0
         else:
             handles = self._discover_handles_from_sitemaps(max_sitemaps=max_pages)
+            if not handles:
+                time.sleep(2.0)
+                handles = self._discover_handles_from_sitemaps(max_sitemaps=None)
             expected = len(handles)
             published = self._published_product_count() or 0
             if published > expected:
