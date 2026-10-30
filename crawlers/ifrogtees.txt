@@ -1,0 +1,101 @@
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Josh Howerton Live Free Hat	woocom		US$35.95			319	22326	$4,854,483	19.97	26,840,598.17	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Mike Ditka Halloween Costume Ugly Sweater	woocom		US$39.95			515	27390	$8,202,411	11.00	13,811,429.16	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Milwaukee Brewers Cerveceros Night 2025 Jersey	woocom		US$41.95			183	42564	$2,230,156	9.08	12,982,284.78	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Milwaukee Brewers EST 1970 Legacy Varsity Jacket	woocom		US$56.95			409	73776	$5,922,614	7.07	17,202,259.85	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Clemson Tigers Military Appreciation Hoodie 2025	woocom		US$41.95			138	9502	$1,991,881	6.00	7,521,884.28	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	GoodFellins Henry Hill Button Shirt	woocom		US$35.95			59	1341	$836,807	6.00	7,932,477.33	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Tennessee Volunteers 2025 White Quarter Zip Hoodie	woocom		US$48.95			106	7385	$1,441,200	5.45	8,579,984.53	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Milwaukee Brewers 2025 Waffle Quarter Zip Hoodie	woocom		US$48.95			227	18993	$3,572,916	5.03	8,745,327.27	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Ryan Gosling Holland Merch Hawaiian Shirt	woocom		US$35.95			59	826	$619,434	5.00	5,548,008.06	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	2026 Mike Ditka Forever Da Coach Bears Jersey	woocom		US$41.95			134	6016	$1,924,869	5.00	7,654,091.81	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Brewers nfl. Central Champs Hat 2026	woocom		US$35.95			119	9478	$2,221,177	5.00	6,431,992.34	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Ohio State Buckeyes Waffle Quarter Zip Hoodie 2025	woocom		US$48.95			111	51079	$1,634,168	4.70	9,224,539.14	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Brewers 2026 NLCS Champs Waffle Quarter Zip Hoodie	woocom		US$48.95			62	4937	$1,170,264	4.00	7,258,484.57	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Broncos Throwback Classic 1977 Collection Ugly Sweater	woocom		US$39.95			44	631	$530,585	4.00	4,807,360.40	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	2026 Valkyries Finals Shirt Giveaway	woocom		US$29.95			55	1372	$928,409	4.00	3,812,654.46	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Georgia Bulldogs EST 1892 Waffle Quarter Zip Sweater	woocom		US$52.95			63	4077	$803,042	4.00	6,227,116.48	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Notre Dame Fighting Irish EST 1867 Waffle Quarter Zip Sweater	woocom		US$52.95			230	73723	$3,946,870	3.77	5,859,175.71	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Milwaukee Brewers World Series 2026 Zip Hoodie	woocom		US$49.95			204	15495	$2,849,191	3.67	6,573,861.24	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Brewers World Series 2026 Patch Hat	woocom		US$35.95			121	7487	$1,465,562	3.33	3,665,238.97	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Milwaukee Brewers Custom Quarter Zip Sweatshirt	woocom		US$44.95			40	3215	$675,652	3.33	4,235,485.02	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	2026 Heat Vice City GTA VI Jersey	woocom		US$41.95			120	3332	$464,690	3.00	4,933,880.73	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Clemson Tigers EST 1885 Waffle Quarter Zip Sweater	woocom		US$52.95			30	7609	$524,582	3.00	4,627,436.61	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	2026 Packers Rivalries Custom Jersey	woocom		US$41.95			62	4397	$1,336,528	3.00	3,885,021.08	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	2026 Ole Miss Rebels Trinidad Chambliss Powder Blue Jersey	woocom		US$41.95			26	8025	$531,322	3.00	3,695,709.71	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A1	Ảnh 1	Cleveland Guardians 2026 Hockey Jersey Giveaway	woocom		US$42.95			22	1260	$278,609	3.00	3,798,461.54	Ảnh SP	
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Cleveland Guardians 2025 Waffle Quarter Zip Hoodie	woocom		US$49.95			121	4830	₫1,780,738	3.00	4,420,147.29	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Brewers World Series 2026 Black Hat	woocom		US$35.95			133	5095	₫1,049,837	3.00	3,251,488.33		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	2026 TB Rays Devil Rays White Jersey	woocom		US$41.95			110	5155	₫2,039,610	3.00	3,776,216.96		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Lantern Season One Green Hat	woocom		US$37.95			32	17390	₫340,211	3.00	3,359,599.49	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Ted Lasso S4 KC Sines Original Hat	woocom		US$37.95			3	800	₫117,778	3.00	4,005,146.80		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Brewers 2026 NLCS Champions Win Our Way Jersey	woocom		US$41.95			112	4688	₫2,272,817	3.00	5,092,547.52		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Hibiscus Ready Or Not Hawaiian Shirt	woocom		US$35.95			3	972	₫574,130	3.00	4,395,612.42		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	2026 LA Dodgers NLDS Champions Gray Hat	woocom		US$37.95			37	1501	₫479,767	2.99	5,512,097.51		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Georgia Bulldogs EST 1892 Waffle Hoodie	woocom		US$42.95			43	2635	₫625,284	2.99	3,990,393.83		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Notre Dame Fighting Irish Waffle Quarter Zip Hoodie 2025	woocom		US$48.95			99	7991	₫1,700,789	2.83	4,175,915.98		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	2026 Milwaukee Brewers Bird Hat Giveaway	woocom		US$35.95			23	3298	₫250,428	2.32	4,578,876.28	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Brewers EST 1969 Quarter Zip Hoodie	gla_4910		US$45.95			41	1779	₫1,655,931	2.32	3,565,584.73		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Bears EST 1920 Waffle Quarter Zip Sweater	woocom		US$52.95			168	70980	₫2,508,644	2.10	4,826,103.52	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Tampa Bay Rays Hockey Jersey 2026 Giveaway	woocom		US$42.95			10	1572	₫174,306	2.00	2,737,313.23	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Patriots EST 1959 Waffle Quarter Zip Sweater	woocom		US$52.95			48	3892	₫996,088	2.00	4,575,034.22		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	2026 TB Rays American League Champs Signature All Team Shirt	woocom		US$29.95			32	1582	₫563,866	2.00	1,937,128.13		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Oklahoma Sooners EST 1895 Waffle Quarter Zip Sweater	woocom		US$52.95			14	1961	₫336,869	2.00	3,075,951.50	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	New York Yankees 2025 Waffle Quarter Zip Hoodie	woocom		US$48.95			43	2968	₫602,948	2.00	2,989,925.72	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	2026 Broncos x Breast Cancer Awareness Month Hoodie	woocom		US$41.95			40	1309	₫586,187	2.00	2,467,391.64		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	He Died For U Miami Hurricanes Shirt	woocom		US$19.95			33	278	₫370,190	2.00	1,575,677.44	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Patriots 2025 Rivalry Not Easter Quarter Zip Hoodie	woocom		US$52.95			58	6577	₫739,285	2.00	2,817,597.05	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Dions Crucial Clutch Hoodie 2025	woocom		US$41.95			11	582	₫218,352	2.00	2,533,623.77		
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Pebble's Thinking Cap - I'm A Thinker Hat	woocom		US$35.95			5	317	₫17,215	2.00	2,353,254.09	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	April 1805 Hat	woocom		US$35.95			9	108	₫230,529	2.00	2,172,243.21	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A2	Ảnh 2	Indiana Hoosiers 2025-2026 National Championship Waffle Hoodie	woocom		US$42.95			38	6865	₫721,880	2.00	2,644,521.60		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Notre Dame Fighting Irish EST 1842 Quarter Zip Hoodie	woocom		US$49.95			55	3678	$839,694	2.00	4,239,375.33		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Seahawks SBLX Champions Team Signature Sweatshirt	woocom		US$41.95			21	1510	$704,895	2.00	2,853,280.23		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Nashville Balls One Love Two Balls Shirt	woocom		US$24.95			2	130	$21,774	2.00	2,120,042.77	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Tennessee Volunteers Military Appreciation 2025 Hoodie	woocom		US$41.95			95	14226	$1,262,673	2.00	3,671,418.00		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Mike Ditka Bears Vintage Ugly Sweater	woocom		US$39.95			93	7734	$1,956,762	2.00	2,377,055.69	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Mexico Lobos Football The Turquoise Uniform Hoodie	gla_6745		US$41.95			19	359	$472,087	2.00	4,679,390.75	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	New York Giants U.S Army's 250th Anniversary Jersey	woocom		US$41.95			4	217	$110,840	2.00	2,583,632.62	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	2026 Blues Fourth Wing Night Sweatshirt Giveaway	woocom		US$36.95			59	1804	$779,092	2.00	3,329,457.94		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Bears Mike Ditka Sweater Vest	woocom		US$39.95			360	37637	$6,299,814	2.00	2,508,575.93	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Chiefs 2026 STM6 Baseball Jacket	woocom		US$57.95			58	1831	$667,126	2.00	4,912,953.92		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Brewers 2026 National League Champs Polo Shirt	woocom		US$35.95			25	406	$674,656	2.00	3,307,401.23		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Patriots 2026 Crucial Catch Cancer In All Color Hoodie	woocom		US$41.95			18	1025	$233,416	2.00	2,637,475.96		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	49ers 80th Anniversary 2026 Blanket	woocom		US$29.95			21	2279	$282,848	2.00	4,811,797.50	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	2026 Chattanooga Lookouts x Vols Hat	woocom		US$16.95			21	282	$235,190	2.00	2,224,927.03	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	2026 Brewers National League Champions Zip Hoodie	woocom		US$40.95			45	5208	$734,495	2.00	2,773,264.68		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Cleveland Guardians Hispanic Heritage Hat 2026 Giveaway	woocom		US$27.95			4	379	$41,865	2.00	2,274,405.47		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Be Still And Know Psalm 46-10 Waffle Sweater	woocom		US$29.95			17	600	$241,295	1.98	2,512,588.13		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	All I Want For Christmas Is Elsa Langley Sweatshirt	woocom		US$29.95			67	1384	$899,595	1.98	3,544,807.64		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Brewers EST 1970 Stand-Up Collar Sweatshirt	gla_6598		US$49.95			25	1319	$1,052,984	1.97	2,726,146.66		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Rochester Red Wings Dylan Crews Jersey Giveaway 2025	woocom		US$41.95			3	59	$37,819	1.97	3,434,356.71		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	2026 Bears Crucial Catch Colorful Hoodie	woocom		US$41.95			10	620	$292,656	1.60	2,010,760.16		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Ole Miss Rebels EST 1846 Quarter Zip Hoodie	woocom		US$49.95			1.50	1523	$425,141	1.50	1,899,910.17		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Lions EST 1930 Waffle Quarter Zip Sweater	woocom		US$53.95			38	4392	$759,444	1.49	2,231,686.98		
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	2026 Brewers World Series Bound Jacket	woocom		US$56.95			44	3514	$817,982	1.39	2,704,623.93	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A3	Ảnh 3	Cowboys Waffle Quarter Zip Hoodie 2025	woocom		US$48.95			42	1739	$526,147	1.20	2,073,067.73		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Messi Farewell Football Jersey	woocom1		US$44.95			24		$275,862	1.10	1,833,858.48		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Notre Dame Leprechaun Swing Golf Rope Hat	woocom1		US$35.95			64		$490,660	1.01	1,099,548.91		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Panera Bread Ugly Christmas Sweater	woocom1		US$39.95			5		$52,366	1.00	1,188,091.34		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Chicago Football Bear Down Waffle Hoodie	woocom1		US$42.95			5		$66,430	1.00	1,239,814.95		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	2026 FDNY Yankees Hat 9/11	woocom1		US$35.95			35		$432,549	1.00	1,085,291.36		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Virginia Tech Hokies 2025 Hoodie	woocom1		US$48.95			6		$104,210	1.00	1,213,953.15		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Auburn Tigers 2025 Military Appreciation Hoodie	woocom1		US$29.95			23		$211,847	1.00	2,200,520.31		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Seahawks NFC West Division 10-Time Champions Shirt	woocom1		US$24.95			8		$135,698	1.00	800,615.20	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	2025 Yankees Hamilton Hat Giveaway	woocom1		US$37.95			1		$60,305	1.00	1,136,837.66	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Brenden Dillon NJ Devils Black Hat	woocom1		US$37.95			10		$96,450	1.00	1,136,837.66		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	2026 Tampa Bay Rays Next Road Gray Jersey	woocom1		US$41.95			42		$547,263	1.00	1,264,796.02		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Miami Hurricanes Military Appreciation Hoodie 2025	woocom1		US$41.95			39		$471,645	1.00	1,240,725.97		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Green Bay Packers Retro 1993 Classic Hoodie	woocom1		US$29.95			25		$232,696	1.00	1,295,285.39		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Utah Football White Out 2026 Hoodie	woocom1		US$19.95			34		$68,373	1.00	697,109.68		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	I Got Meananned At The Olive Garden Hat	woocom1		US$35.95			1		$10,530	1.00	1,271,406.55		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Super Bowl LA Chargers Seahawks Baseball Jacket	woocom1		US$57.95			7		$103,922	1.00	1,731,189.25		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Bengals ES1 1967 Gruden Waffle Hoodie	woocom1		US$42.95			10		$223,985	1.00	1,377,451.91		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Eagles 2026 Back in Black Hoodie	woocom1		US$24.95			4		$67,695	1.00	709,607.46		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Nebraska Cornhuskers We Almost Always Almost Win Shirt	woocom1		US$19.95			13		$270,740	1.00	1,240,305.96		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Mahomes Tech On Saturdays Chiefs On Sundays Jersey	gla_4695		US$40.95			2		$146,089	1.00	1,214,433.91	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Clofaz Salute To Service Hoodie 2025	woocom1		US$29.95			4		$113,897	1.00	1,111,131.76		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Jack Black Rocking Trent Williams Shirt	woocom1		US$19.95			9		$121,227	1.00	749,316.53	Ảnh SP	Link
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	TB Rays 2026 American League Champions Locker Room Gray T-Shirt	gla_9094		US$24.95			2		$149,793	1.00	1,573,629.54		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Bengals Cincy Waffle Hoodie 2025	woocom1		US$43.95			11		$125,775	1.00	1,292,072.66		
+Sweater	2026-10-24 18:10:32	428090·A4	Ảnh 4	Seahawks Waffle Quarter Zip Hoodie 2025	woocom1		US$44.95			13		$199,286	1.00	1,447,444.79	Ảnh SP	Link

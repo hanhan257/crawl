@@ -1,0 +1,502 @@
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Part Framed Print by Jennifer Lommers | Colorful Floral Abstract	product-823169		US$86.00			701	84506	US$1,117.06	20.00	2,125.88		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Southwestern Sunset II Throw Pillow by Bonnie Bruno | Abstract Throw Pillow | Modern Throw Pillow	product-9196786		US$40.00			442	30002	US$545.53	14.29	1,451.68		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Part iPhone Case by Jennifer Lommers | Colorful Floral Abstract	product-2306385		US$25.95			246	19635	US$213.48	14.28	760.86		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Twisting Holiday Elegance Greeting Card by Charlotte Hall	product-3283020		US$30.00			282	14279	US$214.91	13.66	922.92		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Shaken Not Stirred Framed Print by Peter Ruck | Man with Glass and Cigarette	product-1196194		US$142.52			374	33403	US$1,462.85	12.71	4,293.69		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Shower Curtain by Jennifer Lommers | Vibrant Floral Garden	product-2065891		US$68.00			364	35891	US$258.54	11.70	970.11		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Adventure Time - Jake Head Men's T Shirt (Regular Fit) by Brand A | Dog Men's T Shirt (Regular Fit)	product-3165210		US$14.00			130	10269	US$92.93	11.00	294.22	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Part Shower Curtain by Jennifer Lommers | Colorful Floral Abstract	product-2065891		US$69.00			513	41807	US$489.36	10.84	937.24		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Batman - Robin Logo Men's T Shirt (Regular Fit) by Brand A	product-3165210		US$14.80			355	14130	US$96.35	10.60	287.84		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Kings of New York Art Print by Mark Likkesen | Basketball Legends Collage	product-3339687		US$109.00			374	23839	US$715.92	10.17	1,959.69		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Dc - Green Lantern Logo Men's T Shirt (Regular Fit) by Brand A | Green Lantern Mens T Shirt (Regular Fit) | Superhero Mens T Shirt (Regular Fit)	product-1166245		US$14.00			108	17900	US$66.84	9.83	251.62		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	New York Knicks 2026 NBA Champions Time Art Print by Noel Jemission for Time | New York Knicks Celebration Montage	product-3344433		US$19.32			261	22379	US$341.05	9.53	875.48		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Parts Throw Pillow by Jennifer Lommers | Colorful Floral Abstraction	product-1499713		US$43.95			112	9028	US$145.89	8.93	586.58		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Old Annabyth NPLA Finals Tjo Jo Ice dye Wild Framed Print by Jose Maraboty | Western Battle on the Basketball Court	product-3344432		US$151.56			64	6272	US$206.91	8.49	1,871.24		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Kings of New York Framed Print by Mark Likkesen | Basketball Legends Collage	product-3339688		US$161.99			211	18331	US$612.47	7.68	2,428.51		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	The Man in The Arena by Theodore Framed Print by Descendants Gallery | The Man in The Arena Quote	product-3225790		US$67.00			526	54091	US$270.66	7.63	584.54		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	I Am the Place of Refuge iPhone Case by Jennifer Lommers | Colorful Birds Perched on a Tree	product-2305790		US$25.95			119	9016	US$81.37	7.48	254.83		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Frida Kahlo Painting 6 Framed Print by Mark Askewarz | Frida Kahlo Surrounded by Colorful Birds	product-5505560		US$72.00			392	53130	US$143.05	7.20	801.77		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Warning Poem by Jeremy Joseph Art Print by Book Quote Decor | Warning Poem Text with Floral Background	product-3172806		US$22.21			1376	131359	US$191.46	7.08	804.89		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Flash - kid Flash Logo Mens T Shirt (Regular Fit) by Brand A | Superhero Mens T Shirt (Regular Fit)	product-3166414		US$14.00			47	2799	US$31.75	6.67	133.00		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Master Bedroom by Andrew Wyrth Framed Print by Dale Kincaid | Sleeping Dog in Serene Bedroom	product-3226108		US$100.00			445	33749	US$276.49	6.64	845.91		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Poolside: Glamour Art Print by Slim Aaronis | Relaxing by the Mountainous Poolside	product-1228550		US$86.06			570	43227	US$812.83	6.45	1,337.84		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Tennis in The Bahamas Art Print by Slim Aaronis | Chic Tennis Gathering in the Sun	product-1228551		US$86.06			285	17156	US$467.41	6.40	2,276.71		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Shaken Not Stirred Art Print by Peter Ruck | Man with Glass and Cigarette	product-1196251		US$86.06			270	16393	US$577.12	6.35	1,386.40		
+Card	2026-10-24 17:51:01	427bf7·A1	Ảnh 1	Meet Me in My Garden Dreams Part Throw Pillow by Jennifer Lommers | Colorful Floral Abstract	product-1524306		US$27.95			162	11157	US$150.09	6.30	555.61		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Meet Me in My Garden Dreams Part 8 Throw Pillow by Jennifer Lommers | Colorful Floral Abstraction	product-1493713		US$34.00			302	21240	US$274.98	6.24	571.12		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	New Yorker March 29, 1976 Art Print by Saul Steinberg | NYC View with Exaggerated Perspective	product-1791143		US$109.00			698	30644	US$376.63	6.23	2617.20		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	The Great Kanagawa Tea Art Print by Vincent Trinidad | Waves in a Teacup	product-2176942		US$17.35			7	122	US$5.86	6.20	1483.08		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Yellowstone National Park Travel Poster Art Print by Travel Poster Guy | Yellowstone National Park Art Print | Landscape Art Print	product-3326498		US$16.69			96	6707	US$94.50	6.13	441.01		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Santa With Horses Greeting Card by Mary Miller Veazie | Santa with Horses in Snowy Forest	product-1974805		US$4.86			87	4892	US$45.50	6.07	357.66		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	The 17th Hole Of The Old Course, St Francis Print by Heritage Images | St Andrews Golf Course Landscape	product-2119211		US$151.31			150	11248	US$234.13	6.07	1943.03		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Lounging in Verbier Art Print by Slim Aarons | Skiers Lounging with Mountain View	product-1226550		US$86.06			418	25926	US$624.47	5.93	3627.12		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Breaking Home Ties Framed Print by Norman Rockwell | Vintage Roadside Encounter with Dog	product-1251083		US$79.00			128	11704	US$80.54	5.73	839.92		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Meet Me in My Garden Dreams Part 8 Throw Pillow by Jennifer Lommers | Colorful Floral Abstraction	product-1493714		US$58.00			133	8995	US$233.80	5.71	566.88		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	USA Wins 2026 Olympic Hockey Gold USA Framed Print by USA TODAY Co USA | USA Wins 2026 Olympic Hockey Gold	product-3324973		US$92.00			162	6938	US$237.24	5.56	1112.99	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Back To The Future - 1985. Framed Print by AllEn | Back to the Future Movie Poster	product-2608459		US$69.00			115	7317	US$186.79	5.55	3384.50	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Meet Me in My Garden Dreams Part 8 Greeting Card by Jennifer Lommers | Colorful Floral Abstraction	product-1933178		US$6.30			95	9567	US$74.33	5.43	233.51		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Yes I Came Back (Always Come Back) Framed Print by Harry Bliss | Man and Dog Reunion	product-745027		US$153.00			166	92436	US$139.46	5.40	190.92		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Wooded hilly landscape Tapestry by Abraham Perther (68" x 80") | Serene Lakeside Landscape	product-1036689		US$67.00			77	3742	US$51.74	5.38	411.53		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Dolly Parton 1946-2026 Framed Print by David Gahr-Getty | Dolly Parton on Time Magazine Cover	product-3364433		US$112.00			45	3977	US$74.56	5.30	489.28		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	If - Rudyard Kipling - Minimal Framed Print by Studio Grafikia | Rudyard Kipling's Poem II	product-1732254		US$89.00			314	47940	US$455.39	5.27	503.88		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Map Of The Great Lakes Canvas Print by Jennifer Thermes | Map of the Great Lakes Region	product-2238187		US$98.11			2045	105822	US$159.47	5.20	329.81	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Shania Twain - That Don't Impress Canvas Print by Robert Williams | Shania Twain Canvas Print | Celebrity Canvas Art | Music Canvas Wall Art	product-3347775		US$42.04			1	6	US$0.41	5.05	1102.71		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Pale Blue Dot Framed Print by Noaa | Science Photo Library | Pale Blue Dot in Vast Cosmos	product-1780453		US$113.00			61	7586	US$67.84	5.04	1580.91		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Dc - Distressed Lantern Logo Men's T-Shirt (Regular Fit) by Brand A | Green Lantern Men's T-Shirt (Regular Fit)	product-3165364		US$14.00			66	11598	US$58.49	5.00	317.37		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Utimo Greeting Card by Kevin Weber | Eagle Greeting Card | Globe Greeting Card | United States Greeting Card	product-3274573		US$5.25			13	457	US$7.76	5.00	62.71		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Batman - Nightwing Symbol Youth T-Shirt by Brand A | Abstract Youth T-Shirt | Geometric Youth T-Shirt | Minimalist Youth T-Shirt	product-3167019		US$13.00			12	656	US$4.18	5.00	142.49		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Nantucket Island Golf Sports Framed Print by Sports Illustrated | Golfing Near Nantucket Lighthouse	product-1472546		US$133.00			55	3932	US$92.28	5.00	673.84		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Map Of Central America Metal Print by Jennifer Thermes | Central America Map	product-1174817		US$97.77			2183	60844	US$28.59	5.00	1182.69		
+Card	2026-10-24 17:51:01	427bf7·A2	Ảnh 2	Green Lantern - Red Lantern Logo Men's T-Shirt (Regular Fit) by Brand A | Green Lantern Men's T-Shirt (Regular Fit)	product-3165241		US$14.00			22	2334	US$14.66	5.00	156.67		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Map Of The Great Lakes Poster by Jennifer Thermes | Map of the Great Lakes Region	product-1489617		US$85.85			4234	40823	US$51.25	5.00	1,359.99		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	I Am the Place of Refuge Greeting Card by Jennifer Lommers | Colorful Birds Perched on a Tree	product-1993379		US$5.30			152	9738	US$76.11	5.00	126.21		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Poolside Glamour Framed Print by Slim Aarons | Relaxing by the Mountainous Poolside	product-1105609		US$152.29			240	24120	US$606.84	5.00	1,351.14		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Honda - Standard Logo #2 Men's T-Shirt (Regular Fit) by Brand A | Typography Men's T-Shirt (Regular Fit)	product-1115839		US$14.80			6	397	US$6.98	4.96	174.56		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Wishing You The Happiest Of Birthdays Greeting Card by General Birthday Cards | Happy Greeting Card	product-9324072		US$4.30			9333	452056	US$98.71	4.94	996.97		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	The Enzo Supercar Baby One Piece by Mark Rogan (Medium) | Ferrari Enzo Supercar Profile	product-1822495		US$23.50			15	1209	US$20.02	4.94	149.20		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Stack of BMW 5 Series E36 Coupe Men's T-Shirt (Regular Fit) by Tom Meyers | Monkey Glass On Mars | Classic Car Side Profile	product-5511967		US$23.00			16	749	US$4.99	4.93	247.91		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Map Of Central America Art Print by Jennifer Thermes | Central America Map	product-1194271		US$86.06			895	99964	US$166.92	4.92	413.38		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Laguna Beach Surfers Art Print by Slim Aarons | Surfers Gathering on Sandy Beach	product-2326069		US$86.06			191	19481	US$228.13	4.88	1,495.25		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Once Upon A Story Time Framed Print by Bill Buckley | Bear Reading to Forest Animals	product-1585065		US$72.00			62	4795	US$71.18	4.70	1,278.84		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Desert House Party Art Print by Slim Aarons | Retro Poolside Gathering	product-1228550		US$86.06			413	29816	US$616.58	4.67	2,171.15		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Poolside Piano Practice Art Print by George Hughes | Boy Playing Piano by the Pool	product-1251019		US$27.35			239	16140	US$269.27	4.58	420.31		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	New Yorker March 22, 1958 Art Post by Arthur Getz | Lobotser Mural on Building	product-1792736		US$109.00			196	15962	US$183.22	4.58	645.61		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	New Yorker August 2nd, 1958 Art Print by Arthur Getz | 1950s Evening Outdoor Dining Scene	product-1806249		US$109.00			137	10078	US$122.82	4.57	1,419.04		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Light Of The World Art Print by William Holman Hunt | Jesus Knocking at Door	product-3018165		US$17.35			377	10637	US$62.02	4.36	442.11		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	The Man In The Arena by Teddy Roosevelt Framed Print by Desiderata Gallery | The Man In The Arena Quote	product-3226577		US$69.00			321	40389	US$143.20	4.34	408.27		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Christmas Chorus Greeting Card by Pat Scott | Christmas Cats Around a Piano	product-3274428		US$35.00			102	5375	US$90.28	4.29	313.16		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Jesus runs towards the lost lamb Poster by Kevin Carden | Jesus Pursuing a Lost Lamb	product-3236960		US$18.56			51	4539	US$44.33	4.28	352.72		Link
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Map Of Africa Showing National Art Print by Everett | Color-Coded Map of Africa	product-3180916		US$16.75			7477	217688	US$193.07	4.11	327.54		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Anthony Bourdain Quote Print, Eat Framed Print by Pulp Poster | Anthony Bourdain Quote Print	product-3225770		US$73.00			294	17377	US$139.81	4.10	596.30		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Map Of American East Coast Poster by Jennifer Thermes | Map of Eastern United States	product-1458185		US$85.85			4314	47381	US$62.54	4.09	543.06		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	New York Knicks - 2026 NBA Champions Art Print by Sports Illustrated | Basketball Action on Sports Illustrated Cover	product-3344433		US$25.14			14	2605	US$8.94	4.00	205.17		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Steven Universe - Greg Star Men's T-Shirt (Regular Fit) by Brand A | Christmas Men's T-Shirt (Regular Fit) | Yellow Men's T-Shirt (Regular Fit)	product-3366405		US$14.90			8	1286	US$6.44	4.00	126.47		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	Meet Me in My Garden Dreams Part B Tote Bag by Jennifer Lommers (18" x 18") Colorful Floral Abstraction	product-2697930		US$30.00			65	3905	US$35.27	4.00	345.81		
+Card	2026-10-24 17:51:01	427bf7·A3	Ảnh 3	The 911 1964 Men's T-Shirt (Regular Fit) by Mark Rogan | Vintage Porsche #11 Side View	product-1510260		US$23.50			70	8606	US$70.88	4.00	364.83		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	N.C. Wyeth - Giant in the Sky Art Print by Jon Baran | Giant in the Sky by N.C. Wyeth	product-32288031		US$14.86			48	3196	US$23.08	4.00	447.21	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Another Year Still Fabulous Happy Greeting Card by Adult Birthday Cards | Flamingo Greeting Card	product-3374035		US$4.30			3091	184249	US$35.94	4.00	157.42		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Teenage Mutant Ninja Turtles: 1992- #1 Framed Print by Album | Ninja Turtles Emerge in Cityscape	product-2683676		US$69.99			5	754	US$4.84	4.00	428.10		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Tree of Hearts Greeting Card by Tixie | eCard | Tree of Hearts	product-3200732		US$40.00			28	1892	US$19.69	4.00	55.26		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Yoda Tote Bag by Tom Carlton (18" x 18") | Yoda Sketch	product-1225178		US$29.00			2	17	US$1.28	4.00	387.20	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	World Map, Continent And Country Labels Jigsaw Puzzle by Globe Turner LLC: Map Jigsaw Puzzle	product-2469837		US$48.80			3543	76339	US$21.58	4.00	1828.41	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Vote 2020 Framed Print by Illustration by Sheppard Farley for TIME | Vote and Empowers	product-1454649		US$112.00			4	1010	US$52.84	4.00	795.35		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Us Marine Corps - Retro Logo Men's T-Shirt (Regular Fit) by Brand Al | Esign Mens T Shirts (Regular Fit) Typography Mens T Shirt (Regular Fit)	product-1716107		US$14.00			27	2396	US$20.27	4.00	194.15		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Vintage Art Deco Negroni Poster Art Print by The Whiskey Gingers | Vintage Art Print Cocktail Art Print | Seagull Art Print	product-3013368		US$22.56			285	22789	US$252.77	4.00	828.02		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	The Calling of Saint Matthew Canvas Print by Caravaggio | Jesus Christ Canvas Print | Choloeko Canvas Art	product-3974590		US$69.54			388	77256	US$184.70	3.87	318.92		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	The Isle of the Dead, 1883 Framed Print by Arnold Böcklin | Mysterious Isle of the Dead with Cypress Trees	product-7130801		US$82.00			108	9676	US$97.87	3.82	741.01		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Map Of Africa Showing National Canvas Print by Everett | Color-Coded Map of Africa	product-6017289		US$49.39			1327	123200	US$147.44	3.81	213.92		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Grace Eric Enstrom Original Canvas Print by Restored Vintage Shop | Powerful Momento with Grace	product-3230781		US$42.04			87	5526	US$66.03	3.77	510.26		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Roger Daltrey and the Who Art Print by Melinda Sarmiento | The Who Art Print	product-3191464		US$22.56			2	61	US$2.04	3.76	111.92		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	The Hand Of God Modern Jesus Savior Art Print by Alice Fuller | Jesus Christ Art Print	product-3350280		US$17.35			108	5891	US$78.70	3.70	240.96	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Light Of The World Framed Print by William Holman Hunt | Jesus Receiving at Door	product-3227361		US$104.00			160	8094	US$59.21	3.64	380.26		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	The Sacred Heart Of Jesus Framed Print by Pompeo Batoni | Sacred Heart of Jesus by Batoni	product-3225734		US$66.00			31	2585	US$29.13	3.61	395.14	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Memento Mori Art Print by Necroblood: Skeletons Embracing Among Flowers	product-2665807		US$17.35			45	4363	US$52.06	3.61	796.13		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	The Walth #2 Art Print by Clementine Hunter | Landscape Art Print | Tree Art Print | Cabin Art Print	product-3229361		US$26.56			8	395	US$1.89	3.60	477.83		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Bible Quilt Tapestry by Harriet Powers (80" x 61") | Harriet Powers' Bible Quilt	product-1765058		US$40.00			44	1533	US$8.85	3.54	344.56		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Impression Sunrise Framed Print by Claude Monet | Impression Sunrise by Claude Monet	product-3226809		US$81.00			67	8497	US$99.78	3.50	722.47		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Cygnet's Ball Art Print by Slim Aarons | Elegant Formal Dinner Gathering	product-2178936		US$86.06			506	27542	US$301.10	3.47	631.50		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Hidden Honey Hole Jigsaw Puzzle by Guy Crittenden | Mallards in Autumn Wetlands	product-3211025		US$67.00			16	422	US$11.92	3.47	605.60		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Angelus Novus Art Print by Paul Klee | Angelus Novus by Paul Klee	product-2909228		US$15.84			12	1121	US$15.64	3.46	389.23		
+Card	2026-10-24 17:51:01	427bf7·A4	Ảnh 4	Big Boy Jr. Jigsaw Puzzle by Peter Telfone | Vintage Locomotive on a Railroad Track	product-1442060		US$40.00			62	7136	US$28.45	3.44	219.32		
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Verbier Vacation #1 Art Print by Slim Aarons | Ski Resort Sunbathing	product-1228550		US$86.06			96	7810	US$133.14	3.36	1085.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	A Whale Of A Time Framed Print by Bri Buckley | Whimsical Animals on a Whale Adventure	product-5424267		US$71.00			119	7884	US$127.61	3.28	270.96	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	African Kuba Cloth Abstract Throw Pillow by Everett Spruill | Landscape Throw Pillow | Orlando Throw Pillow | New Orleans Throw Pillow	product-3974748		US$42.00			45	2337	US$45.70	3.27	311.97	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Anthony Bourdain Quote Print Eat Framed Print by Pulp Poster | Anthony Bourdain Reflective Portrait	product-2606313		US$73.00			132	8634	US$150.60	3.27	312.64	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	"Star Wars" key art 1977 Framed Print by Retro Art World | Star Wars Space Battle Scene	product-2668754		US$69.00			65	7813	US$55.70	3.27	387.23	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	1929 Art Print by Vintage Lavoie | Guinness Is Good For You Poster	product-1341489		US$14.11			40	4254	US$30.77	3.27	289.57	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Dc- Wonder Woman's Logo Women's T Shirt (Standard Fit) by Brand A | Wonder Woman Women's T Shirt (Standard Fit)	product-2590646		US$16.00			18	3582	US$13.94	3.25	93.49	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Nighthawk, circa 1922 Canvas Print by Edward Hopper | Late Night Diner Scene	product-2145498		US$64.00			1364	72497	US$154.13	3.25	225.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	The Beatles Live At The Hollywood Bowl Art Print by Mitch Shindlerwww | The Beatles Live at Hollywood Bowl	product-3328995		US$34.56			5	285	US$17.37	3.22	151.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	The Christmas Deer Greeting Card by Tina J. eCount | Christmas Greeting Card | Deer Greeting Card | White Greeting Card	product-2594505		US$6.75			108	9038	US$40.85	3.21	180.56	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Pale Blue Dot #3 Framed Print by My Digital Mind | Pale Blue Dot and Carl Sagan Quote	product-3227781		US$79.00			198	10686	US$144.79	3.20	405.76	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Map Of Central America Poster by Jennifer Hommes | Central America Map	product-14596171		US$85.85			7322	39894	US$83.97	3.19	453.53	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	12th hole golden bell Augusta national Framed Print by Tini Gilliland | Golden bell at Augusta National	product-3225760		US$94.00			121	7973	US$225.99	3.19	1298.56	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Meet Me in My Garden Dreams Past Spiral Notebook by Jennifer Lommers | Colorful Floral Abstract	product-3207390		US$15.00			46	5393	US$31.95	3.17	336.82	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	A Tent in the Rockies Art Print by John Singer Sargent | Tent In Forest by John Singer Sargent	product-3229126		US$15.56			9	98	US$1.51	3.17	230.68	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Hogan Bridge at Rives Creek Augusta Scenery Onufran by Stefani Moracca | Hogan Bridge at Augusta National	product-2659970		US$74.00			20	701	US$16.88	3.17	262.11	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	New Yorker September 25th 1965 Art Print by Laura Jean Alston | Vintage Bar Scene	product-2191036		US$109.00			268	20575	US$211.92	3.15	417.90	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Meet Me in my Garden Dreams Past & Art Print by Jennifer Lommers | Colorful Floral Abstraction	product-1821522		US$17.35			110	12323	US$97.91	3.15	428.11	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Getting Together Greeting Card by Pat Scott | Festive Cat Banquet	product-3274415		US$5.25			69	2910	US$34.68	3.13	124.98	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	The Storm on the Sea of Galilee, 1633 Govaert Print by Rembrandt Harmenszoon van Rijn | The Storm on the Sea of Galilee	product-2232665		US$47.04			412	14883	US$113.89	3.10	357.58	Ảnh SP	Link
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Nude woman bodyscope 17 Art Print by Johan Swanepoel | Abstract Silhouette Landscape	product-1817632		US$31.56			79	6081	US$86.21	3.09	625.09	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	BMW 3 Series E36 M3 GTR Coupe Touring T-Shirt by Tom Mayer II Monkey Crisis On Mars | San Diego T-shirt | Car T-shirt | Blue T-shirt	product-565516		US$28.00			1	7	US$0.19	3.07	59.71	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Yosemite Valley 1935 Framed Print by Ansel Adams | Majestic Yosemite Valley	product-4688108		US$89.00			176	10722	US$129.22	3.06	394.07	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Agnus Art Print by Konstantin Korobov | Serene Lamb Surrounded by Wolves	product-3224270		US$45.56			253	8515	US$95.01	3.05	420.63	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A5	Ảnh 5	Sheet music for the Moonlight Sonata Art Print by Beethoven | Handwritten Musical Composition	product-3591342		US$17.36			34	1283	US$24.14	3.04	1243.98	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Hotel du Lac Art Print by Janet Hill | Charming Lakeside Hotel Scene	product-9365524		US$32.35			8	433	US$2.18	3.02	287.97		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Great Blue Heron #13 Art Print by John James Audubon | Great Blue Heron by Audubon	product-9980448		US$17.35			35	2,625	US$35.47	3.02	360.86		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Boston Strong Jigsaw Puzzle by Patti Schermerhorn | Vibrant Boston Marathon Montage	product-9210752		US$40.00			53	3,767	US$36.63	3.01	219.37		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Chauvet Cave Lions Art Print by Weston Westmoreland | Prehistoric Art Print | Bison Art Print | Lion Art Print	product-1173423		US$30.56			112	3,911	US$58.42	3.01	389.17		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Nude Lady on the floor 45 Framed Print by Gufi G | Reclining Classical Statue	product-9474818		US$89.00			8	434	US$7.64	3.00	309.43		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Blueprint of Me Cicle Type R Baby One-Piece (3XLarge) by Mark Rogan | Car Baby One-Piece | Transportation Baby One-Piece	product-3282016		US$5.00			4	237	US$1.14	3.00	220.59		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	The Constellation Of The Southern Cross Canvas Print by Luke Dodd | Science Photo Library | Starry Night Sky	product-1001762		US$70.00			97	1,866	US$5.43	3.00	345.72		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	A Scarlet Stage Framed Print by Ken Krolikowski | Ohio State Stadium Filled with Fans	product-6446903		US$78.00			77	4,268	US$59.94	3.00	953.58		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	The Annunciation Art Print by Henry Ossawa Tanner | Mary and the Announcing Angel	product-2995360		US$15.84			74	4,759	US$22.90	3.00	216.16		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Batman - Glass Hole Logo Men's T-Shirt (Regular Fit) by Brand A | Batman Movie Men's T-Shirt (Regular Fit) | Batman Men's T-Shirt (Regular Fit)	product-7145394		US$14.00			9	1,670	US$6.39	3.00	97.96		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Bandon Dunes 8 Courses Framed Print by Mike Centioli | Scenic Views of Bandon Dunes Courses	product-2224567		US$248.00			8	712	US$9.13	3.00	849.40		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	VW Emblem Sticker by Bill Cannon | Volkswagen Logo on Cream Background	product-2713541		US$99.00			8	746	US$8.12	3.00	326.40		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Freya Golden Tears Vintage Art Print by Tina Lavoie | Freya with Golden Tears	product-7078491		US$22.46			4	299	US$6.09	3.00	1,739.81		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	G. Joe - Distressed Logo Men's T-Shirt (Regular Fit) by Brand A	product-8720675		US$14.00			7	618	US$5.24	3.00	117.62		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Succession 1935 Framed Print by Wassily Kandinsky | Succession of Vibrant Shapes	product-2307142		US$66.00			15	2,181	US$17.82	3.00	520.67		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Turquoise Cow Framed Print by Daniel Patrick Kessler | Whimsical Cartoon Style Cow	product-2007413		US$73.00			0	46	US$0.20	3.00	366.44		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Batman - Snow Bat Logo #3 Men's T-Shirt (Regular Fit) by Brand A | Batman Movie Men's T-Shirt (Regular Fit) | Batman Men's T-Shirt (Regular Fit)	product-9114521		US$14.00			31	1,195	US$8.84	3.00	126.85		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Dodger Stadium Art Print by Brian Callaghan | Vin Scully at Dodger Stadium	product-3220863		US$22.50			24	1,815	US$17.95	3.00	139.10		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	The Fallen Angel Framed Print by Alexandre Cabanel | Lucifer in Fallen Angel Pose	product-3221129		US$70.00			36	2,236	US$22.05	3.00	276.92		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	You Big Dummy T-Shirt by Baltzgar	product-5698922		US$26.00			0	140	US$8.79	3.00	164.25		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Maui Beach Glass iPhone Case by Stacy Vossberg | Colorful Sea Glass Collection	product-3114427		US$26.00			9	444	US$5.02	3.00	112.86		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	The 911 Evolution Jigsaw Puzzle by Mark Rogan | Transportation Jigsaw Puzzle | Car Jigsaw Puzzle	product-8212313		US$28.00			20	557	US$14.03	3.00	243.83		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Celebrity Guests Art Print by Slim Aarons | Elegant Social Gathering in Evening Attire	product-9278714		US$86.00			107	7,829	US$81.31	3.00	1,190.73		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	America Must Change Time Cover Art Print by Painting by Charly Palmer - Photograph by Travis Ghisson | Time Magazine Cover with Activist	product-1795264		US$19.32			12	485	US$2.95	3.00	102.84		
+Card	2026-10-24 17:51:01	427bf7·A6	Ảnh 6	Kings of New York Poster by Mark Ulriksen | Basketball Legends Collage	product-3339683		US$109.00			36	3,614	US$5.64	3.00	566.61		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Eric Clapton Poster by Concert Photos | Eric Clapton Performing Live	product-3287663		US$42.56					US$2.93	3.00	466.50		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Desiderata with Deluxe Italian Border Poster by Desiderata Gallery | Desiderata with Ornate Border	product-3299764		US$31.56					US$1.83	3.00	286.60		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	El Jaleo Art Print by John Singer Sargent | Impressionism Art Print | Museum Art Print	product-3222995		US$6.10					US$22.48	3.00	148.86		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Nautical Chart 11248 Estero Bay-lennon Art Print by Bret Johnston | Marine Art Print	product-2981032		US$45.00					US$16.25	3.00	1,216.94		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Stargate - Sgl Distressed Men's T-Shirt (Regular Fit) by Brand A | Abstract Men's T-Shirt (Regular Fit) Vintage - Men's T-Shirt (Regular Fit)	product-3165279		US$16.00					US$3.56	3.00	121.33		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Glow Seventh - Banner Propeller Sets Framed Print by Joel Baroni | Colorful Abstract Geometric Geographical	product-3227546		US$6.00					US$5.74	3.00	426.50		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Alice Neel, Philodendron Art Print by Don Hill Galleries | Alice Neel with Philodendron Plant	product-3299114		US$17.56					US$6.28	3.00	413.16		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Fargo - Avr Jeep Men's T-Shirt (Regular Fit) by Brand A	product-3196217		US$14.00					US$2.74	3.00	94.08		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	New Yorker April 1st 1974 Poster by Charles Marton | Vintage New Yorker Advertisement Poster	product-1850568		US$105.00					US$0.01	3.00	339.75		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Blue Ridge Parkway Sunset - The Official Signed Roadside Guide Auto, Eastern Cove Mountains Print	product-13479485		US$49.00					US$34.12	3.00	186.42		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Black and White Hawaiian Chains Rope 5 ft Hamed Navy by Samuel H Grassman, Honolulu, Oahu Tropical Scenery Poster	product-7919155		US$65.00					US$0.55	3.00	397.55		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Yale University Saybrook College Alumni Poster by University Prints & Robert University Architecture	product-3209446		US$49.00					US$1.17	3.00	181.11		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Jesus runs towards the Lost Lamb Greeting Card by Roger Cardoff | Jesus Pursuing a Lost Lamb	product-3274550		US$6.25					US$43.56	3.00	88.82		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	German Shepherd ole Beatch Canvas Print by Dave Rodgers | Dog Gazing at the Ocean	product-2165638		US$66.00					US$0.56	3.00	325.31		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Roxen Women's T-Shirt by Nicolas Duckstein | Dramatics for Right to Face Crew	product-7827822		US$27.00					US$5.39	3.00	234.47		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	I Still Believe Amazing Grace Jesus Coffee Mug by Jolien | Amazing Grace Jesus Landscape	product-3206212		US$16.00					US$6.11	3.00	78.14		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	First Amendment Freedom of Speech T-shirt By Artiface Images | First Amendment Word Cloud	product-7757530		US$27.95					US$2.43	3.00	149.70		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	The Annunciation, 1898 Art Print by Henry Ossawa Tanner | Contemplative Woman in Warm Light	product-2185210		US$15.35					US$10.00	3.00	303.46		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Sturgill Simpson Art Print by Dewi Vlasog Klo | Sturgill Simpson Art Print | Rock And Roll Art Print | Music Art Print	product-3225128		US$21.56					US$11.00	3.00	324.87		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Superman - Red And Black Shield #1 Mens T-Shirt (Regular Fit) by Brand A & Man Of Steel Men's T Shirt (Regular Fit)	product-3165215		US$14.00					US$1.04	3.00	116.38		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Corvette Collection Greeting Card by Mark Rogan | Vintage Chevrolet Corvette Array	product-1986878		US$5.55					US$1.98	3.00	62.99		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Secretariat Winning The Triple Crown #2 Framed Print by Bettrman | Secretariat Winning the Triple Crown	product-2539485		US$151.31					US$25.13	3.00	854.52		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Fernet Branca Poster by Vintage Apple Collection | Fernet Branca Crocodile Poster	product-3238837		US$14.35					US$21.44	3.00	79.68		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Bird-of Paradise Throw Pillow by Janis Grau | Tropical Bird of Paradise Blooms	product-3195222		US$40.00					US$34.43	3.00	147.16		
+Card	2026-10-24 17:51:01	427bf7·A7	Ảnh 7	Ford Mustang Timeline History 50 Years Framed Print by Vandrae Bex | Ford Mustang 50 Years Timeline	product-5023514		US$83.00					US$90.35	3.00	5,545.01		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Roadrunner Bird Framed Print by Juan Bosco | Roadrunner in Motion	product-793219		US$85.00			13	1009	US$5.62	3.00	764.59		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Poppies Throw Pillow by Jennifer Lommers | Vibrant Poppies in Bloom	product-1501147		US$27.95			25	2401	US$15.85	3.00	135.55		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Woodstock T Shirt by Gary Grayson | Woodstock Music Festival Poster	product-520918		US$28.00			46	3881	US$32.42	3.00	83.80		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Skull of a Skeleton with Burning Tapestry by Wei's Hell Store (50" x 61") | Skeleton with Smoking Cigarette	product-1500449		US$43.00			3	233	US$2.18	3.00	205.16		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Flip Wilson as Geraldine Jones in 1970s Metal Print by Everett | 1970s Metal Print	product-3293129		US$81.00			2	48	US$0.43	3.00	429.93		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Parisian Charme - monochrome Art Print by Melanie Viola | Parisian Street with Eiffel Tower	product-2119398		US$17.56			2	69	US$4.72	3.00	876.56		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Portrait Of Princess Turandot Poster by Mary Evans Picture Library | Portrait of Princess Turandot	product-3241184		US$18.56			3	113	US$2.85	3.00	525.37		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Rockefeller Center #1 Greeting Card by Kathy Jakobsen | Festive Night at Rockefeller Plaza	product-1933006		US$4.86			7	122	US$5.70	3.00	112.90		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Cheap Trick, Robin Zander, Twin Canvas Print by Everett | Rock Band Group Photo	product-1999049		US$74.00			1	50	US$1.21	3.00	454.52		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Marsh Sailboat - Lincoln Art Print by Abby Matthews	product-3350833		US$22.35			4	142	US$4.66	3.00	770.18		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	The Singing Butler Framed Print by Jack Vettriano | Dancers in the Rain	product-2606136		US$75.00			142	6191	US$56.28	3.00	686.88		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Gotham City Tapestry (68" x 80") by Chuck Staley | Batman Movie Tapestry | Batman Tapestry | Skyline Tapestry	product-1082327		US$64.00			1	76	US$2.81	3.00	431.01		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Siegfried Art Print by Thomas Theodore Heine | Pug Art Print | Dog Art Print | Animal Art Print	product-3224272		US$26.56			24	1133	US$11.90	3.00	288.62		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	The Iconic Enzo Baby One Piece by Mark Rogan (Medium) | Ferrari Enzo Front View	product-3282492		US$23.50			25	1397	US$30.02	3.00	89.30		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Holdout Framed Print by Norman Rockwell | Group of Men in a Jury Room	product-1251054		US$79.00			101	8352	US$99.82	3.00	731.97		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	His Majesty - Framed Print by Jeffrey C. Sink | Majestic Lion in Monochrome	product-1901540		US$74.00			31	3362	US$40.41	2.96	1234.11		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	The Serenity Prayer - Rosehoed Niebuhr Art Print by Studio Grafikka | The Serenity Prayer by Rosehold Niebuhr	product-3214595		US$20.56			1294	86335	US$126.51	2.94	190.00		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Guernica Wood Print by Pablo Picasso	product-3171614		US$105.00			230	16267	US$58.59	2.93	406.23		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Santa Claus Throwing Card by William Melbourne Baird | Santa Claus Flying Over the City	product-3274457		US$30.00			78	5086	US$39.54	2.93	184.32		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Tidy And Sloppy Neighbors Art Print by John Falter | Tidy and Sloppy Neighbors	product-2630806		US$27.35			100	5010	US$35.87	2.93	199.86		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Still Life With Three Puppies Art Print by Paul Gauguin | Paul Gauguin Art Print | Whimsical Art Print | Still Life Art Print	product-3324171		US$15.84			17	518	US$18.61	2.92	219.16		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	a3 Mens T-Shirt (Regular Fit) by Brand S | Men Of Steel Mens T Shirt (Regular Fit) | Superman Mens T Shirt (Regular Fit)	product-3165245		US$14.00			93	18554	US$57.56	2.91	58.18		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Charge of the Irish Brigade Framed Print by Mark Mirtalcio | Charge of the Irish Brigade	product-3226867		US$112.00			21	955	US$45.77	2.89	443.89		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Boulevard Des Capucines Jigsaw Puzzle by Claude Monet | Busy Street Scene in Winter	product-3209672		US$39.00			2	37	US$4.19	2.89	166.95		
+Card	2026-10-24 17:51:01	427bf7·A8	Ảnh 8	Moment of Joy Art Print by Jack Hunter | Bert and Ernie Watching TV	product-1791166		US$109.00			13	644	US$5.68	2.87	596.95		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Irish Free State and Northern Ireland Poster by English School | Historic Map of Ireland and Northern Ireland	product-3237476		US$17.56			319	15377	US$14.56	2.87	325.44		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Ophelia Framed Print by John Everett Millais | Ophelia by John Everett Millais	product-29958404		US$94.00			67	4677	US$45.90	2.87	539.31		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Elvis Presley - Army Mug Shot Men's T-Shirt (Regular Fit) by Brand A | Elvis Presley Men's T-Shirt (Regular Fit)	product-3165746		US$14.00			23	1815	US$12.21	2.86	85.49		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Fernando Cueto Amorosolo, The Tinikling Art Print by Dan Hill Galleries | Fernando Cueto Amorosolo The Tinikling	product-3228868		US$17.56			15	721	US$12.06	2.86	426.02		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Honda - Standard Logo Men's T-Shirt (Regular Fit) by Brand A | Transportation Men's T-Shirt (Regular Fit)	product-31566568		US$14.00			19	3888	US$14.94	2.85	121.91		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Philadelphia Sports Fan Recycled Canvas Print by Design Turnpike | Philadelphia Sports Team Logos Collage	product-2011761		US$49.04			14	1014	US$8.53	2.81	488.04		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Seaweed wallpaper design, 1901 Shower Curtain by William Morris | William Morris Seaweed Design	product-26993271		US$69.00			11	343	US$17.81	2.80	214.35		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Self-portrait with monkeys, 1943 Art Print by Frida Kahlo | Frida Kahlo with Monkeys	product-32286411		US$27.56			12	1197	US$4.99	2.77	119.34		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Jerry Garcia Mugshot Framed Print by Bill Cannon | New Orleans Mugshot 1970	product-4847468		US$98.00			8	508	US$8.50	2.77	732.95		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Photo Of Van Halen And Eddie Van Halen Art Print by Jim Costello | Iconic Rock Band Portrait	product-1238605		US$86.06			6	112	US$11.27	2.77	497.65		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Brian Dawkins Weapon X - Philadelphia Art Print by Michael Patterson | Football Player in Eagles Jersey	product-1918223		US$27.56			4	247	US$6.23	2.77	260.64		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Daybreak Canvas Print by Maxfield Parrish | Maxfield Parrish Daybreak Scene	product-3230777		US$75.00			424	13624	US$70.47	2.77	671.62		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Solitude in Dimly Lit Bar Framed Print by Felipe Horaz | Edward Hopper Framed Print | Reflection Framed Art | Lonely Framed Wall Art	product-3550788		US$69.00			102	8826	US$76.58	2.75	1634.82		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Sailing Dinghy Art Print by Sim Aaron | Children Preparing Sailboats at the Marina	product-2177913		US$86.06			309	20437	US$222.74	2.72	559.25		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Heliot I and Hildebrand, the Meeting Art Print by Frederic William Burton | Medieval Lovers Embrace	product-2178045		US$15.36			78	3994	US$47.00	2.72	284.28		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	The Triumph of Christianity Art Print by Gustave Dore | Heavenly and Hellish Realms Depiction	product-2181632		US$15.36			21	1384	US$8.14	2.67	156.89		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Blue Heron Throw Pillow By Patricia Pinto | Soothing Abstract Blues	product-1659609		US$33.50			52	3371	US$21.90	2.67	300.93		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Calligraphy DESPERATA Watercolor Art Print by Desiderata Gallery | Desiderata Poem with Wildflowers	product-3189012		US$15.56			91	8923	US$24.92	2.67	199.88		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Rush - Los Angeles Framed Print by John Eadon | Rush Performing Live in Concert	product-3225959		US$89.00			19	1267	US$27.95	2.66	383.90		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Map Of The Great Lakes Art Print by Jennifer Thermes | Map of the Great Lakes Region	product-1191828		US$86.06			906	58796	US$77.70	2.65	146.11		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Kindred Spirits, 1849 Art Print by Asher Brown Durand | Asher Brown Durand Art Print | Thomas Cole Art Print | Vintage Art Print	product-2200969		US$15.36			107	8742	US$59.35	2.65	212.80		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	A Sabbatical Art Print by Swapnil | Silhouette of Bird on Tall Grass	product-1921774		US$22.56			95	46198	US$78.83	2.64	904.22		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	David Bowie Men's T-Shirt (Regular Fit) by Chad Lorius | David Bowie's Iconic Aladdin Sane Portrait	product-1518336		US$26.00			3	255	US$2.98	2.63	74.71		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Shaken Not Stirred Poster by Peter Ruck | Man with Glass and Cigarette	product-14650392		US$86.06			39	2233	US$128.33	2.61	1349.51		
+Card	2026-10-24 17:51:01	427bf7·A9	Ảnh 9	Brigitte Bardot Avid Bob Zaguri Art Print by New York Daily News Archive | Elegant Dinner Gathering with Celebrities	product-1235837		US$86.06			297	143643	US$225.03	2.60	468.82		
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Ernest Hemingway Right With A Record Framed Print by Everett | Men Pose with a Large Martini	product-4850393		US$97.60			17	1080	US$10.26	2.57	611.42	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Master Bedroom by Andrew Wyeth Art Print by Dale Kincaid | Sleeping Dog in Serene Bedroom	product-3228808		US$97.56			179	10324	US$77.59	2.56	718.03	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Palm Beach Society Art Print by Slim Aarons | Retro Social Gathering by the Lake	product-1793962		US$86.06			119	8730	US$197.30	2.56	1360.40	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	"Woodstock" poster 1969, art Poster by Retro Art World | Woodstock Music Festival 1969 Poster	product-9237014		US$19.56			85	6302	US$40.24	2.56	172.98	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	A Glamorous 1960s Couple Dining Framed Print by Horn & Griner | Elegant Evening at a Glamorous Restaurant	product-4947906		US$154.60			259	20468	US$465.47	2.56	1661.30	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Scandinavian Christmas card Greeting Card by European School | Vintage Greeting Card | Christmas Greeting Card | Music Greeting Card	product-9275792		US$35.00			71	277	US$7.44	2.54	341.94	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Bob Dylan - Knocking On Heavens Door Framed Print by Paul Loving | Portrait with Sunglasses and Wild Hair	product-1257933		US$100.00			46	3520	US$33.30	2.53	883.24	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Old Fashioned Christmas Greeting Card by Rortech2000 | Nature Greeting Card | Winter Greeting Card | Christmas Greeting Card	product-3278785		US$30.00			132	6181	US$9.94	2.52	138.74	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	New Yorker June 23, 1945 Art Print by Ilonka Karasz | Whimsical Garden with insects	product-2177853		US$109.00			188	13135	US$169.52	2.51	620.48	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	The Storm on the Sea of Galilee. Art Print by Rembrandt | Dramatic Storm at Sea	product-2178066		US$15.35			20	3169	US$12.69	2.50	93.31	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	The Parthenon Jigsaw Puzzle by Inge Johnsson | Majestic View of the Parthenon	product-1426369		US$52.00			2	99	US$1.61	2.50	138.55	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Happy Birthday Dad Father Greeting Card by Adull Birthday Cards	product-3324026		US$4.30			389	17508	US$4.20	2.50	405.06	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Massive Attack Art Print by Marilyn Goldsboro | The In Monochrome	product-1242005		US$86.06			2	56	US$1.37	2.50	404.20	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	The Song of the Lark by Jules Breton Art Print by Jules A Breton | The Song of the Lark	product-3225304		US$15.06			22	2364	US$25.71	2.50	339.81	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Musician Ray Charles Art Print by Bill Ray | Ray Charles Performing on Stage	product-2531211		US$16.47			12	598	US$11.22	2.50	90.69	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Stillness in the Grand Tetons Framed Print by Pleasures Grace Wall | Majestic Mountain Range Reflections	product-3351027		US$80.00			163	8606	US$227.07	2.47	578.97	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Well We're My Autumn Dreams Part II Throw Pillow by Jennifer Lommen | Colorful Floral Abstraction	product-1493713		US$31.50			80	5587	US$91.60	2.47	376.86	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Olympia Framed Print by Edouard Manet | Edouard Manet's Olympia	product-2956120		US$93.00			3	378	US$2.01	2.46	1054.21	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Majestic Deciduous Forest Scene Art Print by Robert Domeyne | Nature Art Print | Tree Art Print	product-3328668		US$15.50			22	789	US$10.80	2.44	449.16	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	A Stand of Longleaf Pine Forest, Tapestry by John Sorrac (68" x 80") | Lush Pine Forest Landscape	product-3208273		US$67.00			6	115	US$3.22	2.39	183.25	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	New Yorker March 29, 1976 Framed Print by Saul Steinberg | NYC View with Exaggerated Perspective	product-744770		US$153.00			196	14486	US$281.31	2.39	258.00	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Deliberation Jigsaw Puzzle by Mario Sanchez Nevado | Fragmented Human Portrait in Flames	product-2599843		US$49.95			55	7405	US$34.17	2.39	120.39	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Audubon Bird & Botanical Art Print by John James Audubon | Bird Perched Among Botanicals	product-3214918		US$22.56			121	8404	US$59.22	2.38	263.24	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Apple Tree Art Print by Gustav Klimt | Vibrant Apple Orchard	product-2981821		US$15.84			10	4525	US$11.20	2.36	238.51	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Dining Al Fresco On Capri Art Print by Slim Aarons | Dining with a View of Capri	product-11826613		US$86.06			32	3052	US$49.81	2.34	1065.66	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A10	Ảnh 10	Grateful Dead Portrait Framed Print by Michael Ochs Archives | Group of Friends on a City Street	product-2446816		US$142.28			36	3565	US$60.12	2.33	435.07	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Grateful Dead Portrait Framed Print by Michael Ochs Archives | Group of Friends on a City Street	product-12109411		US$142.28			36	3565	US$60.12	2.33	435.07	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Sisyphus Art Print by Jeffrey Hummel | Sisyphus Rolling the Stone	product-20528090		US$22.56			44	8588	US$72.36	2.31	431.63	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Little Safari Parade Framed Print by Bri Buckley | Parade of Cartoon Animals	product-15722886		US$71.00			11	746	US$9.89	2.31	869.24	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	President Abraham Lincoln #5 Art Print by War is Hell Store | Abraham Lincoln in Thoughtful Pose	product-21792927		US$17.56			1	62	US$2.12	2.31	404.56	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Kohler's Pig Framed Print by DH Bubble	product-43350406		US$75.00			26	935	US$33.61	2.31	905.18	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Black and White Beach Framed Print by Phill Doherty | Seaside Coastal Sunrise	product-5063762		US$6.00			4	314	US$4.44	2.31	837.48	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	DAVID WOJNAROWICZ History Keeps Canvas Print by Dan Hill Galleries | David Wojnarowicz History Collage	product-3233596		US$42.08			2	239	US$1.30	2.31	1,630.41	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Adirondack Mountain Lake Placid Jigsaw Puzzle by Vintage Treasure | Scenic View of Adirondack Mountains	product-3209851		US$39.99			32	2274	US$31.27	2.27	100.83	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Trick-Or-Treat 2017 - Halloween Night Greeting Card by Debbie Chinweli | Halloween Night in a Quiet Village	product-1988967		US$5.25			3	250	US$1.45	2.25	65.85	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Adorable Addie Art Print by Tosa LeCour | Whimsical Art Print | Chicken Art Print | Quirky Art Print	product-32152801		US$22.56			5	372	US$7.10	2.25	351.69	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Tiger - Digital Remastered Edition Art Print by Ito Jakuchu	product-32216495		US$13.56			7	203	US$5.48	2.25	247.63	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Plumbers' Art Print by Norman Rockwell | Humorous Plumbers in Vintage Bathroom	product-2630095		US$27.35			41	2481	US$38.60	2.25	592.58	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Monte Carlo Art Print by Slim Aarons | Elegant Bowling Scene with Guests	product-1182663		US$86.06			80	9175	US$200.14	2.23	383.38	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Takashi Murakami, I Know Not, I Know Framed Print by Dan Hill Galleries | Takashi Murakami Vibrant Skulls	product-3227725		US$69.00			102	6566	US$70.79	2.23	641.15	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Pure Seduction Art Print by My Heart Cheyenne | Paris Art Print | Nude Art Print | Sexy Art Print	product-3215168		US$58.00			207	9969	US$192.12	2.21	203.94	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Brad Paisley's Art Print by Mike Burroughs | Guitarist Performing on Stage	product-3191144		US$26.56			4	7	US$2.34	2.21	122.29	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Lighthouse Palace Art Print by Joseph Mallord William Turner | Joseph Mallord William Turner Art Print | Architecture Art Print	product-3324276		US$15.84			4	34	US$6.62	2.21	331.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Walt Disney World Magic Travel Poster Art Print by Travel Poster Guy | Fantasy Art Print | Whimsical Art Print | Orlando Art Print	product-3326024		US$16.69			39	2817	US$16.73	2.20	370.66	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Absinthe Bourgeois Art Print by Vintage Apple Collection | Cat Art Print | Newspaper Art Print	product-3274377		US$14.35			20	1248	US$19.85	2.20	607.51	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	A River Landscape with Storks Tapestry (50" x 61") by Charles Francois Daubigny French | Landscape Tapestry | Tree Tapestry | Nature Tapestry	product-3208701		US$43.50			58	3872	US$24.33	2.20	193.77	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Mark Rothko, Light Red over Dark Red Glovan Print by Dan Hill Galleries | Mark Rothko Color Field	product-3223667		US$64.00			36	4264	US$88.73	2.18	309.22	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	JERRY GARCIA and the GRATEFUL DEAD live Framed Print by Fabrizio Cassettari | Vibrant Band Performance	product-4852566		US$79.00			205	12854	US$152.38	2.17	668.23	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	The Best Of 2005 Reggie Bush And Matt Art Print by Sports Illustrated | 2005 Sports Illustrated Cover Reggie Bush	product-2210805		US$25.14			1	55	US$1.39	2.16	245.52	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	Twilight Bookstore Art Print by Kaoru Yamada | Cozy Twilight Bookstore Corner	product-3235470		US$42.56			144	11441	US$120.57	2.16	606.61	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A11	Ảnh 11	A Vintage Vogue Magazine Cover Art Print by Andre Marty | Elegant Woman Riding a Zebra	product-17811961		US$109.00			119	9411	US$131.82	2.16	295.66	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Seattle Washington Vintage Travel Poster Art Print by Vintage Travel Posters | Vintage Art Print | Seattle Art Print | Travel Poster Art Print	product-3339205		US$15.50			49	2418	US$26.23	2.16	241.97		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Catesby Bird & Botanical II Art Print by Mark Catesby | Exotic Bird and Botanical Study	product-2319458		US$22.35			39	3388	US$37.86	2.15	308.30		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Christmas Eve in the Woods Greeting Card by Eve Lechner	product-3276794		US$35.00			73	3562	US$42.53	2.15	207.60		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Garden Joy in Red Buoyet Cover by Jennifer Lommers | Vibrant Botanical Abstraction	product-3199960		US$107.00			129	7007	US$99.85	2.14	167.14		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Guinness When You're Tired Art Print by Mark Rogan | Guinness on a Turtle	product-1907864		US$16.56			3	219	US$3.67	2.13	347.51		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	27 Birds Jigsaw Puzzle by Jennifer Lommers | Colorful Birds on a Branch	product-1437430		US$39.75			32	4726	US$30.33	2.13	96.17		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Yin Home Art Print by Harry Bliss | Joyful Dog Leaping Home	product-3224787		US$109.00			217	187812	US$116.23	2.13	284.72		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	David Gilmour Live Framed Print by Mal Bray | Guitarist on Stage Under Dramatic Lights	product-5026828		US$77.00			2	204	US$7.34	2.12	293.39		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Prayer of St. Francis - An Instrument Metal Print by Studio Grafiikka | Prayer of St. Francis	product-3234928		US$69.00			451	27059	US$23.72	2.10	562.70		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Glacier National Park Montana Jigsaw Puzzle by Mountain Dreams | Glacier National Park Jigsaw Puzzle | Landscape Jigsaw Puzzle	product-3210771		US$42.00			5	287	US$4.80	2.10	106.44		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Olympic National Park Serenity Travel Art Print by Travel Poster Guy | Olympic National Park Art Print | Landscape Art Print | Mountain Art Print	product-3326353		US$16.69			48	2863	US$30.90	2.10	268.52		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Vogue Magazine Cover Featuring A Woman Art Print by Eduardo Garcia Benito | Beach Fashion with Dog	product-1794847		US$109.00			33	1935	US$55.36	2.09	670.42		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Elle Macpherson Swimsuit 1987 Sports Canvas Print by Sports Illustrated | Elle Macpherson Swimsuit Cover	product-2149168		US$106.00			787	110094	US$175.83	2.09	259.73		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Michelin approved Art Print by Patricia Hoffmeister | Michelin Approved Sign	product-3229121		US$25.06			44	807	US$27.74	2.09	165.07		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	World Map, Continent And Country Labels Jigsaw Puzzle by Globe Turner Llc | Map Jigsaw Puzzle	product-1426129		US$40.00			2982	139664	US$33.89	2.08	361.62		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	I Am the Place of Refuge Spiral Notebook by Jennifer Lommers | Colorful Birds Perched on a Tree	product-3207828		US$15.00			64	4473	US$33.90	2.08	49.13		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Masons in Kenya Art Print by Sam Aaron | Equestrians and Hounds on a Countryside Lawn	product-1235706		US$86.06			129	10443	US$37.29	2.06	561.98		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Irish Free State and Northern Ireland Art Print by English School | Historic Map of Ireland and Northern Ireland	product-2531407		US$17.56			68	8033	US$99.66	2.06	291.31		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Marilyn Monroe #81 Art Print | Marilyn Monroe Breakfast in Bed	product-2197740		US$27.56			26	1285	US$36.25	2.06	572.15		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	The Great Wave of Kanagawa Art Print by Katsushika Hokusai | The Great Wave of Kanagawa	product-2993284		US$15.84			29	7849	US$30.86	2.06	113.39		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	New Yorker October 27, 1945 Greeting Card by Edna Eicke | Halloween Night at the Gated Mansion	product-1984283		US$40.50			16	853	US$17.31	2.06	57.83		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Return Of The Prodigal Son #1 Art Print by Restored Vintage Shop | Return of the Prodigal Son by Rembrandt	product-3228889		US$17.56			164	11091	US$49.35	2.04	298.89		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Audubon Wild Turkey Art Print by John James Audubon | Wild Turkey by Audubon	product-2980572		US$22.35			69	5929	US$56.04	2.04	258.12		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Dolly Parton 1946-2026 Art Print by David Gahr-Getty | Dolly Parton on Time Magazine Cover	product-3364433		US$19.32			39	4339	US$56.68	2.04	773.12		
+Card	2026-10-24 17:51:01	427bf7·A12	Ảnh 12	Gettin Braids Art Print by Dawn Soden-Greene | Abstract Art Print | Black Art Print	product-3177162		US$32.56			51	2793	US$19.21	2.04	288.95		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Addic - PowerAge Men's T-Shirt (Regular Fit) by Brand A | Music Men's T-Shirt (Regular Fit) | Vibrant Men's T-Shirt (Regular Fit)	product-1605589		US$14.00			1	678	US$2.64	2.04	39.93		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Cave Lions Framed Print by Chauvet Cave | Cave Lions of Chauvet	product-3226254		US$83.00			103	3,822	US$57.04	2.02	429.30		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	1961 Yankees Score Card Coffee Mug by Jon Neidert | New York Yankees Coffee Mug | Vintage Coffee Mug | Baseball Coffee Mug	product-3206769		US$15.00			4	309	US$7.62	2.01	56.70		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Cave Lions Art Print by Chauvet Cave | Cave Lions of Chauvet	product-3228913		US$15.56			304	6,469	US$96.87	2.01	47.53		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Fuji No Yukei An Evening View Of Fuji Art Print by Utagawa Kunisada | Serene Japanese Mountain Landscape	product-3230457		US$22.56			39	3,864	US$25.25	2.01	141.14		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Roquiescott Art Print by Briton Rivière | Knight Lying in State with Dog	product-2981830		US$15.84			93	8,199	US$39.69	2.01	117.59		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Deep Roots-with Scripture Art Print by Mona Elliott | Landscape Art Print | Tree Art Print | Nature Art Print	product-3190155		US$22.56			3	105	US$2.94	2.01	258.52		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Army - Big Logo Men's T-Shirt (Regular Fit) by Brand A | Yellow Men's T-Shirt (Regular Fit) | Black Men's T-Shirt (Regular Fit)	product-3165774		US$14.00			11	1,822	US$19.24	2.00	40.53		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Cafe Terrace at Night Framed Print by Vincent Van Gogh | Cafe Terrace at Night by Van Gogh	product-6190408		US$68.00			43	3,588	US$48.79	2.00	221.15		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Summer Play Framed Print by Katerina Mertikos | Children Playing in a Colorful Village	product-2095218		US$83.00			5	157	US$0.96	2.00	104.33		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	#3 Men's T-Shirt (Regular Fit) by Brand A | Batman Movie Mens T-Shirt (Regular Fit) | Batman Men's T-Shirt (Regular Fit)	product-3165238		US$14.00			16	2,499	US$13.85	2.00	115.81		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Willie Gillis in College' Art Print by Norman Rockwell | Willie Gillis Reading in College	product-2630086		US$27.35			15	640	US$6.25	2.00	114.04		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Take My Hand Art Print by Greg Olsen | Jesus Leading a Young Boy	product-2632814		US$37.56			7	739	US$4.23	2.00	196.93		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Lunch Atop a Skyscraper, New York Art Print by Historical Photo | Workers on a Skyscraper Beam	product-2177946		US$15.35			69	3,479	US$47.64	2.00	586.10		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	St Louis Cardinals Busch Stadium Shower Curtain by John Stoeckley | Busch Stadium in St. Louis	product-3199843		US$69.00			2	187	US$0.95	2.00	151.84		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Steven Universe - Crying Breakfast Men's T-Shirt (Regular Fit) by Brand A | Whimsical Men's T-Shirt (Regular Fit)	product-3165874		US$14.00			1	24	US$0.09	2.00	93.15		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Dr. Robin Logo Men's T-Shirt (Regular Fit) by Brand A | Robin Men's T-Shirt (Regular Fit) | Superhero Men's T-Shirt (Regular Fit)	product-3165218		US$14.00			17	5,266	US$9.87	2.00	81.74		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Out of the Canyon Framed Print by Carl Rungius | Grizzly Bears in Mountain Terrain	product-2125289		US$66.00			1	120	US$0.94	2.00	304.60		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Lexington Kentucky Vintage Travel Poster Art Print by Vintage Travel Posters | Landscape Art Print | Vintage Art Print | Lexington Art Print	product-3239652		US$15.50			5	495	US$3.31	2.00	299.87		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Roy Lichtenstein Peace Through Chemistry Poster by Dot Hill Galleries | Lichtenstein Peace Through Chemistry	product-3241254		US$17.56			20	1,930	US$18.42	2.00	321.82		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Vintage Bison illustration Jigsaw Puzzle by Land of Dreams | Bison Jigsaw Puzzle | Wildlife Jigsaw Puzzle	product-3212224		US$42.00			6	86	US$2.93	2.00	114.61		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Reading by the Window Art Print by Charles James Lewis | Woman Reading by a Sunny Window	product-2301815		US$17.56			3	299	US$3.35	2.00	61.09		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Peaks from House Island Art Print by Benjamin Williamson | Landscape Art Print | Maine Art Print | Peaks Island Maine Art Print	product-3224088		US$53.00			5	87	US$9.37	2.00	368.81		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Blue Illusion Shower Curtain by Patricia Pinto | Soothing Abstract Blues	product-2649360		US$74.00			53	3,891	US$31.16	2.00	133.83		
+Card	2026-10-24 17:51:01	427bf7·A13	Ảnh 13	Map of Lower Manhattan Art Print by CSA Images | Map of Lower Manhattan	product-2982337		US$19.00			540	10,251	US$10.73	2.00	341.72		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Fallout Shelter Sign Tapestry by War Is Hell Store (50" x 61") | Fallout Shelter Sign	product-1459566		US$43.80			1	31	US$0.79	2.00	274.34		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	The Unicorn in Captivity Canvas Print by Netherlandish School | The Unicorn in Captivity	product-2187999		US$61.80			2	537	US$8.94	2.00	188.66		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	New Yorker March 7, 1936 Art Print by Constantin Alajalov | Vintage Squash Match	product-1863944		US$109.00			15	622	US$23.69	2.00	472.08		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Gary Player, 1978 Masters Sports Art Print by Sports Illustrated | Gary Player Wins the Masters	product-2179618		US$25.14			1	43	US$0.35	2.00	121.94		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Loon in Flight Art Print by Isaac Bignell Cree Nation Canada	product-3179867		US$22.56			5	492	US$3.04	2.00	340.10		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Mc Magazine, 1972 Art Print by Granger Historical Picture Archive | Cat Art Print | Clock Art Print | Historical Art Print	product-3172568		US$22.56			14	237	US$7.06	2.00	137.86		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Cookie Monster Tote Bag by Sesame Street Artist (13" x 13") | Cookie Monster with a Cookie	product-3206455		US$21.50			1	183	US$0.81	2.00	141.19		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Chief Tecumseh Poem - Live Your Life #2 Poster by Celestial Images | Chief Tecumseh Inspirational Poem	product-3287114		US$17.56			16	584	US$2.11	2.00	288.62		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Great Smoky Mountains Travel Poster #2 Art Print by Travel Poster Guy | Landscape Art Print | Sunrise Art Print | National Parks Art Print	product-3326330		US$16.69			23	2,022	US$13.79	2.00	503.41		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	ROGERS HORNSBY AND John J. McGraw CRCA Art Print by Robert W Williams | Historic Baseball Team Gathering	product-3346956		US$17.35			2	26	US$3.14	2.00	130.55		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Harley Davidson Heritage Softail Shower Curtain by Dave Koontz | Vintage Shower Curtain | Motorcycle Shower Curtain | Transportation Shower Curtain	product-3199131		US$89.00			4	113	US$9.38	2.00	165.51		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Whose Meat 1914 Art Print by Charles Marion Russell | Furies and Beast in Rugged Landscape	product-3215153		US$15.56			17	1,249	US$7.02	2.00	225.93		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Birds in Flight design iPhone Case by Charles Francis Annesley Voysey | Birds and Floral Pattern	product-3194595		US$27.50			4	139	US$1.30	2.00	65.48		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Lee Krasner, Bird Talk Art Print by Dan Hill Galleries | Lee Krasner's Bird Talk Composition	product-3229109		US$17.56			39	4,060	US$16.25	2.00	210.40		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Oklahoma Sooners 2026 College World Framed Print by Dia Today Co USA | Oklahoma Sooners Celebrate Victory	product-3344465		US$92.00			7	933	US$20.80	2.00	461.65		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Barry Cuda, V.2 Framed Print by Trevor Irwin | Colorful Barracuda Illustration	product-4926890		US$99.00			1	14	US$1.88	2.00	365.51		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Serene Autumn Lake #1 Sunset #1 Framed Print by The Luxury Art Collection | Serene Autumn Lake at Sunset	product-3350931		US$78.00			4	178	US$8.67	2.00	235.35		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Peony Navy Blue Flower Watercolor Framed Print by Joanna Szmidt | Elegant Blue Flowers on Stems	product-2130443		US$90.00			19	1,122	US$25.23	2.00	154.89		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Sycamore Tree Serenity Poster by Robert Domoyne | Landscape Poster | Nature Poster	product-3327676		US$15.50			5	193	US$1.57	2.00	157.16		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	United Kingdom Union Jack England Shower Curtain by Design Turnpike | Union Jack Flag	product-2696011		US$83.00			1	19	US$1.86	2.00	128.84		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Angel Oak on Johns Island in South Art Print by Dawna Moore Photography | Black And White Art Print | Nature Art Print | Tree Art Print	product-3173512		US$32.56			32	2,002	US$28.05	2.00	1,091.17		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Flashdance - 1983, Framed Print by Album | Flashdance 1983 Movie Poster	product-2610628		US$78.00			1	119	US$2.58	2.00	160.02		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	The Daughters of Edward Darley Boit Canvas Print by John Singer Sargent | Children Playing in a Grand Room	product-2004111		US$42.04			95	1,858	US$9.09	2.00	129.89		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	In His Constant Care #1 Art Print by Greg Olsen | Jesus Feeding Sparrows in Temple Courtyard	product-2632864		US$37.56			51	2,474	US$15.04	2.00	80.81		
+Card	2026-10-24 17:51:01	427bf7·A14	Ảnh 14	Radish Framed Print by Fran Henig | Lone Radish with Leaves	product-4909590		US$89.00			2	24	US$0.86	2.00	166.33		
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Best Of 1976 Newspaper Framed Print by Newspaper Guy | Vintage Framed Print | Sports Framed Art | Music Framed Wall Art	product-33251319		US$92.00			22	2054	US$33.29	2.00	256.73	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Mamma Mia Poster by Bo Kev | Mamma Mia Musical Scene	product-26048378		US$21.35			6	248	US$4.99	2.00	212.35	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	No1120 My Once Upon a Time in Hollywood Metal Print by Chungokong Art | Once Upon a Time in Hollywood Poster	product-32242122		US$69.00			2	45	US$1.18	2.00	90.70	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Al Capone Scarface Mafia Crime Boss Coffee Mug by Wingsdomain Art and Photography | Scarface Coffee Mug | James Cagney Coffee Mug	product-32040699		US$21.00			3	37	US$0.89	2.00	104.44	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Scooby-doo??! - T-shirt Mens T-Shirt (Regular Fit) by Brand A | Dog Mens T-Shirt (Regular Fit)	product-31646012		US$14.00			10	907	US$5.72	2.00	55.20	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Justice League Movie -Batman Logo Sweatshirt by Brand A | Batman Movie Sweatshirt | Batman Sweatshirt | Superhero Sweatshirt	product-31876636		US$25.00			13	624	US$6.36	2.00	71.70	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Horses In The Mist Art Print by Monte Nagler | Horses Grazing in Morning Light	product-26805205		US$14.35			2	293	US$2.94	2.00	478.58	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	The Band - The Last Waltz Mens T-Shirt (Regular Fit) by Brand A | Music Mens T-Shirt (Regular Fit) | 1970s Mens T-shirt (Regular Fit)	product-31664171		US$14.00			22	1612	US$15.43	2.00	58.00	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Playboy Magazine Cover, August 1965 Poster, Lip Collins Playboy Cover Art 1965	product-31517866		US$20.93			22	956	US$4.67	2.00	114.02	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Acropolis of Athens Art Print by Manolis Tsantakis | Black And White Art Print | Architecture Art Print | Greece Art Print	product-31781197		US$42.56			2	98	US$1.51	2.00	209.18	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Boon Island Light Tower circa 1850 Framed Print by Angel Hall | Boon Lighthouse in Stormy Seas	product-4863002		US$88.00			1	21	US$10.15	2.00	686.47	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	High Five You're 5 Greeting Card by MUG Artistry Cards	product-33240601		US$4.30			333	8230	US$7.25	2.00	37.50	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	3 Lithium Periodic Table Element Light Sticker by Organic Synthesis | Lithium Periodic Table Element Design	product-32131112		US$2.90			1	5	US$0.50	2.00	108.19	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Anthony Bourdain Quote Eat at a torsa Framed Print by Pulp Poster | Anthony Bourdain by the River	product-3225748		US$73.00			57	4945	US$58.44	2.00	496.10	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Millenium Bean Canvas Print by Frozen in Time Fine Art Photography | Cloud Gate in Chicago	product-2209659		US$74.00			237	5449	US$8.96	2.00	507.73	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Adrian Norwood Park Serenity River Art Print by Novel Poster Guy | Scenes Art Print | Landscape Art Print | Nature Art Print	product-3326066		US$16.69			18	1801	US$10.81	2.00	153.64	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Monk By The Sea Framed Print by Caspar David Friedrich | Monk by the Sea	product-3227380		US$74.00			48	3047	US$48.70	2.00	552.65	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Chris Paul and Blake Griffin Art Print by Isaac Haluzan | Chris Paul and Blake Griffin on Court	product-25414094		US$86.21			2	11	US$1.18	2.00	254.90	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	October on Cape Cod Art Print by OH Bubble	product-3350403		US$17.34			3	473	US$2.07	2.00	710.14	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Batman - Arkham Asylum Mens T-Shirt (Regular Fit) by Brand A | Typography Mens T-Shirt (Regular Fit)	product-31653200		US$14.00			2	179	US$0.68	2.00	92.95	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Silver Diner Coffee Mug by Julie Niemela | Neon Silver Diner Sign at Night	product-3201722		US$19.00			4	14	US$2.26	2.00	56.14	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Yucca Art Print by Georg Dionysius Ehret | Botanical Study of a Yucca Plant	product-2665036		US$15.84			12	1148	US$7.32	2.00	340.61	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Hollywood Landmarks: Hollywood Theater Framed Print by Art Block Collections | Hollywood Sign and Palm Tree	product-4916686		US$89.00			2	69	US$2.59	2.00	279.59	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	Solar System Planets Art Print by Manjik Pictures | Solar System Planets Display	product-2987171		US$17.35			495	10558	US$5.73	2.00	111.22	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A15	Ảnh 15	The Penitent Magdalen, circa 1640 Art Print by Georges de La Tour | Contemplation by Candlelight	product-2185101		US$17.35			15	494	US$5.63	2.00	63.30	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Sidney Poitier Looks Through A Window #1 Poster by Gordon Parks | Reflective Moment by the Window	product-3243037		US$16.75			4	273	US$3.90	2.00	195.35	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Lady Lilith - #1 Framed Print by Dante Gabriel Rossetti | Lady Lilith by Dante Gabriel Rossetti	product-3227277		US$69.00			1	138	US$1.94	2.00	226.16	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Salman Toor Rooftop Party with Ghosts Framed Print by Dan Hill Galleries | Salman Toor Rooftop Party	product-3227736		US$80.00			68	1,832	US$19.77	2.00	365.12	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	The Garden Of Earthly Delights #1 Jigsaw Puzzle by Hieronymus Bosch | The Garden of Earthly Delights	product-3209512		US$39.90			1	45	US$0.38	2.00	125.24	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Lassen Volcanic National Park Travel Framed Print by Travel Poster Guy | Lassen Volcanic National Park Framed Print | Landscape Framed Art	product-3206234		US$92.00			3	101	US$3.85	2.00	141.72	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Philadelphia Eagles Super Bowl LIX Poster by Sports Illustrated | Jalen Hurts Celebrates Super Bowl Victory	product-3171586		US$28.14			20	1,269	US$15.06	2.00	69.22	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Navajo Western Art by Gerald Cassidy Art Print | Navajo Man in Traditional Dress	product-930448		US$22.96			8	182	US$3.11	2.00	240.14	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	New Yorker September 22 1951 Art Print by Leonard Dove | Quirky Bar Scene with Poodles	product-2984451		US$109.00			6	240	US$4.29	2.00	428.17	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	The Governor's Palace Framed Print by Gulay Berryman | Colonial Williamsburg Governor's Palace	product-3244241		US$69.00			3	225	US$1.07	2.00	384.14	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Green Lantern - Kyle Logo Men's T-Shirt (Regular Fit) by Brand A | Green Lantern Kyle Logo Men's T-Shirt (Regular Fit) | Superhero Men's T-Shirt (Regular Fit)	product-9165384		US$14.00			4	474	US$2.21	2.00	316.41	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Aqua Curl Metal Print by Sean Davey | Powerful Ocean Wave Curl	product-1488865		US$77.00			3	74	US$6.48	2.00	1,090.62	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	The Headless Horseman Pursuing Ichabod Tapestry by John Quidor 1800–1879 | The Headless Horseman and Ichabod Crane	product-3208578		US$40.50			2	75	US$1.74	2.00	335.39	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Venus and the Three Graces offering Art Print by Sandro Botticelli | Women with Chired Angels	product-2087930		US$22.35			128	3,819	US$7.27	2.00	1,167.94	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	New Yorker Cover - June 25th, 1960 Art Print by Anatol Kovarsky | Chantrey Tennis Match Illustration	product-1811833		US$109.00			175	12,154	US$195.95	2.00	575.71	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Mint 400 Motocross Race Art Print by Bill Eppridge | Massive Desert Motorcycle Race	product-2531185		US$16.47			2	293	US$0.52	2.00	55.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Guinness For Strength Baby One-Piece by Mark Rogan (Medium) | Guinness For Strength Advertisement	product-3262528		US$23.00			25	715	US$23.68	2.00	73.93	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Seattle Over Lake Union Framed Print by Mike Reid | Seattle Skyline Sunset View	product-2177555		US$103.00			2	55	US$4.62	2.00	491.28	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Stack of Holders Monaros Men's Premium T-Shirt by Tom Mayer II Monkey Crisis On Mars | Fire Colorful Race Cars in Profile	product-496005		US$27.00			1	19	US$0.73	2.00	54.37	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Door Of No Return Art Print by Tony Vegas | Historical Art Print	product-3172358		US$22.35			1	6	US$0.67	2.00	278.38	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Washing up from Good Housekeeping 1920s Poster by Jessie Wilcox Smith | Child Washing Dishes by Jessie Wilcox Smith	product-3242289		US$17.56			2	45	US$0.33	2.00	220.93	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Africa Continent Map With Relief Poster by Globe Turner Ltd | Detailed Political Map of Africa	product-1466007		US$85.85			161	18,532	US$5.88	2.00	303.24	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Mending The Nets #4 Canvas Print by Winslow Homer | Women Mending Fishing Nets	product-2729517		US$65.00			3	53	US$1.41	2.00	167.98	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Vintage Fenway Park - Boston Coffee Mug by Joanne Vitali | Iconic Fenway Park Stadium	product-3203157		US$18.50			16	611	US$6.82	2.00	98.26	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Snowy Owl Greeting Card by John James Audubon | Snowy Owls on Tree Branches	product-3275681		US$5.00			2	41	US$2.69	2.00	127.48	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A16	Ảnh 16	Figures Art Print by Jankel Adler | Abstract Art Print | Reflection Art Print	product-3273669		US$16.10			19	579	US$19.86	2.00	83.52	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Italian Cafe iPhone Case by Thomas Kinkade Studios | Charming Italian Coastal Village	product-32802971		US$31.00			2	33	US$2.04	2.00	92.50		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Porsche parked in the street Coffee Mug by Shay Levy | Transportation Coffee Mug | Car Coffee Mug	product-32046163		US$18.50			32	7496	US$16.15	2.00	71.89		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Emory University Haygood Hopkins Gate Jigsaw Puzzle by University Icons | Emory University Historic Gate	product-92112581		US$51.00			2	4	US$2.52	2.00	138.24		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Whistljacket Art Print by George Stubbs | Whistljacket by George Stubbs	product-25313071		US$17.35			16	3207	US$18.03	2.00	311.99		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Dunettar Castle Overlooking The Sea Canvas Print by Brandon Angler	product-8333971		US$69.00			3	96	US$0.63	2.00	196.64		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Colorful San Antonio Riverwalk Jigsaw Puzzle by Bee Creek Photography - Tod and Cynthia | Colorful San Antonio Riverwalk	product-32101571		US$22.00			16	627	US$8.36	2.00	310.36		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Bichon Frise, fluffy white dog lying Throw Pillow by Jane Bichon | Fluffy Bichon Frise Relaxing	product-3195718		US$35.00			3	79	US$3.67	2.00	75.65		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Witches' Sabbath #4 Yoga Mat by Lagra Art | Francisco Goya Yoga Mat	product-3207033		US$65.00			9	318	US$5.00	2.00	112.22		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Tinkerbell iPhone Case by Morn Print | Watercolor of Tinkerball with Wand	product-3191434		US$27.00			1	76	US$1.77	2.00	53.05		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Tackled Canvas Print by Norman Rockwell | Vintage Football Tackle	product-1251024		US$93.00			8	633	US$1.99	2.00	301.11		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	If You Build It, They Will Come Framed Print by Mountain Dreams | Field of Dreams Baseball Scene	product-3225906		US$90.00			42	2830	US$40.49	2.00	403.08		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Pirate Ship Artwork - Vintage Men's Premium T Shirt by Nikki Marie Smith | Vintage Pirate Ship Illustration	product-476846		US$37.95			2	82	US$4.39	2.00	103.30		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Raven Art Print by John James Audubon | Raven Art Print	product-8324438		US$15.84			19	1028	US$17.64	2.00	337.81		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Slovenia Serene Beauty Travel Poster Art print by Travel Poster Guy | Landscape Art Print | Mountain Art Print | Nature Art Print	product-3376487		US$16.69			3	33	US$1.28	2.00	324.09		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Sugar Magnolia Baby Onsie Pieces by Kosmik Univ (Medium) | Grateful Dead Typography Design	product-9282507		US$23.00			6	318	US$4.97	2.00	83.21		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Salvador Dali The Persistence of Memory Framed Print by Dan Hill Galleries | Salvador Dali Surreal Melting Clocks	product-9226124		US$80.00			141	9938	US$65.55	2.00	827.56		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Blue On Blue #1 Throw Pillow by June Erica Vess | Dynamic Blue Brushstrokes	product-1677730		US$29.00			1	205	US$1.24	2.00	222.62		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Acadia National Park Travel Poster Art Print by Travel Poster Guy | Acadia National Park Art Print | Mountain Art Print | Nature Art Print	product-3326643		US$16.69			61	4347	US$33.96	2.00	345.55		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Shelby Cobra 1967 Framed Print by Yurdzer Eces | Classic 1967 Shelby Cobra	product-7541921		US$83.00			2	46	US$4.63	2.00	328.40		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Bengal Tiger Fur Throw Pillow by Siede Print	product-3197008		US$30.00			70	3762	US$38.46	2.00	73.61		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	A Morning Dance of the Nympha Art Print by Camille Corot | Dancers in a Lush Forest Clearing	product-3189439		US$18.56			2	78	US$0.57	2.00	323.68		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Barred Owl Throw Pillow by Lois Bryan | Curious Barred Owl	product-3195236		US$30.00			2	156	US$2.73	2.00	81.05		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Misty Rainforest Creek Tapestry by Nicklas Gustafsson (88" x 104") | Lush Tropical Rainforest Scene	product-14605211		US$87.00			1	14	US$0.97	2.00	138.54		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	The Thames With Charing Cross Bridge Art Print by Claude Monet | Impressionism Art Print | Bridge Art Print	product-3324158		US$15.84			2	162	US$2.40	2.00	486.76		
+Card	2026-10-24 17:51:01	427bf7·A17	Ảnh 17	Swimming Hole Jigsaw Puzzle by Thomas Cowperthwaite Eakes | Bathers by the Riverside	product-32100521		US$39.00			1	12	US$0.33	2.00	95.89		
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Trick or Treat Art Print by Janet Munro | Halloween Night at the Haunted House	product-3228904		US$22.56			16	1733	US$8.27	2.00	439.72	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Lime-Borghini Jigsaw Puzzle by Peter Tellone | Green Lamborghini on Dark Background	product-1441184		US$40.00			32	1	US$1.52	2.00	94.82	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Red cardinal watercolor Art Print by Nitin Singh	product-3219648		US$17.56			4	121	US$0.47	2.00	212.33	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	James Bond Barlet Framed Print by Pechane Sumie | Daniel Craig in Monochrome Silhouette	product-2951638		US$69.00			7	969	US$13.39	2.00	616.71	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	The Greek Alphabet Metal Print by Mark Rogan | Greek Alphabet Chart	product-3233781		US$67.00			1850	84055	US$23.69	2.00	549.54	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Buddha 5 Jigsaw Puzzle by Cameron Gray | Nature Jigsaw Puzzle | Buddha Jigsaw Puzzle | Natural Jigsaw Puzzle	product-3212235		US$45.00			2	49	US$6.79	2.00	108.37	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Blue 1936 Ford Phaeton Convertible T-Shirt by Keith Webber Jr | Vintage T-Shirt | Transportation T-Shirt | Car T-Shirt	product-7804790		US$27.95			1	7	US$2.22	2.00	175.44	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	The R8 Blueprint Women's T-Shirt by Mark Rogan | Audi R8 Blueprint Design	product-7833115		US$25.50			5	41	US$6.24	2.00	59.76	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Buckeye Game Day iPhone Case by Dan Keck | Ohio State Buckeyes Football Game	product-3287629		US$28.00			9	616	US$4.26	2.00	78.01	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Justice League Movie - Superman Logo Men's T-Shirt (Regular Fit) by Brand A | Man Of Steel Men's T-Shirt (Regular Fit)	product-3165507		US$14.00			23	2507	US$11.66	2.00	39.84	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	The Sea Art Print by Gustave Courbet | Landscape Art Print | Sky Art Print	product-3324299		US$15.64			1	135	US$0.14	2.00	492.76	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Master Chief Body One-Piece Be Inspired Design (Medium) | Master Chief Typography	product-3282522		US$31.00			2	89	US$1.74	2.00	134.51	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	World's Fair Chicago - A Century Poster by Vintage Treasure | World's Fair Chicago 1933 Poster	product-3237927		US$17.55			15	1610	US$10.85	2.00	452.97	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Perfume with peachy Framed Print by Owen Pallas | Coco Noir Perfume with Peony	product-3227921		US$86.00			7	301	US$10.75	2.00	306.91	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Sunbathing At Hotel Zu Cape Codness Art Print by Slim Aarons | Summer Day at a Seaside Resort	product-1237750		US$86.06			16	1830	US$26.44	2.00	1033.64	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	The Mexican Major Frederic Remington, Art Print | The Mexican Major by Frederic Remington	product-2614979		US$17.35			2	54	US$0.30	2.00	199.38	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Agony in the Garden Art Print by Schwartz Frans | Angel Comforting a Weary Soul	product-1813598		US$15.35			34	1628	US$17.35	2.00	236.63	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Holstein Cows Greeting Card by C. M. Yost | Curious Cows in a Field	product-1985870		US$5.25			5	82	US$1.23	2.00	19.34	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Flowers and Fruits Art Print by Paul Cezanne | Vase with Citrus and Floral Arrangement	product-2532299		US$17.56			1	84	US$0.41	2.00	62.89	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Entrance to the Public Park in Arles Canvas Print by Vincent Van Gogh | Stroll in a Sunlit Park	product-4447261		US$53.00			1	40	US$1.87	2.00	219.56	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Dc - Aquaman Splash Toddler T-Shirt by Brand A | Aquaman Toddler T-Shirt | Superhero Toddler T-Shirt	product-2599530		US$12.00			2	12	US$0.36	2.00	335.37	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	1978 Toyota Land Cruiser FJ40 Taillight iPhone Case by Jill Reger | Vintage Yellow Toyota Rear Detail	product-3193456		US$43.00			1	7	US$0.87	2.00	130.45	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Rush in Springfield Poster by Fin Costello | Rush Band Backstage Moment	product-1456531		US$86.06			6	515	US$2.59	2.00	421.01	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Purdue University Boilermakers West Jigsaw Puzzle by Design Turnpike | West Lafayette Indiana Map	product-1441269		US$40.00			1	52	US$0.34	2.00	173.32	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A18	Ảnh 18	Chinoisine Vintage Hummingbirds in Beach Sheet by Audrey Jeanne Roberts | Hummingbird and Floral Pattern	product-3216915		US$49.95			11	232	US$10.05	2.00	162.72	Ảnh SP	
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Guitar Icons No 1 T Shirt by Mark Rogan | Famous Musicians | Iconic Guitars	product-523988		US$25.95			7	489	US$4.32	2.00	62.75		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Baroque Horse Series In/Out Shower Curtain by Heather Edwards | Horse Shower Curtains | Animal Shower Curtains | Portrait Shower Curtain	product-3199994		US$79.00			2	44	US$1.48	2.00	174.36		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Beat the Whites with the Red Wedge, 1919 Art Print by El Lissitzky | Bold Constructivist Design	product-2201248		US$15.35			6	276	US$1.60	2.00	206.40		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Salvador Dali The Persistence of Memory Poster by Dan Hill Galleries | Salvador Dali Surreal Melting Clocks	product-3288067		US$17.56			17	2,485	US$11.89	2.00	102.83		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Playboy Magazine Cover, October 1975 Art Print | Dannie Stern Playboy Cover October 1971	product-3517772		US$20.98			2	1	US$0.12	2.00	168.48		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Steve McQueen, Motorsport Sports Canvas Print by Sports Illustrated | Steve McQueen on Sports Illustrated Cover	product-2154181		US$106.00			7	1,983	US$2.87	2.00	572.68		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Evening at the Inis Field iPhone Case by Timothy Easton | Serene Countryside Landscape	product-2305929		US$27.00			3	206	US$3.55	2.00	88.78		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	The Dark Knight Art Print by Batugar | Batman Stands Before Blazing Gotham	product-2254148		US$27.35			6	754	US$11.98	2.00	332.73		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	First Colored Senator Framed Print by Wse Is Ntil Store | First African American Leaders in US Congress	product-5077580		US$68.00			1	7	US$1.33	2.00	161.14		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Eiffel Tower Twilight Canvas Print by Leonid Afremov Studio | Sunset Canvas Print | Skyline Canvas Art | Eiffel Tower Canvas Wall Art	product-3357692		US$55.00			3	88	US$7.28	2.00	215.42		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Chinese Lantern #1 Greeting Card by Lydia Jacobs | Vibrant Chinese Lanterns in Vase	product-1983139		US$8.25			2	11	US$3.72	2.00	19.64		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Resin Cast Of The Coronary Arteries Art Print by Martin Dohn | Royal College Of Surgeons / Science Photo Library | Intricate Red Vascular Structure	product-2191615		US$44.56			1	21	US$0.60	2.00	355.61		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Still Life With A Glass And Oysters Art Print by Jan Davidz De Heem | Still Life with Fruit and Oysters	product-2664030		US$15.84			3	296	US$0.83	2.00	131.99		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Native Tlingit Carving At The Jonesau Framed Print by Ron Sanford | Traditional Indigenous Totem Design	product-5172834		US$92.00			20	2,464	US$17.86	2.00	58.82		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Landscape With The Fall Of Icarus Art Print by Pieter The Elder Bruegel | Landscape Art Print | Nature Art Print | Gorneta Acti Print	product-3324141		US$15.84			21	1,311	US$14.23	2.00	97.15		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Vintage Map of West Virginia 1865 Framed Print by Design Turnpike | Antique Map of West Virginia	product-2186596		US$88.00			3	34	US$3.23	2.00	327.31		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	1954 Topps Hank Aaron Metal Print by Celestial Images | 1954 Hank Aaron Baseball Card	product-3236858		US$76.00			4	490	US$1.23	2.00	349.39		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	On to The Final Four Wisconsin The Case Art Print by Sports Illustrated | Wisconsin Basketball Celebration	product-1882619		US$25.14			4	168	US$8.43	2.00	179.47		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Martha Dandridge Custis Washington Art Print by Gilbert Stuart | Gilbert Stuart Art Print | Washington Art Print	product-3222877		US$27.56			1	46	US$0.77	2.00	935.62		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Evening Song Throw Pillow by Karla Gerard | Whimsical Village at Night	product-1283119		US$29.00			2	12	US$4.08	2.00	124.74		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Mount Rainier, 1925 Tapestry by Yoshida Hiroshi (60" x 63") | Mount Rainier with Serene Reflection	product-3208624		US$40.00			52	4,313	US$30.89	2.00	123.65		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Dc - Retro Super Logo Distressed w/ Youth T Shirt by Brand A | Superman Youth T Shirt | Superhero Youth T Shirt	product-3167107		US$13.00			26	2,920	US$6.32	2.00	44.84		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Ford Thunderbird 1957 Men's T Shirt (Regular Fit) by Mark Rogan | Classic Red Thunderbird Convertible	product-1495402		US$23.50			6	324	US$5.76	2.00	49.89		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	Parrots in Paradise Shower Curtain by Danielle Perry | Parrots on a Tropical Beach	product-2976956		US$94.00			2	46	US$0.39	2.00	148.53		
+Card	2026-10-24 17:51:01	427bf7·A19	Ảnh 19	TIME100 - Jennifer Coolidge Poster by Photograph by Paola Kudacki for TIME | Jennifer Coolidge on TIME Cover	product-3227932		US$19.32			1	18	US$0.60	2.00	242.55		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Majestic Horse 159 Shower Curtain by Amyllyn Brine | Horse Shower Curtain | Feather Shower Curtain	product-31992474		US$69.00			1	86	US$1.07	2.00	120.08		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Tree Of Life iPhone Case by William Morris | Tree of Life Tapestry Design	product-31930929		US$28.00			1	170	US$1.21	2.00	73.22		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Gold and Blue Christmas Village Greeting Card by Lise Buhraut | Giustoy Kierrt Greeting Card | Landscape Greeting Card | Winter Greeting Card	product-3288086		US$30.00			36	2815	US$16.99	2.00	144.71		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Red Hollyhocks #1 Throw Pillow by John A Furge | Flower Throw Pillow | Green Throw Pillow	product-31967651		US$29.00			155	9664	US$11.60	2.00	455.69		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Autumn Waterfall Greeting Card by Wilhelm Goebel | Majestic Deer in Autumn Forest	product-1933445		US$4.86			5	258	US$1.02	2.00	32.95		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Wahoowa University of Virginia 2019 Framed Print by Sports Illustrated | Virginia Wins National Title	product-1533123		US$139.00			2	215	US$10.72	2.00	322.04		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Where The Wild Things Are - Line Art Mens T-shirt (Regular Fit) by Ronald A. Fantasy Men's T-Shirt (Regular Fit)	product-3166371		US$14.00			24	2589	US$12.88	2.00	36.36		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Desiderata Print - Max Ehrmann - Greeting Card by Studio Grafikko | Desiderata Inspirational Poem	product-1934247		US$6.25			460	14728	US$5.88	2.00	123.80		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Bronze Scrolls Abstract Throw Pillow by John Edwards | Intricate Spiral Fractal Design	product-12969595		US$29.50			3	91	US$1.75	2.00	190.31		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Legoland California Sticker by Ricky Barnard | Entrance to Legoland California	product-2296605		US$4.50			3	91	US$2.53	2.00	43.73		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Adam and Eve, from 1504 Framed Print by Albrecht Durer | Adam and Eve in the Garden	product-5060615		US$68.00			1	80	US$0.09	2.00	137.00		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Seijas 2021 - F grouts Men's T-Shirt (Regular Fit) by Brend A | Typography Men's T-Shirt (Regular Fit)	product-3166433		US$14.00			1	42	US$0.94	2.00	126.71		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Clasped Hands HD Roer and Elisabeth Art Print by Harriet Goodhue Hosmer | Bronze Sculpture of Clasped Hands	product-3219046		US$16.56			2	26	US$1.31	2.00	160.05		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Park Avenue Party Art Print by Siex Acros | Elegant Evening Gathering	product-2177948		US$86.06			12	1247	US$16.24	2.00	304.84		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Georgetown From The Potomac River Framed Print by Unknown | Georgetown University and Potomac River	product-3310182		US$74.00			7	243	US$5.23	2.00	276.55		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Batman - Movie Youth T-shirt by Brand A | Batman Movie Youth T-Shirt | Batman Youth T-Shirt | Superhero Youth T-Shirt	product-3167016		US$13.00			3	396	US$3.50	2.00	63.32		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	I carry your heart with me poem - E E Metel Print by Studio Grafikko | I Carry Your Heart with Me Poem	product-3247973		US$69.00			152	6707	US$22.22	2.00	240.41		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Batman - Wayne Industries Black Baby One-Piece (Medium) by Brand A | Batman Movie Baby One-Piece | Batman Baby One-Piece | Typography Baby One-Piece	product-3166899		US$14.00			2	53	US$5.68	2.00	216.85		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Downtown Grand Rapids in Black and White Art Print by Twenty Two North Photography | Night View of City Skyline	product-2195662		US$14.56			4	94	US$12.24	2.00	865.51		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	1921 Brighton English Seaside Resort Art Print by Retro Graphics | Travel Poster Art Print	product-3222363		US$22.56			1	29	US$0.87	2.00	672.99		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	A Friend in Need Poster by Cassius Marcellus Coolidge | Dogs Playing Poker	product-3242840		US$17.56			79	8607	US$49.55	2.00	77.44		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	The Hound of the Baskervilles by Arthur Art Print by Design Turnpike | Sherlock Holmes Art Print | Book Art Print	product-3221940		US$30.56			2	59	US$1.60	2.00	266.61		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Distinguished Deer, Full #2 Art Print by Fab Funky | Elegant Deer in Vintage Attire	product-1917263		US$22.35			1	88	US$0.37	2.00	134.12		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Stained Glass Poppies Greeting Card by Mindy Sommers | Vibrant Purple Poppy Field	product-1983970		US$9.25			3	104	US$1.27	2.00	165.48		
+Card	2026-10-24 17:51:01	427bf7·A20	Ảnh 20	Appalachian Mountains North Carolina Jigsaw Puzzle by Dave Allen | Autumn Sunset Over Blue Ridge Mountains	product-3211461		US$49.00			11	614	US$6.47	2.00	571.39		

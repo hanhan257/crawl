@@ -1,0 +1,105 @@
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Mike Ditka Bears Sweater Vest Chicago Bears Mike Ditka Merch Gifts For Dad	3214297		US$44.99			422	73814	US$421.62	25.00	1,315.50		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Milwaukee Brewers Merch 2026 Postseason Collection Hoodie Brewers No Time Like October Hoodie	657997		US$44.99			38	2536	US$23.14	3.00	155.94		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Mike Ditka Bears Sweater Vest 2026 Mike Ditka Merch Chicago Game Day Gift For Football Fans	3141402		US$44.99			78	29701	US$71.35	3.00	155.94		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	ESPN College GameDay Notre Dame Vs BYU Live From Provo Utah TShirt College Football Fan Gifts	3448567		US$29.99			11	875	US$4.74	3.00	172.92		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Personalized US Marines Watch Military Proud Patriotic Merch Gift For Marine Veterans	579902		US$48.99			21	570	US$7.59	3.00	172.94		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Singapore Grand Prix F1 Charles Leclerc Scuderia Ferrari Race 36 Popper Hat Gift For Racing Fans	1111444		US$44.99			50	2143	US$11.90	3.00	140.94		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Ralph Lauren The US Open Merch 2026 US Open Ball Crew Polo Shirt Presents For Tennis Lovers - Joyoce	940383		US$36.95			13	415	US$4.63	2.50	146.13		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	New York Yankees Polo Ralph Lauren Bear Sweater NY Yankees Merch Gift For Baseball Fans - Joyoce	937249		US$49.99			12	710	US$11.69	2.00	158.95		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Curious George T-Shirt Classic Logo Cartoon Tee Curious George Merch Gifts For Monkey Lovers	1146931		US$29.99			66	2344	US$18.10	2.00	75.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Cadillac Formula 1 Team Racing 2026 Hoodie Cadillac Team Merch Black Gift For Husband	650091		US$43.99			18	617	US$5.68	2.00	101.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Big Boy 4014 Steam Legend 85th Anniversary Christmas Snowlight Xmas Tree Decor Gift For Dad - Joyoce	767578		US$22.95			11	288	US$6.72	2.00	111.83		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Irons Maiden Up The Irons Sleeves For Kids Denim Vest Iron Maiden Merch Gifts | Ice Dudes - Joyoce	734868		US$59.95			99	2896	US$25.90	2.00	135.88		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Scotland FIFA World Cup 2026 Shirt Glasgow 1983 Squad Apparel Gifts For Scottish - Dalyanddecor	351593		US$34.99			17	866	US$4.70	2.00	85.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Chicago Bears Golf Wang X NFL Merch Bears Fit Golf Navy Cursive Hoodie Football Fan Gift Ideas	117651		US$49.99			1	60	US$0.37	2.00	129.95		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Studio Ghibli Anime Advent Calendar 2026 Christmas Ornaments Studio Ghibli Merch Fan Gifts	1001297		US$44.99			13	756	US$5.84	2.00	103.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	US Marine Corps 250th Anniversary Hoodie Mens Military Pullover Sweatshirt Gift	257023		US$44.99			15	450	US$7.32	2.00	105.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Morgan Silky Kanika Olson On High Potency Of Howie Fleetwood Mac T-Shirt Present For Her - Joyoce	346765		US$29.99			6	99	US$0.88	2.00	93.96		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	2026 Nebraska Corn Line Hat Tailgate Frostate Cap Nebraska Cornhusker Merch Gift For Fans	1249972		US$47.95			32	838	US$7.21	2.00	109.88		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Us Marine Corps Veteran 25th Anniversary Hat Semper Fidelis 1775 2025 Gifts For Him	236188		US$52.99			11	398	US$3.19	1.99	119.24		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Mike Ditka Merch Bears Sweater Vest Chicago Bears Game Day Gift For Football Fans	1314307		US$44.99			48	14791	US$37.03	1.50	79.97		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Peanuts Snoopy Christmas Quilt Bedding Set Charlie Brown Holiday Bedspread Christmas Gifts For Fans	881103		US$84.95			28	1721	US$15.14	1.50	172.43		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Golden State Warriors Tropical Vibes Hawaiian Shirt Warriors Merch Gifts For Basketball Fans	609465		US$39.99			2	12	US$2.05	1.48	69.73		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Alexis Ohanian & Price X NFL Merch 2026 San Francisco 49ers | FKNJ Muscle Tank 49ers Merch Game Day - Joyoce	817558		US$34.99			4	133	US$1.73	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	US Marine Corps Semper Fidelis Veteran Ring Proud USMC Merch Gifts For Marine Veterans	653385		US$41.95			11	480	US$2.96	1.00	48.94		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Jimmy Buffett Hey Dude Shoes Jimmy Buffett Merch 2026 Birthday Gifts For Friends - Joyoce	940402		US$66.99			1	26	US$0.98	1.00	73.98		
+Merch	2026-10-24 17:54:30	427e05·A1	Ảnh 1	Stevie Wonder's Songs In The Key Of Life Album Shirt Stevie Wonder Merch Gift For Husband	1270868		US$34.99			1	133	US$0.41	1.00	76.97		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Apple Meadow Quilted Bedspread Sets Luxury Bedding Sets New Home Gift Ideas	90942		US$79.95			1	65	US$0.60	1.00	109.95		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Los Angeles Rams Merchr Breast Cancer Awareness V-Neck Shirt Football Gift For Game Day	1254928		US$34.99			1	65	US$1.35	1.00	43.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Personalized Winnie The Pooh Christmas Ornament Pooh And Friends Christmas Tree Decor - Joyoco	994273		US$22.95			2	67	US$0.74	1.00	31.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Custom Name Rainbow Unicorn Pillow 3D Graphic Design Pillow Best Gifts For Unicorn Lovers - Joycode	287623		US$37.95			7	745	US$6.98	1.00	46.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Disney X NFL Seattle Seahawks Merch Disney X NFL Champion Black Seahawks Seagulls All Star Zip Hoodie - Joyoce	815318		US$49.99			5	363	US$2.98	1.00	59.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	New England Patriots Aviator Nation X NFL 2026 Merch NE Patriots T Shirt American Football Gift	1187862		US$34.99			1	6	US$0.45	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	From The River To The Sea Shirt - Joyoce	291813		US$29.99			1	3	US$0.74	1.00	36.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Denver Broncos Fear Of God X NFL The ESSENTIALS Collection Merch Denver Essentials Hoodie Navy	1204219		US$44.99			19	194	US$1.85	1.00	51.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Personalized Peanuts Classic Cartoon Friends Hoodie And Leggings Set Birthday Gift For Her - Joyoce	990020		US$44.99			16	471	US$6.46	1.00	51.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Victoria Secret NFL Merch 2026 Touchdown 1948 San Francisco 49ers Campus T-shirt Gifts For Fan - Joyoce	380993		US$34.99			6	81	US$2.64	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Chicago Bears 107th Anniversary YETI Stanley Tumbler Chicago Bears Merch Football Fans Gifts - Joyoce	795421		US$49.99			3	91	US$7.66	1.00	56.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Dolly Parton Advent Calendar 24 Days Of Dolly Parton Memories Merch Gifts For Music Lovers - Joyoce	945425		US$44.99			1	8	US$0.71	1.00	269.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	NFL Crucial Catch Merch 2026 Kansas City Chiefs No One Fights Alone Pink Hoodie Objets Merch	10265717		US$49.99			4	265	US$2.87	1.00	58.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Ghostface Bunny Black Horror Animal Halloween Plush Pillow Scream Movie Merch Fan Gifts - Joyoce	779676		US$42.95			9	500	US$1.45	1.00	56.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Personalized Horror Characters Are Watching You Tumblr Best Gift For Halloween - Joyoce	951562		US$49.99			1	10	US$0.35	1.00	55.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	2026 NeeBoli Advent Calendar Squishy Toys 24 Days Squishy NeeBoli Merch Christmas Gifts For Kids	1210927		US$39.99			22	4060	US$13.74	1.00	46.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	World Cup 2026 Merch Host City Emblems Hoodie Black Best Gifts For World Cup Fans	3529400		US$49.99			1	11	US$0.20	1.00	56.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Disney X Minnesota Vikings Merch MN Vikings Theor Disney X NFL Football To 1 Gifts For Fans - Joyoce	814034		US$34.99			2	20	US$0.70	1.00	43.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Live From London It's Saturday Night SNL 2026 Shirt - Joyoce	244676		US$34.99			1	11	US$0.27	1.00	41.98	Ảnh SP	Link
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	UCLA Bruins Merch 2026 UCLA Bruins Gameday Clothes Raised On Victory T-Shirt Football Fan Gear - Joyoce	944427		US$29.99			1	8	US$0.16	1.00	36.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Jimi Hendrix Guitar Purple Haze Vintage Quilt Blanket Jimi Hendrix Merch Gift For Music Lovers	590848		US$69.95			1	9	US$3.72	1.00	90.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Pokemon Charizard Brings The Heat Omola Collab Water Bottle Gifts For Pokemon Fans	1197216		US$39.95			5	793	US$2.38	1.00	46.94		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	DJ Khaled We The Best 4 Week Polo Shirt 2026 Birthday Ideas For Brothers	44900		US$41.49			1	6	US$0.23	1.00	30.48		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	New York Jets Aviator Nation X NFL 2026 Merch NY Jets Hoodie Football Enthusiast Gifts	1188145		US$44.99			3	13	US$2.12	1.00	31.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Notre Dame Fighting Irish Play Like A Champion Christmas Advent CalendarFighting Irish Merch - Joyoce	831537		US$44.99			7	236	US$3.82	1.00	51.98		
+Merch	2026-10-24 17:54:30	427e05·A2	Ảnh 2	Custom Name One Piece Monkey D Luffy Shoes Sneakers One Piece Merch Gift For Anime Fans	684287		US$49.99			2	119	US$0.68	1.00	90.99		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Custom Marne One Piece Monkey D Luffy Shoes Sneakers One Piece Merch Gift For Anime Fans	684827		US$99.99			2	113	US$0.68	1.00	99.99		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Morocco World Cup 2026 Merch #7 Yassine Bounou Goalkeeper Jersey Gifts For Morocco Team Fans	486131		US$41.49			1	112	US$1.02	1.00	48.48		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	New York Knicks Champions 2026 Bucket Hat NY Knicks Finals Champions Merch Cool Fan Gifts	356535		US$36.95			4	186	US$0.64	1.00	43.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Andre Iguodala Miami Heat Vice City Jersey #28 Group Economic Iguodala Jersey Fan Merch	449641		US$40.49			48	1,242	US$7.02	1.00	47.48		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Kid Rock Hailed Rough Redeemed Strong Vintage Harley Davidson Tour Shirt Kid Rock Merch 2026	457745		US$34.49			1	25	US$0.15	1.00	44.48		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Motorhead Louder Than Ever Est 1975 Denim Vest Motorhead Merch Cool Gift For Band Fans - Joycee	734328		US$59.95			2	225	US$0.81	1.00	68.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Masters Tournament Doormat Augusta National Golf Club Mat Home Decor Gifts For Golfers - Dallyanddecor	351362		US$34.95			19	309	US$5.80	1.00	71.93		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Eagles X Live In Concert At Sphere Las Vegas 2027 T-Shirt Eagles Band Merch Gift For Music Fans	713359		US$33.99			11	320	US$4.78	1.00	74.97		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Georgia Bulldogs Ss Em Glory Glory Denim Vest Georgia Bulldogs Merch Gift For Football Lovers - Joycee	734118		US$59.95			2	37	US$0.25	1.00	66.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Notre Dame Merch Notre Dame Fighting Irish 2026 Shamrock Series Lambeau Field T-Shirt Navy	444995		US$34.49			1	21	US$0.38	1.00	105.47		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Ohio State Buckeyes Merch Halloween 2026 Buck-Tober Polo Shirt Unique Gifts For Football Fans	581715		US$35.95			3	73	US$0.99	1.00	42.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Omega Psi Phi Purple Suede Sneakers Omega Psi Phi Merch Birthday Gift For Him - Joycee	815785		US$109.99			28	1,553	US$14.04	1.00	107.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Gorillaz The Mountain Tour 2026 Us Arcd Canada Jumbo Band Art T-Shirt Gorillaz Merch Fan Gifts	1156278		US$29.99			4	192	US$1.07	1.00	36.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	2026 Kansas City Royals Hot Dog Hat Embroidered KC Royals Match Gift For Baseball Lovers	596002		US$46.99			2	12	US$0.49	1.00	53.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Frosty Delight Quilted Bedspread Sets Quilted Bedding Sets Housewarming Gift Ideas	180233		US$79.95			3	32	US$0.87	1.00	109.95		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	New York Knicks 2026 Champions Shoes Sneakers Knicks Merch Present For Basketball Fans	479775		US$105.49			8	319	US$2.78	1.00	105.49		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Rush Fifty Something Tour 2026 Hockey Jersey Rush Merch Gifts For Rock Lovers	1349877		US$44.99			1	165	US$0.59	1.00	53.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	San Francisco 49ers Faithful To The Bay V-Neck Shirt 49ers Merch Game Day T-Shirt Football Gear - Joycee	879410		US$34.99			22	1,337	US$9.36	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Slomosa Manoman T-Shirt Slomosa Merch Best Gifts For Music Lovers	395898		US$28.99			1	17	US$0.45	1.00	35.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	New Orleans Saints Shoes Game Day Gear NO Saints Merch Best Gifts For Football Lovers	636554		US$70.99			3	12	US$0.69	1.00	77.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Scooby Doo Holiday Advent Calendar 2026 Christmas Ornaments Scooby-Doo Merch Gift For Fans	1017603		US$44.99			5	321	US$0.72	1.00	51.98		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Chicago Cubs 150th Anniversary 2026 Globe Ornament Cubs Merch Gifts For Baseball Lovers - Joycee	902357		US$22.95			4	205	US$0.48	1.00	29.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Personalized Magic The Gathering Spellcaster Christmas Ornament Decor Gifts For Game Lovers	1120750		US$22.95			3	73	US$1.17	1.00	29.94		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Wwii Veteran Daughter T-Shirt Proud Daughter Of A Wwii Veteran Shirt Gift For Her - Joycee	321023		US$24.95			2	15	US$0.61	1.00	34.94	Ảnh SP	Link
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Marine Corps Before You Break Into My House Doormat Cool Sayings Unique USMC Gift Items - Joycee	320429		US$29.95			5	69	US$1.04	1.00	62.93		
+Merch	2026-10-24 17:54:30	427e05·A3	Ảnh 3	Baltimore Ravens Aviator Nation X NFL 2026 Merch Baltimore Ravens Football Sweatshirt	1188814		US$42.99			2	22	US$1.25	1.00	49.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Wwii Veteran Daughter T Shirt Proud Daughter Of A Wwii Veteran Shirt Gift For Her - Joyoce	321023		US$24.95			2	15	US$0.61	1.00	34.94	Ảnh SP	Link
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Marine Corps Before You Break Into My House Doormat Cool Sayings Unique USMC Gift Items - Joyoce	320429		US$29.95			5	63	US$1.04	1.00	42.93		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Baltimore Ravens Aviator Nation X NFL 2026 Merch Baltimore Ravens Football Sweatshirt	1188814		US$42.99			2	22	US$1.25	1.00	49.99		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Juice Wrld 999 Goodbye And Good Riddance Shoes Sneakers Birthday Ideas For Him	437284		US$100.49			56	2,327	US$12.00	1.00	36.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Dallas Cowboys How Bout Them Christmas Advent Calendar Dallas Cowboys Merch Xmas Gifts - Joyoce	799307		US$24.99			2	82	US$0.46	1.00	96.97		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Abercrombie & Fitch X NFL Merch 2026 Chicago Bears Football Sweatshirt Game Day Bears Merch - Joyoce	818252		US$42.99			24	1,102	US$4.89	1.00	49.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Oklahoma City Thunder Halloween Merch Thunder Feeds The Fright T Shirt Basketball Fan Gifts	582429		US$33.99			3	12	US$0.32	1.00	43.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Star Wars 50th Anniversary Bedding Set 2026 Star Wars Merch Bed Decor Gift For Sci Fi Fans	990303		US$63.95			7	398	US$6.25	1.00	80.94		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Before You Break Into My House Doormat Gun Cool Doormat Front Door Mat Outdoor Indoor - Joyoce	319504		US$29.95			11	95	US$3.42	1.00	56.93		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Moozili Dreams Quilted Bedspread Seta Luxury Bedding Sets Practical Gifts For Mom	742098		US$79.95			1	7	US$0.31	1.00	99.95		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Anti Fascist Action Flag Banner Antifa Protest Anti Racism Flag For Yard Outside Decoration - Joyoce	322351		US$25.95			4	148	US$0.65	1.00	32.94		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Metallica 2026 2027 Embroidered Net Sphere Las Vegas Baseball Cap Metallica Merch Fan Gifts	1248740		US$47.99			6	118	US$2.55	1.00	54.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	ACDC Power Up Tour 2026 North American Dates Heavy Metal Vintage T Shirt AC DC Merch Fan Gifts - Joyoce	984236		US$34.99			5	167	US$2.12	1.00	41.99		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Megadeth Rust In Peace Denim Vest Megadeth Merch Gift For Heavy Metal Band Fans - Joyoce	734286		US$69.95			4	240	US$0.45	1.00	68.94		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	New York Or Nowhere X NY Yankees Watercolor Stadium T Shirt NYON Merch Gift For Baseball Fan	1008334		US$29.99			1	7	US$0.62	1.00	36.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Curry Baker Bear Obsession 2026 Hoodie Obsession Movie Merch Gifts Ideas For Friends	411667		US$44.99			29	5,345	US$14.36	1.00	51.48		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	FIFA World Cup 2026 Host Nations T Shirt Mexico USA Canada Clothes Game Day Gifts	352796		US$34.99			3	62	US$1.55	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Minnesota Vikings NFL Rivalries Merch 2026 Vikings Rivalries Hoodie Football Related Gift Ideas	1325640		US$44.99			27	316	US$7.69	1.00	51.96		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Voidemon Dark Arts Harry Potter Sneakers Deathly Hallows Wizard Fan Gifts - Joyoce	871583		US$100.99			1	21	US$8.31	1.00	100.99		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Pickford #1 England Stadium Goalkeeper Jersey England World Cup 2026 Merch Football Fan Gear	433291		US$41.49			6	294	US$4.39	1.00	48.48		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Nebraska Cornhuskers Husker Pride Game Day Glory Varsity Jacket Cornhuskers Merch Fans Gifts - Joyoce	805497		US$44.99			5	301	US$2.82	1.00	71.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Victoria Secret NFL Merch 2026 Touchdown 1960 Denver Broncos Campus T Shirt Broncos Merch - Joyoce	838713		US$34.99			6	125	US$1.74	1.00	41.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Brewers World Series 2026 Half Zip Hoodie Milwaukee Brewers Merch Baseball Lover Gift Ideas	1336179		US$44.99			35	2,037	US$15.26	1.00	65.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	Phoebe Bridgers The Lost Tour Lost Weekend Sweatshirt Phoebe Bridgers Merch Gift For Fans	1139895		US$47.99			4	999	US$0.87	1.00	35.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	I Get Stuffed In Chicago Shirt Birthday Presents For Boyfriend	654864		US$28.99			1	10	US$0.84	1.00	71.98		
+Merch	2026-10-24 17:54:30	427e05·A4	Ảnh 4	UCLA Bruins Merch 2026 UCLA Bruins Legacy Bomber Jacket Birthday Gift Ideas For Friends - Joyoce	964857		US$44.99			9	134	US$1.19	1.00	71.98		

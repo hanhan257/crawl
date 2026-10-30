@@ -1,0 +1,104 @@
+Dự án	Ngày	Mã ảnh	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Bears	2026-10-24 18:28:45	428493·A1	Da Coach Mike Ditka Bears Sweater Vest	woocom		US$39.99			2780	43994	US$4125.80	189.79	9,415.37		
+Bears	2026-10-24 18:28:45	428493·A1	Brewers No Time Like October Postseason 2026 Hoodie	woocom		US$40.99			309	10023	US$166.19	12.00	641.73		
+Bears	2026-10-24 18:28:45	428493·A1	2026 Skeleton Lost Balloon Shirt	woocom		US$19.99			57	2152	US$34.33	6.02	170.92		
+Bears	2026-10-24 18:28:45	428493·A1	Brewers Bunch Of Gamers Shirt	woocom		US$19.99			90	1655	US$48.67	6.00	208.86		
+Bears	2026-10-24 18:28:45	428493·A1	Utah Football Ice Out Hoodie	woocom		US$40.99			121	2737	US$91.67	6.00	393.85		
+Bears	2026-10-24 18:28:45	428493·A1	William Contreras Brewers Wins The Pennant Shirt	woocom		US$19.99			48	719	US$18.52	5.00	145.05		
+Bears	2026-10-24 18:28:45	428493·A1	Da Coach Mike Ditka Bears Christmas Ugly Sweater	woocom		US$39.99			239	34108	US$242.95	4.67	218.91		
+Bears	2026-10-24 18:28:45	428493·A1	Riley Green Green's Taxidermy Camo Hat	woocom		US$37.99			358	4034	US$163.44	4.00	188.92		
+Bears	2026-10-24 18:28:45	428493·A1	Rake Bauers Yard Work Co Shirt	woocom		US$19.99			60	1539	US$28.65	4.00	136.01		
+Bears	2026-10-24 18:28:45	428493·A1	Brewers 2026 World Series Win Our Way Hat	woocom		US$37.99			70	6956	US$33.90	3.50	161.43		
+Bears	2026-10-24 18:28:45	428493·A1	Fast Attack Adventures Shirt	woocom		US$19.99			108	3243	US$21.74	3.02	86.97		
+Bears	2026-10-24 18:28:45	428493·A1	Josh Homme Scumbag Shirt	woocom		US$19.99			59	1245	US$21.71	3.02	84.97		
+Bears	2026-10-24 18:28:45	428493·A1	Morgan Wallen The Norms 2026 At Tuscaloosa Hat	woocom		US$35.99			41	1384	US$15.56	3.00	137.99	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A1	Patriots We Are All Patriots Zip Hoodie 2026	woocom		US$47.99			31	955	US$16.01	3.00	157.34		
+Bears	2026-10-24 18:28:45	428493·A1	Ravens White Out 2026 Hoodie	woocom		US$41.99			6	178	US$3.59	3.00	184.93		
+Bears	2026-10-24 18:28:45	428493·A1	2026 Packers x Brewers Baseball Jersey	woocom		US$40.99			79	2116	US$35.23	3.00	184.93		
+Bears	2026-10-24 18:28:45	428493·A1	49ers Georgie Kittle Mike Evans Shirt	woocom		US$19.99			83	1369	US$42.70	3.00	97.94		
+Bears	2026-10-24 18:28:45	428493·A1	2026 Joel Klatt Rose Bowl Hat	woocom		US$35.99			79	857	US$27.10	2.02	97.04	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A1	Brewers NL Central Division Champions Locker Room 2026 Shirt	woocom		US$19.99			41	3063	US$29.43	2.00	57.96		
+Bears	2026-10-24 18:28:45	428493·A1	Josh Allen 17 Bills x Wyoming Cowboys Shirt	woocom		US$19.99			9	244	US$4.08	2.00	55.96		
+Bears	2026-10-24 18:28:45	428493·A1	Mike Ditka Bears Ugly Sweater	woocom		US$39.99			74	12329	US$71.49	2.00	92.96	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A1	Bills 2026 Breast Cancer Awareness Hoodie	woocom		US$40.99			20	880	US$12.19	2.00	95.96		
+Bears	2026-10-24 18:28:45	428493·A1	Yes, I'm Old But I Saw Broncos Greatness 2026 Shirt	woocom		US$19.99			25	869	US$12.98	2.00	60.56		
+Bears	2026-10-24 18:28:45	428493·A1	Milwaukee Brewers Joey Ortiz Joey O Stache Shirt	woocom		US$19.99			14	1399	US$5.82	2.00	52.96		
+Bears	2026-10-24 18:28:45	428493·A1	Brewers World Series 2026 Waffle Hoodie	woocom		US$40.99			82	9551	US$39.64	2.00	92.96		
+Bears	2026-10-24 18:28:45	428493·A1	Broncos EST 1959 Waffle Quarter Zip Hoodie	woocom		US$40.99			43	2440	US$23.48	2.00	114.96		
+Bears	2026-10-24 18:28:45	428493·A2	Broncos EST 1959 Waffle Quarter Zip Hoodie	woocommerce-7853		US$49.99			43	2440	US$23.48	2.00	114.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Guardians Stand Guard Shirt	woocommerce-7854		US$19.99			7	206	US$3.88	2.00	144.92	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2026 Yes I'm Old But I Saw Yankees Greatness Shirt	woocommerce-7855		US$19.99			21	307	US$15.36	2.00	55.06	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Brewers 2026 Champions Series Locker Room Hat	woocommerce-7856		US$37.99			33	2374	US$12.28	2.00	87.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Tyrese Haliburton Oscorp Industries Sweatshirt	woocommerce-7857		US$36.99			1	31	US$0.32	2.00	80.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	I'm Retired It's 5 O'clock Everywhere Hat	woocommerce-7858		US$35.99			5	75	US$1.77	2.00	122.95	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2025 Bears Crucial Catch Hoodie	woocommerce-7859		US$41.99			2	201	US$2.59	2.00	96.06	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2026 Halloween Dry Bones Come Alive Ezekiel 37 Sweatshirt	woocommerce-7860		US$36.99			58	1442	US$25.97	2.00	85.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Raiders White Out 2026 Hoodie	woocommerce-7861		US$41.99			17	605	US$6.96	2.00	100.96	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A2	TB Rays American League Champions 2026 Hat	woocommerce-7862		US$40.99			19	1044	US$6.72	2.00	151.15	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	New York Yankees x Giants Stadium Skyline Hat	woocommerce-7863		US$37.99			11	326	US$4.68	2.00	92.96	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A2	Dominik Tauczynski Be Like Poland Hats	woocommerce-7864		US$35.99			46	2792	US$27.32	2.00	91.97	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2026 Brewers National League Champions Win Our Way Jersey	woocommerce-7865		US$40.99			31	2158	US$22.96	2.00	97.06	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Braves EST 1871 Quarter Zip Waffle Hoodie	woocommerce-7866		US$49.99			22	820	US$15.74	2.00	103.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Ravens x Breast Cancer Awareness 2026 Hoodie	woocommerce-7867		US$40.99			44	2305	US$37.63	2.00	93.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Seattle Seahawks USMC 250th Birthday V-Neck Jersey 2025	woocommerce-7868		US$41.99			4	74	US$2.25	2.00	79.96	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A2	Patriots Drake Mayo 10 Waffle Hoodie	1195482		US$41.99			18	386	US$10.51	2.00	140.95	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Personalized Cowboys Tungsten Carbide Ring	woocommerce-7869		US$35.99			10	173	US$6.25	2.00	100.11	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Bills EST 1959 Waffle Quarter Zip Hoodie	woocommerce-7870		US$49.99			39	3499	US$18.35	2.00	131.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Wall E Costume Axion Passenger Halloween Costume 2025 Shirt	woocommerce-7871		US$29.99			26	1411	US$16.96	1.98	71.34	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A2	Patriots The Brady Bunch Shirt	woocommerce-7872		US$19.99			14	165	US$1.79	1.98	102.91	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	TB Rays 2026 ALCS Locker Room Shirt	woocommerce-7873		US$39.99			25	1010	US$12.80	1.67	44.63	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2026 Houston Texans Rivalries Uniforms T-Shirt	woocommerce-7874		US$29.99			22	991	US$11.10	1.65	93.19	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	Brewers 2026 World Series Here We Come Hat	woocommerce-7875		US$37.99			44	4713	US$17.87	1.50	66.47	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A2	2026 Tulane Green Wave 250 Years Of Freedom Waffle Sweatshirt	woocommerce-7876		US$36.99			5	67	US$5.90	1.92	59.32	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A2	2026 Blue Jays Armed Forces Day Hat	woocommerce-7877		US$37.99			7	276	US$2.57	1.02	53.02	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	2026 Blue Jays Armed Forces Day Hat	woocom_1743		US$37.99			9	276	US$2.57	1.02	$3.02	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	White Sox x Bears Stadium Skyline Hat	woocom_1746		US$37.99			20	695	US$5.35	1.02	$50.01	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Patriots EST 1959 Quarter Zip Wolfie Hoodie	woocom_1757		US$49.99			29	1269	US$16.83	1.00	$57.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	2026 Halloween I Fully Intend To Flaunt People When I Die I Have A List Shirt	woocom_1761		US$29.99			1	60	US$0.65	1.00	$35.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	2026 Atlanta Final Let's Go Dreams Blue Out Shirt Giveaway	woocom_1763		US$19.99			6	38	US$2.88	1.00	$56.97	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Packers Crucial Catch 2026 T-Shirt	woocom_1766		US$29.99			1	123	US$0.98	1.00	$35.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	My Weiner Isn't 12 Inches But It Smells Like A Foot Shirt	woocom_1772		US$29.99			14	343	US$4.71	1.00	$35.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Dodgers 5 in a Row Division Champs Shirt	woocom_1777		US$19.99			1	62	US$2.04	1.00	$26.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	49ers x Giants City Connect Baseball Jersey	woocom_1782		US$41.99			3	38	US$0.10	1.00	$50.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Denver Broncos White Out 2025 Shirt	woocom_1785		US$29.99			5	114	US$5.97	1.00	$35.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Guardians Back in Black 2026 Jersey	woocom_1788		US$40.99			11	902	US$5.54	1.00	$49.96	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Williams 18 Bears Football Unisex Blanket Hoodie	woocom_1793		US$75.99			5	301	US$4.15	1.00	$81.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	2025 I Got That Dog In Me Christmas Ugly Sweater	woocom_1795		US$39.99			5	45	US$1.52	1.00	$45.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Agents Never Sleep Hat	woocom_1799		US$35.99			2	1	US$1.12	1.00	$41.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	2026 TB Rays Devil Rays ALDS Uniform Jersey	woocom_1801		US$40.99			42	2829	US$19.54	1.00	$91.97	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Vikings EST 1960 Waffle Quarter Zip Hoodie	woocom_1802		US$49.99			28	1464	US$10.34	1.00	$57.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Philadelphia Eagles Breast Cancer Awareness Month V-neck Short Sleeve Jersey 2025	woocom_1804		US$41.99			11	377	US$5.79	1.06	$50.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Red Sox The Idiots Shirt	woocom_1806		US$19.99			3	24	US$1.16	1.00	$29.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Ben Stiller Jalen Brunson Shirt	woocom_1810		US$29.99			2	58	US$2.74	1.00	$35.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Brewers 2024 Military Appreciation Tribute Jersey	woocom_1812		US$40.99			8	200	US$4.25	1.00	$48.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Pedro Pascal Protect The Dolls At London Shirt	woocom_1814		US$19.99			2	122	US$1.20	1.00	$36.08	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A3	Broncos AFC West Division Champions 2025 Hoodie	woocom_1815		US$41.99			6	19	US$5.36	1.00	$50.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Zaya Flowers Ravens Crucial Catch Strong 2025 Hoodie	woocom_1816		US$41.99			17	159	US$7.42	1.00	$50.08	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Brendan Hulsh XL Sirens Original Hats	woocom_1817		US$35.99			7	171	US$3.90	1.00	$41.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	Mens In The Problem T-Shirt	woocom_1819		US$19.99			18	430	US$7.10	1.00	$26.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A3	TB Rays World Series 2026 Quarter Zip Hoodie	woocom_1821		US$40.99			3	314	US$2.72	1.00	$48.98	Ảnh SP	
+Bears	2026-10-24 18:28:45	428493·A4	TB Rays World Series 2026 Quarter Zip Hoodie	woocommerce		US$40.99			3	314	US$2.72	1.00	48.98		
+Bears	2026-10-24 18:28:45	428493·A4	Giants EST 1925 Quarter Zip Waffle Hoodie	woocommerce		US$49.99			38	2,659	US$20.96	1.00	57.98		
+Bears	2026-10-24 18:28:45	428493·A4	Josh Allen Bills Wyoming Cowboys 2025 Football Jersey	woocommerce		US$41.99			20	1,351	US$13.75	1.00	50.98		
+Bears	2026-10-24 18:28:45	428493·A4	Klint Kubiak Seahawks Super Bowl Lll Hat	woocommerce		US$40.99			14	683	US$5.61	1.00	59.99		
+Bears	2026-10-24 18:28:45	428493·A4	Josh Allen Bills Wyoming Cowboys 2025 Sweatshirt	woocommerce		US$36.99			2	387	US$1.97	1.00	42.96		
+Bears	2026-10-24 18:28:45	428493·A4	Juneteenth Detroit Tigers Baseball Jersey	woocommerce		US$45.99			1	4	US$0.42	1.00	53.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A4	Dad You Are Smooth Like Quagmire Family Guy Shirt	woocommerce		US$19.99			2	152	US$0.88	1.00	31.98		
+Bears	2026-10-24 18:28:45	428493·A4	Fear The Beer Brewers American Family Field Shirt	woocommerce		US$19.99			8	313	US$7.17	1.00	25.98		
+Bears	2026-10-24 18:28:45	428493·A4	Brewers x Miller Lite Hat	woocommerce		US$37.99			4	620	US$1.84	1.00	46.98		
+Bears	2026-10-24 18:28:45	428493·A4	Dodgers No Time Like October Postseason 2026 Hoodie	woocommerce		US$40.99			37	677	US$22.54	1.00	47.98		
+Bears	2026-10-24 18:28:45	428493·A4	Mike Ditka Chicago Bears 1985 Shirt	woocommerce		US$19.99			32	2,455	US$27.42	1.00	29.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A4	Texans Crucial Catch 2026 Hoodie	woocommerce		US$40.99			3	123	US$0.84	1.00	46.98		
+Bears	2026-10-24 18:28:45	428493·A4	Guardians AL Central Division Champions 2026 Hat	woocommerce		US$35.99			16	452	US$16.07	1.00	41.98		
+Bears	2026-10-24 18:28:45	428493·A4	South Alabama Jaguars EST 2009 Quarter Zip Waffle Hoodie	woocommerce		US$49.99			2	42	US$2.26	1.00	56.98		
+Bears	2026-10-24 18:28:45	428493·A4	TB Rays Division Champs Locker Room 2026 Hat	woocommerce		US$37.99			5	250	US$4.30	1.00	43.98		
+Bears	2026-10-24 18:28:45	428493·A4	Broncos Black Metal Texture Hoodie	woocommerce		US$41.99			5	236	US$2.93	1.00	49.98		
+Bears	2026-10-24 18:28:45	428493·A4	UConn EST 1890 Quarter Zip Waffle Hoodie	woocommerce		US$49.99			13	726	US$4.93	1.00	61.98		
+Bears	2026-10-24 18:28:45	428493·A4	Vikings White Out 2026 Hoodie	woocommerce		US$41.99			13	343	US$5.20	1.00	55.99	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A4	Alabama EST 1892 Quarter Zip Waffle Hoodie	woocommerce		US$49.99			14	1,073	US$12.76	1.00	56.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A4	2026 Red Sox Somergal Fourth Wing Night Jersey	woocommerce		US$41.99			5	93	US$2.70	1.00	47.98	Ảnh SP	Link
+Bears	2026-10-24 18:28:45	428493·A4	Milwaukee Brewers Hawaiian Shirt	woocommerce		US$35.99			28	844	US$12.94	1.00	42.98		
+Bears	2026-10-24 18:28:45	428493·A4	2025 Patriots Breast Cancer Awareness Month Hoodie	woocommerce		US$41.99			4	221	US$2.18	1.00	48.98		
+Bears	2026-10-24 18:28:45	428493·A4	Chiefs Black Metal Texture Shirt	woocommerce		US$29.99			2	158	US$0.65	1.00	36.98		
+Bears	2026-10-24 18:28:45	428493·A4	Kelly Stafford Wear LA Rams Rope Hat	woocommerce		US$35.99			20	676	US$8.02	1.00	41.98		
+Bears	2026-10-24 18:28:45	428493·A4	Bears Autism Awareness Football Shirt 2026	woocommerce		US$29.99			1	38	US$0.27	1.00	37.98	Ảnh SP	Link

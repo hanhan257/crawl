@@ -1,0 +1,214 @@
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	North Carolina Tar Heels | Premium NCAA Grateful Again 3D Shirt PB7B8FN	19000206		US$29.95			4	21	US$0.26	1.00	35.94		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Alabama crimson tide Combo Hoodie And Sweatpants Gift For Fan PBTCX88	1000020		US$64.99			31	1571	US$3.32	1.00	190.89		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Los Angeles Rams 90th Anniversary SoFi Stadium Helmet Christmas Ornament PB9GLJH	10000201		US$22.95			3	117	US$0.39	1.00	28.94		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Miami Hurricanes | Premium NCAA Hello Kitty Women's Shirt PB6XG53	50000204		US$27.95			7	192	US$0.90	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Ohio State Buckeyes Vintage Men Hoodies PBKCUDP	1000020		US$65.88			36	1121	US$5.08	1.00	71.87		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Miami Dolphins | Premium NFL Grateful Dead Fan 3D Shirt PBXJS81	1000020		US$27.95			5	32	US$0.27	1.00	31.14		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	San Francisco 49ers Pink October No One Fights Alone Hooded Letterman Jacket Custom Name PALSAD	1000020		US$78.65			48	2389	US$9.43	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Buffalo Bills Personalized Leather Hand Bag PB7TXK6	1000020		US$49.95			1	4	US$0.10	1.00	55.44	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Philadelphia Eagles Heavyweight Hooded Jacket P24KPB	1000020		US$109.95			18	686	US$2.67	1.00	120.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Denver Broncos Car Seat Covers PBB1SAW	1000020		US$59.99			9	125	US$1.21	1.00	65.98		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Jacksonville Jaguars NFL Hooded Letterman Jacket Custom Name PBAJ3P5	1000020		US$78.65			57	2735	US$11.21	1.00	76.77		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Buffalo Bills NFL Hooded Letterman Jacket Custom Name PQW7D2	1000020		US$78.65			251	10188	US$48.67	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Colorado Avalanche Peanuts Night Limited Hockey Jersey PB0NRYA	1000020		US$39.99			13	880	US$2.19	1.00	85.96		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	New Orleans Saints Combo Hoodie And Sweatpants Gift For Fan PBJLC40	1000020		US$64.99			50	1786	US$7.94	1.00	100.99		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Baltimore Ravens PBJ8SQ4	1000020		US$124.95			59	2661	US$21.21	1.00	96.85		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Boston Bruins Personalized Fleece-Lined Windbreaker Jacket PWG6D9	1000020		US$99.00			14	661	US$2.57	1.00	99.00		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Kansas City Chiefs Pink October No One Fights Alone Hooded Letterman Jacket Custom Name PBC8SPH	1000020		US$78.65			26	1190	US$4.80	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Chicago Bears Native American Heritage Limited Football Jersey PBJ8IS52	1000020		US$51.99			62	5549	US$12.15	1.00	92.09		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Los Angeles Rams NFL Parka Jacket - LIMITED EDITION P51HMR	10000201		US$139.99			6	233	US$1.07	1.00	139.99		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Detroit Tigers Personalized Fleece-Lined Windbreaker Jacket PH24XZ	1000020		US$99.00			7	249	US$1.36	1.00	99.00		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Alabama Crimson Tide Sherpa-Lined Zip Hoodie PBYX4KA	1000020		US$69.99			21	1614	US$3.86	1.00	104.98		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Las Vegas Raiders Premium Fleece-Lined Leather Bomber Jacket PB4FM2Q	1000020		US$149.95			3	8	US$0.20	1.00	319.85		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Raiders Rug Living Room Floor Decor Fan Gifts PBX4PQ9	1000020		US$109.95			8	305	US$1.42	1.00	159.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Ohio State Buckeyes Fleece Lined Cargo Jacket Custom Your Name 2024 version PB0DQP0N	1000020		US$129.95			19	1073	US$5.56	1.00	152.86		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Baltimore Ravens Personalized Combo Hoodie And Sweatpants Gift For Fan PB581YS	1000020		US$105.95			9	442	US$1.40	1.00	105.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Chicago Bears Gobble Gobble Thanksgiving Knit Cardigan Custom Name PHCK7E	1000020		US$89.00			11	314	US$1.43	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Texas Longhorns | Premium NCAA Luxury Phone Case P8VLT50	10000020		US$27.95			8	77	US$0.87	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Philadelphia Eagles Windbreaker Unisex Outdoor Windproof Rain Coat Antifouling PW4BV7	10000020		US$59.00			4	58	US$0.48	1.00	64.99		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Buffalo Bills | Premium NFL Quilted Christmas Table Runner P8J6BU1	10000020		US$27.95			25	589	US$4.25	1.00	40.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Chicago Bears NFL Hooded Letterman Jacket Custom Name PMP9RH	10000020		US$78.65			374	15794	US$75.89	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Detroit Lions Sherpa-Lined Zip Hoodie P8UG4U	10000020		US$89.99			36	2060	US$7.28	1.00	95.98		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	New York Giants NFL Lamb Fleece Thick Coat Custom name P8KN5K9	10000020		US$129.95			44	1668	US$12.27	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Kansas City Chiefs NFL Hooded Letterman Jacket Custom Name P8H7JWY	10000020		US$78.65			181	6521	US$36.36	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Utah Mammoth x Star Wars Limited Hockey Jersey P8FQ3UH	10000020		US$39.99			9	720	US$1.81	1.00	57.96		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Pittsburgh Steelers Fleece Flannel Plaid Jacket P8P64LQ	10000020		US$129.95			35	2213	US$10.15	1.00	129.95		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Florida Panthers Hello Kitty Night Limited Hockey Jersey P8NPHA3	10000020		US$39.99			9	291	US$1.69	1.00	52.78		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Las Vegas Raiders NFL Hooded Letterman Jacket Custom Name P9QXRJ	10000020		US$78.65			245	10451	US$45.69	1.00	131.67		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Kansas City Chiefs | Premium NFL Nurse Pride 3D Shirt P8S5XSR	10000020		US$27.95			13	110	US$1.02	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Clemson Tigers | Premium NCAA Victory Streak Polo P8F1XJG	10000020		US$44.95			5	99	US$0.67	1.00	50.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Green Bay Packers NFL Waffle Hoodie P8Y73PP	10000020		US$59.95			11	635	US$1.60	1.00	59.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	West Virginia Mountaineers | Premium NCAA Hello Kitty Women's Shirt P8SGYV8	10000020		US$27.95			2	9	US$0.18	1.00	36.74		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Milwaukee Brewers | Premium MLB Puerto Rico Island Pride Baseball Jersey And Cap Set	10000020		US$64.99			14	364	US$2.49	1.00	123.48		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Atlanta Falcons Lace-Up Sweatshirt P8PBZCA	10000020		US$59.99			2	47	US$0.12	1.00	67.63		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Minnesota Vikings NFL Hooded Letterman Jacket Custom Name P8YX8GQ	10000020		US$78.65			124	4889	US$24.54	1.00	168.80		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Pittsburgh Pirates MLB Parka Jacket - LIMITED EDITION P1E0TT	10000020		US$139.99			12	609	US$1.73	1.00	139.99		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Atlanta Falcons Windbreaker Outdoor Jacket Sport Fan Gift P8CXL04	10000020		US$68.95			4	169	US$0.61	1.00	75.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Tampa Bay Buccaneers x Spongebob Limited Custom Jersey P6BBUEJ	10000020		US$39.99			15	1374	US$2.30	1.00	106.38		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Chicago Bears Personalized New Baseball Jacket Gifts For Fan P8L1WRV	10000020		US$79.99			12	885	US$1.62	1.00	94.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	North Carolina Tar Heels | Premium NCAA Grateful Again 3D Shirt P87B8FN	10000020		US$29.95			4	21	US$0.26	1.00	35.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Alabama crimson tide Combo Hoodie And Sweatpants Gift For Fan P8TCX88	10000020		US$64.99			21	1571	US$5.32	1.00	190.89		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Los Angeles Rams 90th Anniversary SoFi Stadium Helmet Christmas Ornament P8E0LJH	10000020		US$22.95			3	117	US$0.39	1.00	28.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Miami Hurricanes | Premium NCAA Hello Kitty Women's Shirt P8EXC53	10000020		US$27.95			7	192	US$0.90	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Ohio State Buckeyes Vintage Mens Hoodie P8KCJUA0	10000020		US$65.88			36	1121	US$5.08	1.00	71.87		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	New York Giants NFL Hooded Letterman Jacket Custom Name PBL8YPF	1000020		US$78.65			306	12,562	US$60.68	1.50	131.47		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	NFL Miami Dolphins 3D Parka Jacket - LIMITED EDITION	1000020		US$139.99			43	3,483	US$14.73	1.46	197.25		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago Bears Hooded Cardigan Jacket P8XE77X	1000020		US$69.95			102	4,602	US$16.99	1.40	125.92		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Alabama Crimson Tide (Your Name) Women 3D Handbag PBGWGW8	1000020		US$49.95			4	107	US$0.40	1.25	72.42		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Jacksonville Jaguars Multicolor Blanket P8L136J	1000020		US$89.95			4	15	US$0.17	1.19	135.54		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	New England Patriots Hooded Cardigan Jacket PBMZW38	1000020		US$109.95			80	4,739	US$13.15	1.13	203.84		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders Fleece Flannel Plaid Jacket PB8409V9	1000020		US$129.95			170	10,489	US$48.20	1.07	132.45		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders Black & Silver Tri Trim Bead Hooded Letterman Jacket Custom Name PBR382	1000020		US$78.65			40	2,117	US$7.63	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Georgia Bulldogs Sherpa Lined Zip Hoodie PBSC28V	1000020		US$89.95			55	2,172	US$10.74	1.00	95.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Vegas Golden Knights Star Wars Night Limited Hockey Jersey P8L8SAV	1000020		US$39.99			14	1,598	US$2.93	1.00	57.98		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago Bears Combo Hoodie And Sweatpants Gift For Fan PBGHZG4	1000020		US$64.99			38	1,819	US$6.03	1.00	171.66		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens Corduroy Fleece Jacket PB6ZWZV	1000020		US$129.95			33	2,366	US$9.01	1.00	116.95		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Buffalo Bills | Premium NFL Electric Glow V-Neck Jersey P89AKYJ	1000020		US$44.95			55	3,193	US$10.66	1.00	50.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	NCAAF Alabama Crimson Tide (Your Name) Car Seat Cover PB9EQ0R	1000020		US$59.99			35	529	US$7.38	1.00	45.96		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Milwaukee Brewers Peanuts Night Limited Custom Jersey PB4LZPG	1000020		US$39.99			199	11,715	US$41.97	1.00	54.96	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Cincinnati Bengals x SpongeBob Limited Custom Jersey PB0XBGD	1000020		US$39.99			32	1,936	US$5.13	1.00	69.58		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Buffalo Bills | Premium NFL Simple Girl Quilted Vest PAEP8HI	1000020		US$79.95			81	2,970	US$13.85	1.00	85.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Philadelphia Eagles Fleece Jacket PBTX44D	1000020		US$129.95			29	1,122	US$8.49	1.00	99.95	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Pittsburgh Steelers Vintage Men Hoodie PBZ75MN	1000020		US$65.95			28	1,188	US$9.67	1.00	71.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago White Sox Personalized Fleece-Lined Windbreaker Jacket PQSN68	1000020		US$99.00			16	1,306	US$4.79	1.00	95.00		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Georgia Bulldogs Champion Car Seat Covers (SET OF 2) - v3671	1000020		US$89.99			50	798	US$9.96	1.00	59.98		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Detroit Lions NFL Hooded Letterman Jacket Custom Name P8K31R	1000020		US$78.65			35	2,651	US$6.85	1.00	93.67		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Los Angeles Rams NFL Hooded Letterman Jacket Custom Name P8K12HH	1000020		US$78.65			18	1,484	US$8.57	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens Car Seat Covers PBLOJ1J	1000020		US$59.99			3	81	US$0.37	1.00	92.56		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens | Premium NFL Game Day Lace Tank Top Shirt PB6YCUO	1000020		US$36.95			1	19	US$0.01	1.00	78.09		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders x SpongeBob Limited Custom Jersey PBFDXME	1000020		US$39.99			19	1,306	US$3.51	1.00	64.28		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Texas Longhorns | Premium NCAA Luxury Phone Case PBVLTSO	1000020		US$27.95				77	US$0.87	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Las Vegas Raiders Versatile Lapel Workwear Jacket PBXYA8	1000020		US$79.99			560	20969	US$90.72	6.02	$14.52	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	San Francisco 49ers Personalized Fleece Lined Windbreaker Jacket PJCJHP5	1000020		US$99.00			111	8150	US$32.67	3.00	429.52	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Denver Broncos Personalized New Baseball Jacket Gifts For Fan PBEJHX1	1000020		US$75.95			5	248	US$0.67	3.00	361.09	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Auburn Tigers | Premium NCAA Grateful Again 3D Shirt PBWA776	1000020		US$29.95			2	5	US$0.08	3.00	139.82	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Baltimore Ravens | Premium NFL Fleece Bathrobe PB19317	1000020		US$99.95			125	2020	US$16.98	2.67	214.55	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears NFL Parka Jacket - LIMITED EDITION PQ3VXL	1000020		US$139.99			38	1724	US$9.12	2.51	320.76	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New England Patriots NFL Hooded Letterman Jacket Custom Name PDCRJN1	1000020		US$78.65			221	10039	US$42.96	2.36	264.86	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Dallas Cowboys | Zip Up Fur Coat PBW40HD	1000020		US$124.95			396	20830	US$136.40	2.25	407.26	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New England Patriots Vintage Men Hoodies DV5PBX1704	1000020		US$65.95			95	3628	US$13.33	2.09	174.82	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Washington Redskin Hoodie Zip Velvet Coat PBW42DS	1000020		US$84.95			166	4939	US$30.77	2.03	198.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Carolina Panthers Persona zzed Car Seat Covers PB4AKS	1000020		US$59.99			4	61	US$0.55	2.06	181.93	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Oklahoma Sooners | Premium NCAA Luxury Phone Case PBWEUKC	1000020		US$27.95			2	25	US$0.16	2.00	110.11	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Tampa Bay Lightning Hello Kitty Night Limited Hockey Jersey P81APN4	1000020		US$39.99			11	390	US$1.56	2.00	160.72	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Dallas Cowboys Car Seat Covers PBJHJ95W	1000020		US$59.99			55	917	US$12.12	2.00	150.62	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Atlanta Falcons NFL Hooded Letterman Jacket Custom Name PSBLN9	1000020		US$78.65			52	2027	US$9.71	2.00	169.28	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Arizona Cardinals City Heritage Throwback Hooded Letterman Jacket Custom Name PWPR52	1000020		US$78.65			3	247	US$0.60	2.00	161.41	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	NCAAF Ohio State Buckeyes Zip Hoodie 3D PBPQ3WV	1000020		US$84.95			18	705	US$3.30	2.00	181.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Seattle Seahawks Navy & Green TB Im Dead Hooded Letterman Jacket Custom Name PBR3TP	1000020		US$78.65			48	2315	US$9.37	2.00	184.59	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears Vintage Men Hoodie PBYCZN8	1000020		US$65.95			54	2106	US$7.80	2.00	156.58	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears | Premium NFL Nurse Pride 3D Shirt PBQYE6X	1000020		US$29.95			17	120	US$1.44	2.00	66.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New Orleans Saints NFL Hooded Letterman Jacket Custom Name P7RGKT	1000020		US$78.65			137	5362	US$26.35	2.00	188.17	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Seattle Seahawks NFL Lamb Fleece Thick Coat- Custom name PBHAU77	1000020		US$129.95			12	1487	US$3.61	2.00	235.25	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears Versatile Lapel Workwear Jacket PYCDUV	1000020		US$79.99			154	6135	US$26.18	2.00	210.76	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Green Bay Packers NFL Parka Jacket - LIMITED EDITION PLB56K	1000020		US$139.99			136	3457	US$20.30	2.00	279.98	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Philadelphia Eagles NFL Hooded Letterman Jacket Custom Name P7925X	1000020		US$78.65			385	16924	US$67.93	1.98	167.86	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	NFL Chicago Bears Gloves Parka Jacket - LIMITED EDITION	1000020		US$139.99			441	22560	US$151.90	1.34	216.79	Ảnh SP	
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	North Carolina Tar Heels | Premium NCAA Grateful Again 3D Shirt PB7B8FN	19000206		US$29.95			4	21	US$0.26	1.00	35.94		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Alabama crimson tide Combo Hoodie And Sweatpants Gift For Fan PBTCX88	1000020		US$64.99			31	1571	US$3.32	1.00	190.89		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Los Angeles Rams 90th Anniversary SoFi Stadium Helmet Christmas Ornament PB9GLJH	10000201		US$22.95			3	117	US$0.39	1.00	28.94		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Miami Hurricanes | Premium NCAA Hello Kitty Women's Shirt PB6XG53	50000204		US$27.95			7	192	US$0.90	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Ohio State Buckeyes Vintage Men Hoodies PBKCUDP	1000020		US$65.88			36	1121	US$5.08	1.00	71.87		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Miami Dolphins | Premium NFL Grateful Dead Fan 3D Shirt PBXJS81	1000020		US$27.95			5	32	US$0.27	1.00	31.14		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	San Francisco 49ers Pink October No One Fights Alone Hooded Letterman Jacket Custom Name PALSAD	1000020		US$78.65			48	2389	US$9.43	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Buffalo Bills Personalized Leather Hand Bag PB7TXK6	1000020		US$49.95			1	4	US$0.10	1.00	55.44	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Philadelphia Eagles Heavyweight Hooded Jacket P24KPB	1000020		US$109.95			18	686	US$2.67	1.00	120.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Denver Broncos Car Seat Covers PBB1SAW	1000020		US$59.99			9	125	US$1.21	1.00	65.98		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Jacksonville Jaguars NFL Hooded Letterman Jacket Custom Name PBAJ3P5	1000020		US$78.65			57	2735	US$11.21	1.00	76.77		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Buffalo Bills NFL Hooded Letterman Jacket Custom Name PQW7D2	1000020		US$78.65			251	10188	US$48.67	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Colorado Avalanche Peanuts Night Limited Hockey Jersey PB0NRYA	1000020		US$39.99			13	880	US$2.19	1.00	85.96		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	New Orleans Saints Combo Hoodie And Sweatpants Gift For Fan PBJLC40	1000020		US$64.99			50	1786	US$7.94	1.00	100.99		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Baltimore Ravens PBJ8SQ4	1000020		US$124.95			59	2661	US$21.21	1.00	96.85		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Boston Bruins Personalized Fleece-Lined Windbreaker Jacket PWG6D9	1000020		US$99.00			14	661	US$2.57	1.00	99.00		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Kansas City Chiefs Pink October No One Fights Alone Hooded Letterman Jacket Custom Name PBC8SPH	1000020		US$78.65			26	1190	US$4.80	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Chicago Bears Native American Heritage Limited Football Jersey PBJ8IS52	1000020		US$51.99			62	5549	US$12.15	1.00	92.09		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Los Angeles Rams NFL Parka Jacket - LIMITED EDITION P51HMR	10000201		US$139.99			6	233	US$1.07	1.00	139.99		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Detroit Tigers Personalized Fleece-Lined Windbreaker Jacket PH24XZ	1000020		US$99.00			7	249	US$1.36	1.00	99.00		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Alabama Crimson Tide Sherpa-Lined Zip Hoodie PBYX4KA	1000020		US$69.99			21	1614	US$3.86	1.00	104.98		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Las Vegas Raiders Premium Fleece-Lined Leather Bomber Jacket PB4FM2Q	1000020		US$149.95			3	8	US$0.20	1.00	319.85		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Raiders Rug Living Room Floor Decor Fan Gifts PBX4PQ9	1000020		US$109.95			8	305	US$1.42	1.00	159.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Ohio State Buckeyes Fleece Lined Cargo Jacket Custom Your Name 2024 version PB0DQP0N	1000020		US$129.95			19	1073	US$5.56	1.00	152.86		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Baltimore Ravens Personalized Combo Hoodie And Sweatpants Gift For Fan PB581YS	1000020		US$105.95			9	442	US$1.40	1.00	105.95		
+Jacket	2026-10-24 18:06:48	42800d·A1	Ảnh 1	Chicago Bears Gobble Gobble Thanksgiving Knit Cardigan Custom Name PHCK7E	1000020		US$89.00			11	314	US$1.43	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Texas Longhorns | Premium NCAA Luxury Phone Case P8VLT50	10000020		US$27.95			8	77	US$0.87	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Philadelphia Eagles Windbreaker Unisex Outdoor Windproof Rain Coat Antifouling PW4BV7	10000020		US$59.00			4	58	US$0.48	1.00	64.99		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Buffalo Bills | Premium NFL Quilted Christmas Table Runner P8J6BU1	10000020		US$27.95			25	589	US$4.25	1.00	40.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Chicago Bears NFL Hooded Letterman Jacket Custom Name PMP9RH	10000020		US$78.65			374	15794	US$75.89	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Detroit Lions Sherpa-Lined Zip Hoodie P8UG4U	10000020		US$89.99			36	2060	US$7.28	1.00	95.98		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	New York Giants NFL Lamb Fleece Thick Coat Custom name P8KN5K9	10000020		US$129.95			44	1668	US$12.27	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Kansas City Chiefs NFL Hooded Letterman Jacket Custom Name P8H7JWY	10000020		US$78.65			181	6521	US$36.36	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Utah Mammoth x Star Wars Limited Hockey Jersey P8FQ3UH	10000020		US$39.99			9	720	US$1.81	1.00	57.96		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Pittsburgh Steelers Fleece Flannel Plaid Jacket P8P64LQ	10000020		US$129.95			35	2213	US$10.15	1.00	129.95		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Florida Panthers Hello Kitty Night Limited Hockey Jersey P8NPHA3	10000020		US$39.99			9	291	US$1.69	1.00	52.78		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Las Vegas Raiders NFL Hooded Letterman Jacket Custom Name P9QXRJ	10000020		US$78.65			245	10451	US$45.69	1.00	131.67		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Kansas City Chiefs | Premium NFL Nurse Pride 3D Shirt P8S5XSR	10000020		US$27.95			13	110	US$1.02	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Clemson Tigers | Premium NCAA Victory Streak Polo P8F1XJG	10000020		US$44.95			5	99	US$0.67	1.00	50.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Green Bay Packers NFL Waffle Hoodie P8Y73PP	10000020		US$59.95			11	635	US$1.60	1.00	59.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	West Virginia Mountaineers | Premium NCAA Hello Kitty Women's Shirt P8SGYV8	10000020		US$27.95			2	9	US$0.18	1.00	36.74		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Milwaukee Brewers | Premium MLB Puerto Rico Island Pride Baseball Jersey And Cap Set	10000020		US$64.99			14	364	US$2.49	1.00	123.48		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Atlanta Falcons Lace-Up Sweatshirt P8PBZCA	10000020		US$59.99			2	47	US$0.12	1.00	67.63		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Minnesota Vikings NFL Hooded Letterman Jacket Custom Name P8YX8GQ	10000020		US$78.65			124	4889	US$24.54	1.00	168.80		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Pittsburgh Pirates MLB Parka Jacket - LIMITED EDITION P1E0TT	10000020		US$139.99			12	609	US$1.73	1.00	139.99		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Atlanta Falcons Windbreaker Outdoor Jacket Sport Fan Gift P8CXL04	10000020		US$68.95			4	169	US$0.61	1.00	75.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Tampa Bay Buccaneers x Spongebob Limited Custom Jersey P6BBUEJ	10000020		US$39.99			15	1374	US$2.30	1.00	106.38		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Chicago Bears Personalized New Baseball Jacket Gifts For Fan P8L1WRV	10000020		US$79.99			12	885	US$1.62	1.00	94.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	North Carolina Tar Heels | Premium NCAA Grateful Again 3D Shirt P87B8FN	10000020		US$29.95			4	21	US$0.26	1.00	35.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Alabama crimson tide Combo Hoodie And Sweatpants Gift For Fan P8TCX88	10000020		US$64.99			21	1571	US$5.32	1.00	190.89		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Los Angeles Rams 90th Anniversary SoFi Stadium Helmet Christmas Ornament P8E0LJH	10000020		US$22.95			3	117	US$0.39	1.00	28.94		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Miami Hurricanes | Premium NCAA Hello Kitty Women's Shirt P8EXC53	10000020		US$27.95			7	192	US$0.90	1.00	59.09		
+Jacket	2026-10-24 18:06:48	42800d·A2	Ảnh 2	Ohio State Buckeyes Vintage Mens Hoodie P8KCJUA0	10000020		US$65.88			36	1121	US$5.08	1.00	71.87		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	New York Giants NFL Hooded Letterman Jacket Custom Name PBL8YPF	1000020		US$78.65			306	12,562	US$60.68	1.50	131.47		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	NFL Miami Dolphins 3D Parka Jacket - LIMITED EDITION	1000020		US$139.99			43	3,483	US$14.73	1.46	197.25		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago Bears Hooded Cardigan Jacket P8XE77X	1000020		US$69.95			102	4,602	US$16.99	1.40	125.92		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Alabama Crimson Tide (Your Name) Women 3D Handbag PBGWGW8	1000020		US$49.95			4	107	US$0.40	1.25	72.42		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Jacksonville Jaguars Multicolor Blanket P8L136J	1000020		US$89.95			4	15	US$0.17	1.19	135.54		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	New England Patriots Hooded Cardigan Jacket PBMZW38	1000020		US$109.95			80	4,739	US$13.15	1.13	203.84		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders Fleece Flannel Plaid Jacket PB8409V9	1000020		US$129.95			170	10,489	US$48.20	1.07	132.45		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders Black & Silver Tri Trim Bead Hooded Letterman Jacket Custom Name PBR382	1000020		US$78.65			40	2,117	US$7.63	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Georgia Bulldogs Sherpa Lined Zip Hoodie PBSC28V	1000020		US$89.95			55	2,172	US$10.74	1.00	95.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Vegas Golden Knights Star Wars Night Limited Hockey Jersey P8L8SAV	1000020		US$39.99			14	1,598	US$2.93	1.00	57.98		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago Bears Combo Hoodie And Sweatpants Gift For Fan PBGHZG4	1000020		US$64.99			38	1,819	US$6.03	1.00	171.66		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens Corduroy Fleece Jacket PB6ZWZV	1000020		US$129.95			33	2,366	US$9.01	1.00	116.95		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Buffalo Bills | Premium NFL Electric Glow V-Neck Jersey P89AKYJ	1000020		US$44.95			55	3,193	US$10.66	1.00	50.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	NCAAF Alabama Crimson Tide (Your Name) Car Seat Cover PB9EQ0R	1000020		US$59.99			35	529	US$7.38	1.00	45.96		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Milwaukee Brewers Peanuts Night Limited Custom Jersey PB4LZPG	1000020		US$39.99			199	11,715	US$41.97	1.00	54.96	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Cincinnati Bengals x SpongeBob Limited Custom Jersey PB0XBGD	1000020		US$39.99			32	1,936	US$5.13	1.00	69.58		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Buffalo Bills | Premium NFL Simple Girl Quilted Vest PAEP8HI	1000020		US$79.95			81	2,970	US$13.85	1.00	85.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Philadelphia Eagles Fleece Jacket PBTX44D	1000020		US$129.95			29	1,122	US$8.49	1.00	99.95	Ảnh SP	Link
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Pittsburgh Steelers Vintage Men Hoodie PBZ75MN	1000020		US$65.95			28	1,188	US$9.67	1.00	71.94		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Chicago White Sox Personalized Fleece-Lined Windbreaker Jacket PQSN68	1000020		US$99.00			16	1,306	US$4.79	1.00	95.00		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Georgia Bulldogs Champion Car Seat Covers (SET OF 2) - v3671	1000020		US$89.99			50	798	US$9.96	1.00	59.98		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Detroit Lions NFL Hooded Letterman Jacket Custom Name P8K31R	1000020		US$78.65			35	2,651	US$6.85	1.00	93.67		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Los Angeles Rams NFL Hooded Letterman Jacket Custom Name P8K12HH	1000020		US$78.65			18	1,484	US$8.57	1.00	84.64		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens Car Seat Covers PBLOJ1J	1000020		US$59.99			3	81	US$0.37	1.00	92.56		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Baltimore Ravens | Premium NFL Game Day Lace Tank Top Shirt PB6YCUO	1000020		US$36.95			1	19	US$0.01	1.00	78.09		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Las Vegas Raiders x SpongeBob Limited Custom Jersey PBFDXME	1000020		US$39.99			19	1,306	US$3.51	1.00	64.28		
+Jacket	2026-10-24 18:06:48	42800d·A3	Ảnh 3	Texas Longhorns | Premium NCAA Luxury Phone Case PBVLTSO	1000020		US$27.95				77	US$0.87	1.00	33.94		
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Las Vegas Raiders Versatile Lapel Workwear Jacket PBXYA8	1000020		US$79.99			560	20969	US$90.72	6.02	$14.52	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	San Francisco 49ers Personalized Fleece Lined Windbreaker Jacket PJCJHP5	1000020		US$99.00			111	8150	US$32.67	3.00	429.52	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Denver Broncos Personalized New Baseball Jacket Gifts For Fan PBEJHX1	1000020		US$75.95			5	248	US$0.67	3.00	361.09	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Auburn Tigers | Premium NCAA Grateful Again 3D Shirt PBWA776	1000020		US$29.95			2	5	US$0.08	3.00	139.82	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Baltimore Ravens | Premium NFL Fleece Bathrobe PB19317	1000020		US$99.95			125	2020	US$16.98	2.67	214.55	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears NFL Parka Jacket - LIMITED EDITION PQ3VXL	1000020		US$139.99			38	1724	US$9.12	2.51	320.76	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New England Patriots NFL Hooded Letterman Jacket Custom Name PDCRJN1	1000020		US$78.65			221	10039	US$42.96	2.36	264.86	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Dallas Cowboys | Zip Up Fur Coat PBW40HD	1000020		US$124.95			396	20830	US$136.40	2.25	407.26	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New England Patriots Vintage Men Hoodies DV5PBX1704	1000020		US$65.95			95	3628	US$13.33	2.09	174.82	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Washington Redskin Hoodie Zip Velvet Coat PBW42DS	1000020		US$84.95			166	4939	US$30.77	2.03	198.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Carolina Panthers Persona zzed Car Seat Covers PB4AKS	1000020		US$59.99			4	61	US$0.55	2.06	181.93	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Oklahoma Sooners | Premium NCAA Luxury Phone Case PBWEUKC	1000020		US$27.95			2	25	US$0.16	2.00	110.11	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Tampa Bay Lightning Hello Kitty Night Limited Hockey Jersey P81APN4	1000020		US$39.99			11	390	US$1.56	2.00	160.72	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Dallas Cowboys Car Seat Covers PBJHJ95W	1000020		US$59.99			55	917	US$12.12	2.00	150.62	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Atlanta Falcons NFL Hooded Letterman Jacket Custom Name PSBLN9	1000020		US$78.65			52	2027	US$9.71	2.00	169.28	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Arizona Cardinals City Heritage Throwback Hooded Letterman Jacket Custom Name PWPR52	1000020		US$78.65			3	247	US$0.60	2.00	161.41	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	NCAAF Ohio State Buckeyes Zip Hoodie 3D PBPQ3WV	1000020		US$84.95			18	705	US$3.30	2.00	181.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Seattle Seahawks Navy & Green TB Im Dead Hooded Letterman Jacket Custom Name PBR3TP	1000020		US$78.65			48	2315	US$9.37	2.00	184.59	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears Vintage Men Hoodie PBYCZN8	1000020		US$65.95			54	2106	US$7.80	2.00	156.58	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears | Premium NFL Nurse Pride 3D Shirt PBQYE6X	1000020		US$29.95			17	120	US$1.44	2.00	66.88	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	New Orleans Saints NFL Hooded Letterman Jacket Custom Name P7RGKT	1000020		US$78.65			137	5362	US$26.35	2.00	188.17	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Seattle Seahawks NFL Lamb Fleece Thick Coat- Custom name PBHAU77	1000020		US$129.95			12	1487	US$3.61	2.00	235.25	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Chicago Bears Versatile Lapel Workwear Jacket PYCDUV	1000020		US$79.99			154	6135	US$26.18	2.00	210.76	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Green Bay Packers NFL Parka Jacket - LIMITED EDITION PLB56K	1000020		US$139.99			136	3457	US$20.30	2.00	279.98	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	Philadelphia Eagles NFL Hooded Letterman Jacket Custom Name P7925X	1000020		US$78.65			385	16924	US$67.93	1.98	167.86	Ảnh SP	
+Jacket	2026-10-24 18:06:48	42800d·A4	Ảnh 4	NFL Chicago Bears Gloves Parka Jacket - LIMITED EDITION	1000020		US$139.99			441	22560	US$151.90	1.34	216.79	Ảnh SP	

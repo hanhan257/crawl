@@ -1,0 +1,104 @@
+Dự án	Ngày	Mã ảnh	Ảnh nguồn	Sản phẩm	Item ID	SKU	Giá	Danh mục	Trạng thái	Clicks	Impr.	Cost	Conv.	Conv. value	Ảnh SP	Link SP
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Milwaukee Brewers National League Champions Shirt	woocommerce		US$19.95			1,562	61,601	US$920.64	65.24	2,615.08		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Brewers 103 Wins NL Central Division Champions Shirt	woocommerce		US$19.95			884	74,903	US$419.52	17.88	743.00		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Tampa Bay Rays World Series Champions Shirt	woocommerce		US$29.95			435	11,200	US$180.86	16.50	589.00		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Brewers National League Champions World Series Shirt	woocommerce		US$29.95			285	18,031	US$144.74	13.88	563.28		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Brewers World Series Quarter Zip Hoodie	woocommerce		US$49.95			673	39,586	US$353.58	10.31	642.56		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Rays vs Brewers World Series Matchup Hat	woocommerce		US$25.95			303	12,314	US$99.70	10.25	386.55		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Brewers Win Our Way Player Names Shirt	woocommerce		US$15.95			328	17,345	US$137.26	9.14	310.20		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Cleveland Guardians 2026 ALDS Champions Locker Room Hat	woocommerce		US$37.95			248	12,687	US$81.55	9.05	451.58		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Milwaukee Brewers 2026 World Series Locker Room Hat	woocommerce		US$36.95			402	22,184	US$119.79	7.99	368.53		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Dodgers World Series Champions x9 Bomber Jacket	woocommerce		US$61.95			348	65,898	US$87.69	5.99	552.23		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Brewers 2026 National League Champions Locker Room Tshirt	woocommerce		US$19.95			85	5,200	US$36.27	5.89	214.54		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Brewers B2B2026 NL Central Division Champions Shirt	woocommerce		US$19.95			197	57,607	US$86.48	5.22	233.41		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Philadelphia Eagles Italian Flag Hat	woocommerce		US$37.95			161	13,745	US$47.13	5.00	189.75		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Brewers World Series Knit Kist	woocommerce		US$37.95			222	6,162	US$65.41	5.00	179.75	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Bears Legend Nike Duks 1929-2026 Thank You For The Memories Shirt	woocommerce		US$19.95			72	3,179	US$29.05	5.00	136.46		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Rays vs Brewers World Series Championship Showdown Shirt	woocommerce		US$29.95			194	5,314	US$74.39	5.00	199.95		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Packers EST 1919 Quarter Zip Hoodie	woocommerce		US$49.95			154	14,282	US$82.75	4.98	298.53		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Pat Patriots Football Waffle Hoodie	woocommerce		US$42.95			197	12,026	US$92.01	4.50	217.75		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Dawn Royal Am A Packers Fan Jersey	woocommerce		US$41.95			214	51,427	US$81.28	4.02	174.64		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Brewers World Series 2025 Quarter Zip Hoodie	woocommerce		US$49.95			333	17,487	US$176.10	4.01	252.90	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	2026 Tampa Bay Rays vs Milwaukee Brewers World Series Matchup Shirt	woocommerce		US$19.95			102	3,269	US$30.98	4.00	281.45		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Bills EST 1950 Quarter Zip Shirt	woocommerce		US$39.95			87	8,350	US$33.53	4.00	170.74		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Bears EST 1920 Quarter Zip Shirt	woocommerce		US$39.95			42	4,067	US$16.80	4.00	157.70	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Trick Or Treat Cats Halloween Shirt	woocommerce		US$19.95			20	491	US$7.87	4.00	86.75	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Dak Prescott Tony Romo Troy Aikman Cowboys Legends Shirt	woocommerce		US$19.95			63	1,904	US$9.04	3.98	83.37		
+Shirt	2026-10-24 18:14:26	42810d·A1	Ảnh 1	Bears EST 1920 Quarter Zip Hoodie	woocommerce		US$49.95			214	43,144	US$78.44	3.90	167.65	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Milwaukee Brewers NLCS Sweep Dodgers Shirt	woocommerce		US$19.95			65	2057	US$22.26	3.50	85.51	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Guardians AL Central Division Champion Shirt	woocommerce		US$19.95			113	4224	US$40.67	3.50	99.83	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Brewers National League Champions 4-0 Sweep Dodgers Hat	woocommerce		US$35.95			168	8368	US$79.84	3.33	129.68	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Unisex Steelers Printed Bold Zip Hoodie Set	woocommerce		US$42.95			141	39394	US$52.59	3.04	156.13	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Tampa Bay Rays World Series League Champions Hat	woocommerce		US$36.95			153	4882	US$55.89	3.00	138.56	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Mike Ditka Bears Sweater Vest	woocommerce		US$49.95			320	43032	US$402.99	3.00	146.66	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Damn Right I Am A Vols Fan Jersey	woocommerce		US$41.95			35	2572	US$10.39	3.00	136.85	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Bills EST 1960 Quarter Zip Hoodie	woocommerce		US$49.95			105	9220	US$49.84	3.00	203.80	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2025 Brewers Long Sleeve Lightweight Giveaway	woocommerce		US$42.95			77	2834	US$35.72	3.00	130.85	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Guardians ALCS Take October Shirt	woocommerce		US$19.95			147	4771	US$55.71	3.00	119.65	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Brewers World Series Champions Ugly Sweater	woocommerce		US$39.95			79	3905	US$42.99	2.67	124.48	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2026 Indians 2026 AL Central Division Champions Shirt	woocommerce		US$19.95			18	937	US$27.08	2.25	49.39	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Patriots SE Championships Patch Throwback Limited Edition New Jacket	woocommerce		US$49.95			18	2772	US$27.93	2.00	156.65	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Rushform Mountain Bears Mike Ditka Coach 2026 Shirt	woocommerce		US$19.95			109	5629	US$30.96	2.00	59.85	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2025 Ben Jobbean Da Bears Nation Hoodie	woocommerce		US$42.95			58	4296	US$34.40	2.00	86.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Unisex Packers Printed Bold Zip Hoodie Set	woocommerce		US$42.95			49	4184	US$30.31	2.00	146.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Mike Ditka 1939-2026 Iron Mike 89 Da Coach Tribute Hat	woocommerce		US$35.95			57	2327	US$32.61	2.00	215.70	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Broncos EST 1999 Quarter Zip Hoodie	woocommerce		US$49.95			75	7783	US$26.62	2.00	77.85	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Unisex Chiefs Printed Bold Zip Hoodie Set	woocommerce		US$42.95			42	1788	US$18.71	2.00	84.75	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Chiefs EST 1999 Quarter Zip Hoodie	woocommerce		US$49.95			52	4525	US$24.52	2.00	100.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Brewers 2026 Division Series Champions Take October Baseball Jacket	woocommerce		US$61.95			220	9318	US$121.87	2.00	192.85	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Never Mind I Handled It Bloody Halloween Shirt	woocommerce		US$29.95			36	1108	US$8.88	2.00	75.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	2025 Raiders Personalization Jersey	woocommerce		US$41.95			92	6198	US$31.88	2.00	84.70	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Damn Right I Am A Hurricanes Fan Jersey	woocommerce		US$41.95			135	7679	US$55.85	2.00	86.90	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Vols Tell Them Ruth Sent You Shirt	woocommerce		US$19.95			1	20	US$0.46	2.00	53.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A2	Ảnh 2	Unisex Notre Dame Football Print Vintage Baseball Cap	woocommerce		US$35.95			36	1414	US$6.79	2.00	71.90	Ảnh SP	
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Let's Go Brewers Sweep Dodgers Shirt	woocommerce		US$19.95			24	381	US$6.86	2.00	78.38		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Klint Kubiak Raiders EAT Hat	woocommerce		US$37.95			16	658	US$13.68	2.00	113.85	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Retro Deer World We Are So Sorry Love Same Americans Print T-Shirt	woocommerce		US$29.95			33	1,205	US$22.48	2.00	115.85		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Brewers Pennant Giveaway	woocommerce		US$18.95			338	9,245	US$82.05	2.00	70.90		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Tampa Bay Rays World Series Champions Shirt	woocommerce		US$19.95			226	7,362	US$84.82	2.00	81.85		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Rangers Bufflebo Day Hat Giveaway	woocommerce		US$39.95			8	265	US$5.51	2.00	69.90		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2025 Brewers Football Jersey Giveaway	woocommerce		US$41.95			21	1,134	US$9.66	2.00	79.71		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Dan Campbell Lions Villain 2025 Shirt	woocommerce		US$19.95			42	332	US$11.20	2.00	184.35		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Damon Right! Arm A Hurricanes Fan 3D Shirt	woocommerce		US$29.95			57	3,130	US$29.57	1.99	63.70		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Brewers World Series No Time Like October Shirt	woocommerce		US$19.95			90	8,649	US$41.22	1.83	45.05		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Unisex Eagles Printed Bold Zip Hoodie Set	woocommerce		US$42.95			186	62,899	US$56.85	1.04	76.23		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Packers EST 1919 Quarter Zip Shirt	woocommerce		US$39.95			155	11,811	US$66.66	1.00	39.29		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Dodgers vs Brewers MLCS Matchup Shirt	woocommerce		US$19.95			33	3,562	US$21.73	1.00	28.02		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Cleveland Indians Back 2 Back 2 Back AL Central Division Champions Shirt	woocommerce		US$19.95			154	7,862	US$61.05	1.00	47.94		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Begin RSA Private Key X End RSA Private Key Shirt	woocommerce		US$19.95			4	39	US$2.73	1.00	20.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Brewers Win Our Way Postseason Shirt	woocommerce		US$19.95			32	4,104	US$11.96	1.00	19.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Unisex Cowboys Printed Bold Zip Hoodie Set	woocommerce		US$42.95			74	3,300	US$14.54	1.00	38.66		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Broncos Football Waffle Hoodie	woocommerce		US$42.95			5	327	US$1.89	1.00	39.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Rays Division Champions Hat	woocommerce		US$35.95			31	2,878	US$10.70	1.00	35.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Pirates Gold Out Opening Night Shirt	woocommerce		US$29.95			15	171	US$4.76	1.00	31.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Falcons Personalized Printed Cap	woocommerce		US$35.95			1	43	US$2.64	1.00	35.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Lake Ontario Canada True North Still Canadian Hat	woocommerce		US$37.95			1	108	US$0.61	1.00	30.36		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Sophie Cunningham Women No Clu Just Hat	woocommerce		US$37.95			25	1,135	US$10.42	1.00	37.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	Bo Nix 10 Captain Denver Football Unisex Blanket Hoodie	woocommerce		US$74.95			5	346	US$2.51	1.00	89.95		
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	2026 Seahawks Latino Heritage Shirt	woocommerce		US$29.95			19	1,021	US$5.31	1.00	30.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A3	Ảnh 3	George Kittle Make Evens If You're Ever Sad Just Remember Shirt	woocommerce		US$19.95			77	1,283	US$21.19	1.00	43.90		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Bo-Nix 30 Captain Denver Football Unisex Blanket Hoodie	woocommerce		US$74.95			5	346	US$2.51	1.00	69.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Seahawks Latino Heritage Shirt	woocommerce		US$29.95			19	1,021	US$5.31	1.00	36.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	George Kittle Mike Evans If You’re Ever Sad Just Remember Shirt	woocommerce		US$19.95			77	1,203	US$21.19	1.00	43.90		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Diet Coke Drinking Pajama Set	woocommerce		US$49.95			65	2,644	US$25.29	1.00	56.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Seahawks S Bowl LX Champions Locker Room Hat	woocommerce		US$37.95			18	1,743	US$4.99	1.00	37.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Spicy Sophie Basketball Point God Printed V-Neck Shirt	woocommerce		US$19.95			8	823	US$2.03	1.00	26.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	CW 18 Captain Chicago Football Unisex Blanket Hoodie	woocommerce		US$74.95			9	598	US$7.41	1.00	80.96	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Steven Spielberg Dinosaur Shirt	woocommerce		US$19.95			1	39	US$2.05	1.00	91.80		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Dan Campbell Lions Villain 2026 Jersey	woocommerce		US$41.95			12	206	US$9.82	1.00	19.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Justin Jefferson 18 Minnesota Football Unisex Blanket Hoodie	woocommerce		US$74.95			4	321	US$1.62	1.00	89.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Jaxson Dart 6 New York G Football Unisex Blanket Hoodie	woocommerce		US$74.95			4	99	US$5.58	1.00	74.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Rays American League Champions World Series Hat	woocommerce		US$35.95			47	2,574	US$13.27	1.00	34.15		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Frog And Toad Ugly Christmas Sweater	woocommerce		US$39.95			1	42	US$0.16	1.00	39.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Mario Cartoon Muppet Chef Hawaiian Shirt	woocommerce		US$35.95			6	421	US$1.38	1.00	59.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Mike Ditka Chicago Bears 1939 - 2026 Tribute Memorial Shirt	woocommerce		US$19.95			57	3,541	US$24.58	1.00	25.90		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Notre Dame Football Shirt	woocommerce		US$29.95			16	1,311	US$6.13	1.00	29.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Phillies Margaritaville Night Hat Giveaway	woocommerce		US$37.95			3	197	US$0.53	1.00	37.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Rays American League East Champions Shirt	woocommerce		US$19.95			21	1,588	US$9.63	1.00	46.90		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Red Sox City Connect Hot Dog Hat Giveaway	woocommerce		US$39.95			13	507	US$2.81	1.00	37.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Josh Allen 17 Bills x Cowboy Hoodie	woocommerce		US$42.95			18	1,384	US$9.41	1.00	43.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Seahawks x Mariners 3D Baseball Jersey	woocommerce		US$41.95			19	1,531	US$8.08	1.00	44.95		
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Mike Evans Who Are You Shirt	woocommerce		US$19.95			21	1,163	US$10.41	1.00	25.56	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Worst Man in America is Coming Hat	woocommerce		US$35.95			5	496	US$2.39	1.00	35.95	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	Spacex It's Always Sunny in Space Shirt	woocommerce		US$19.95			4	128	US$1.97	1.00	27.90	Ảnh SP	Link
+Shirt	2026-10-24 18:14:26	42810d·A4	Ảnh 4	2026 Braves Hunting & Fishing Night Jersey Giveaway	woocommerce		US$41.95			9	524	US$7.45	1.00	42.95	Ảnh SP	Link
